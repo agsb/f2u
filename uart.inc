@@ -7,6 +7,7 @@
 ;
 LEAF 3, "IO!"
 IOYO:
+	NOOP
     eor wrk_low, wrk_low
     out 0x20, wrk_low
     ldi wrk_low,lo8(52)
@@ -19,7 +20,7 @@ IOYO:
     in wrk_low,0x20
     ori wrk_low,lo8(64)
     out 0x20,wrk_low
-    rjmp CORE
+    POON
 
 ;----------------------------------------------------------------------
 ;
@@ -28,6 +29,7 @@ IOYO:
 LEAF 4, "KEY?"
 KEYQM:
 RXAT:
+	NOOP
     sbis 0xb, 7
     rjmp FFALSE
     in wrk_low, 0xc
@@ -42,6 +44,7 @@ RXAT:
 LEAF 5, "EMIT?"
 EMITQM:
 TXTO:
+    NOOP
     sbis 0xb, 5
     rjmp FFALSE
     out 0xc, tos_low
