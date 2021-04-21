@@ -136,5 +136,6 @@ This is a evolution from what I learning with u2forth, ATMEGA8 assembler and for
 # notes
 
 1. Leaf routine does not do any call. Twig routines do.
+2. 
 
 
