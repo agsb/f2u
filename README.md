@@ -13,6 +13,9 @@ This is a evolution from what I learning with u2forth, ATMEGA8 assembler and for
 
 # References
 
+http://forth.org/OffeteStore/1013_eForthAndZen.pdf
+https://code.google.com/archive/p/subtle-stack/downloads
+
 1. In eforth for Cortex M4, a esp32, Dr. C.H.Ting uses a optimal aprouach for forth engine, but need cpu family specific instructions (ISA) *inline into dictionary*.
 
   _in my opinion best and ideal solution per cpu_
@@ -85,7 +88,8 @@ This is a evolution from what I learning with u2forth, ATMEGA8 assembler and for
     the memory model is not unified, separate address for flash, sdram.
     why two "adiw WL, 1" ????
     
-3. this f2u implementation for ATMEGA8, 
+3. this F2U implementation for ATMEGA8, 
+
     no use of SP intructions (pop, push, call, ret) reserving and leaving those for external extensions and libraries;
     instruction pointer is Z (r31:r30) for lpm instruction;
     first stack pointer is Y (r29:r28) for forth return stack;
@@ -109,7 +113,7 @@ This is a evolution from what I learning with u2forth, ATMEGA8 assembler and for
     ; push ip into rsp
     _ENTER:
      rsp_push ip_low, ip_high
-
+     
     ; if zero then is a exec
      mov r0, r25
      or  r0, r24
