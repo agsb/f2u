@@ -85,44 +85,48 @@ This is a evolution from what I learning with u2forth, ATMEGA8 assembler and for
     the memory model is not unified, separate address for flash, sdram.
     why two "adiw WL, 1" ????
     
-4. this f2u implementation for ATMEGA8, 
+3. this f2u implementation for ATMEGA8, 
     no use of SP intructions (pop, push, call, ret) reserving and leaving those for external extensions and libraries;
     instruction pointer is Z (r31:r30) for lpm instruction;
     first stack pointer is Y (r29:r28) for forth return stack;
     working pair register is W (r25:r24) for forth working register;
     
 ; the interpreter
-
-    _EXIT:  ; 4, pull ip from rsp
-        ld ZH, Y+
-        ld ZL, Y+
+    
+    LAST:
+      nop
+      nop
       
-    _NEXT:  ; 18
-        ; 6, load W with contents of cell at Z, only works in program memory (flash)
-        lpm WH, Z+
-        lpm WL, Z+
-        
-        ; 4, if is zero, then exec
-        mov r0, WH
-        or  r0, WL
-        brbs 1, _EXEC 
-        
-        ; 4, push ip into rsp
-        st -Y, ZL 
-        st -Y, ZH
-        
-        ; 4, point to next reference
-        movw ZL, WL
-        rjmp _NEXT
-        
-    _EXEC:  ; 2
-        ijmp
+    ; pull ip from rsp
+    _EXIT:
+      rsp_pull ip_low, ip_high
+
+    ; load w with contents of cell at ip, only works in program memory (flash)
+    _NEXT:
+     lpm wrk_low, Z+
+     lpm wrk_high, Z+
+
+    ; push ip into rsp
+    _ENTER:
+     rsp_push ip_low, ip_high
+
+    ; if zero then is a exec
+     mov r0, r25
+     or  r0, r24
+     brbs 1, _EXEC
+
+    ; else is a reference
+     movw ip_low, wrk_low
+     rjmp _NEXT
+
+    _EXEC:
+     ijmp
         
 ; the dicionary, inside PFA 
   
-    leaf ==>  (0x0000), code ... code, rjmp _EXIT
+    leaf ==>  (0x0000), code ... code, (rjmp _EXIT)
 
-    twig ==>  ptr ... ptr, _EXIT
+    twig ==>  ptr ... ptr, (LAST)
     
 ; considerations
     
