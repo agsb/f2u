@@ -45,7 +45,7 @@ OPT = 0
 FORMAT = ihex
 
 # Target file name (without extension).
-TARGET = u2f
+TARGET = f2u2
 
 # List C source files here. (C dependencies are automatically generated.)
 SRC = $(TARGET).c

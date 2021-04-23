@@ -33,8 +33,8 @@ RXAT:
     sbis 0xb, 7
     rjmp FFALSE
     in wrk_low, 0xc
-    pspush nds_low, nds_high
-    movw nds_low, tos_low
+	eor wrk_high
+	pspush wrk_low, wrk_high 
     rjmp FTRUE
 
 ;----------------------------------------------------------------------
@@ -47,8 +47,7 @@ TXTO:
     NOOP
     sbis 0xb, 5
     rjmp FFALSE
-    out 0xc, tos_low
-    movw wrk_low, nds_low
-    pspull nds_low, nds_high
+    pspull wrk_low, wrk_high
+    out 0xc, wrk_low
     rjmp FTRUE
 

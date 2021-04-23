@@ -169,23 +169,5 @@
     .endif
 .endm
 
-;----------------------------------------------------------------------
-.macro next_wrk
-	lpm wrk_low, Z+
-	lpm wrk_high, Z+
-.endm
 
-;----------------------------------------------------------------------
-.macro pull_wrk
- 	movw wrk_low, tos_low
- 	movw tos_low, nds_low
- 	pspull nds_low, nds_high
-.endm
-
-;----------------------------------------------------------------------
-.macro push_wrk
-	pspush nds_low, nds_high
-	movw nds_low, tos_low
- 	movw tos_low, wrk_low
-.endm
 
