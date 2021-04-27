@@ -90,9 +90,9 @@ https://code.google.com/archive/p/subtle-stack/downloads
     
 3. this F2U implementation for ATMEGA8, 
 
-no use of CPU SP intructions (pop, push, call, ret), leaving those for external extensions and libraries;
+do not use of CPU SP intructions (pop, push, call, ret), leaving those for external extensions and libraries;
       
-      address pointer is Z (r31:r30) for lpm instruction;
+      address pointer is Z (r31:r30) for lpm (flash), lds (sram), sts (sram) instructions;
       first stack pointer is Y (r29:r28) for forth return stack;
       second stack pointer is X (r27:r26) for forth data stack;
       working pair register is W (r25:r24) for forth working register;
@@ -104,7 +104,16 @@ no use of CPU SP intructions (pop, push, call, ret), leaving those for external 
       registers r2 to r4 used in interrupts
       registers r5 to r15 free
       registers r17:r16 and r19:r18 used in math operations
-    
+ 
+ internal clock of 8MHz
+ uart at 9600, 8N1, asynchronous
+ include timer at 1ms with 16 bits counter  ~ 65 s
+ include watch dog at ~ 2.0 s
+ include pseudo 16bit random generator 
+ include djb 16bit hash generator
+ uses MiniCore and optboot
+ 
+ **still do not write to flash.**
     
 ; the interpreter
     
