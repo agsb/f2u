@@ -145,8 +145,10 @@ https://code.google.com/archive/p/subtle-stack/downloads
 
 1. Leaf routine does not do any call. Twig routines do.
 
-2. to translate forth names to assembler names, as prefix or sufix
-
+2. to translate forth names to assembler names, 
+   
+as prefix or sufix
+    
     use LE for <=
     use GT for >=
     use NE for <>
