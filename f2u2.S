@@ -296,7 +296,7 @@ ROT:
 ;----------------------------------------------------------------------
 ; ok ( w -- 0 | w w )
 LEAF 4, "?DUP"
-QMDUP:
+NZDUP:
 	NOOP
 	pspull wrk_low, wrk_high
 	pspush wrk_low, wrk_high
@@ -526,7 +526,8 @@ LEAF 5, "DOVAR"
 	NOOP
 	rspull ips_low, ips_high
 ; load from static ram memory
-	srload wrk_low, wrk_high
+	srload wrk_low
+	srload wrk_high
 	rspush ips_low, ips_high
 	pspush wrk_low, wrk_high
 	POON
@@ -539,11 +540,13 @@ DOCON:
 	NOOP
 	rspull ips_low, ips_high
 ; load from static ram memory
-	srload wrk_low, wrk_high
+	srload wrk_low
+	srload wrk_high
 	rspush ips_low, ips_high
 	movw ips_low, wrk_low
 ; load from static ram memory
-	srload wrk_low, wrk_high
+	srload wrk_low
+	srload wrk_high
 	pspush wrk_low, wrk_high
 	POON
 
@@ -554,7 +557,8 @@ TO:
 	NOOP
 	pspull ips_low, ips_high
 	pspull wrk_low, wrk_high
-	srsave wrk_low, wrk_high
+	srsave wrk_low
+	srsave wrk_high
 	POON
 
 ;----------------------------------------------------------------------
@@ -564,8 +568,7 @@ CTO:
 	NOOP
 	pspull ips_low, ips_high
 	pspull wrk_low, wrk_high
-	clr wrk_high
-	srsave wrk_low, wrk_high
+	srsave wrk_low
 	POON
 
 ;----------------------------------------------------------------------
@@ -574,7 +577,8 @@ LEAF 1, "@"
 AT:
 	NOOP
 	pspull ips_low, ips_high
-    srload wrk_low, wrk_high
+    srload wrk_low
+    srload wrk_high
 	pspush wrk_low, wrk_high
     POON
 
@@ -584,7 +588,7 @@ LEAF 1, "C@"
 CAT:
 	NOOP
 	pspull ips_low, ips_high
-    srload wrk_low, wrk_high
+    srload wrk_low
 	clr wrk_high
 	pspush wrk_low, wrk_high
     POON
@@ -644,6 +648,16 @@ NEG:
 	pspull wrk_low, wrk_high
     neg wrk_low
     neg wrk_high
+	pspush wrk_low, wrk_high
+    POON
+
+;----------------------------------------------------------------------
+; ok ABS
+LEAF 3, "ABS"
+ABS:
+	NOOP
+	pspull wrk_low, wrk_high
+    cbr wrk_high, 7
 	pspush wrk_low, wrk_high
     POON
 

@@ -7,7 +7,7 @@
 ;
 LEAF 3, "IO!"
 IOYO:
-	NOOP
+    NOOP
     eor wrk_low, wrk_low
     out 0x20, wrk_low
     ldi wrk_low, lo8(52)
@@ -29,12 +29,12 @@ IOYO:
 LEAF 4, "KEY?"
 KEYQM:
 RXAT:
-	NOOP
+    NOOP
     sbis 0xb, 7
     rjmp FFALSE
     in wrk_low, 0xc
-	eor wrk_high, wrk_high
-	pspush wrk_low, wrk_high 
+    eor wrk_high, wrk_high
+    pspush wrk_low, wrk_high 
     rjmp FTRUE
 
 ;----------------------------------------------------------------------

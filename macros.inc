@@ -167,16 +167,14 @@
 
 ;----------------------------------------------------------------------
 ;	load from static memory (sram), increments pointer
-.macro srload low , high
-    ld \low  , Z+
-    ld \high , Z+
+.macro srload byte
+    ld \byte  , Z+
 .endm
 
 ;----------------------------------------------------------------------
 ;	save to static memory (sram), increments pointer
-.macro srsave low , high
-    st Z+, \low 
-    st Z+, \high
+.macro srsave byte
+    st Z+, \byte 
 .endm
 
 ;----------------------------------------------------------------------

@@ -32,7 +32,7 @@ UMBYMOD:
 
 div16u: 
 	clr wrk_low ;clear remainder Low byte
-    sub wrk_high,wrk_high;clear remainder High byte and carry
+    sub wrk_high, wrk_high;clear remainder High byte and carry
     ldi r16,17 ;init loop counter
 d16u_1: 
 	rol nds_low ;shift left dividend
@@ -50,11 +50,11 @@ d16ures:
 d16u_2: 
 	rol wrk_low ;shift dividend into remainder
     rol wrk_high
-    sub wrk_low,tos_low ;remainder = remainder - divisor
-    sbc wrk_high,tos_high ;
+    sub wrk_low, tos_low ;remainder = remainder - divisor
+    sbc wrk_high, tos_high ;
     brcc d16u_3 ;if result negative
-    add wrk_low,tos_low ; restore remainder
-    adc wrk_high,tos_high
+    add wrk_low, tos_low ; restore remainder
+    adc wrk_high, tos_high
     clc ; clear carry to be shifted into result
     rjmp d16u_1 ;else
 d16u_3: sec ; set carry to be shifted into result
@@ -168,22 +168,25 @@ SMUL:
     movw r18, tos_low
 ;
 ;***** Code
-mpy16s: clr    m16s3     ;clear result byte 3
-    sub    m16s2,m16s2    ;clear result byte 2 and carry
-    ldi    mcnt16s,16     ;init loop counter
-m16s_1: brcc    m16s_2    ;if carry (previous bit) set
-    add    m16s2,mc16sL    ;    add multiplicand Low to result byte 2
-    adc    m16s3,mc16sH    ;    add multiplicand High to result byte 3
-m16s_2: sbrc    mp16sL,0    ;if current bit set
-    sub    m16s2,mc16sL    ;    sub multiplicand Low from result byte 2
-    sbrc    mp16sL,0    ;if current bit set
-    sbc    m16s3,mc16sH    ;    sub multiplicand High from result byte 3
-    asr    m16s3     ;shift right result and multiplier
-    ror    m16s2
-    ror    m16s1
-    ror    m16s0
-    dec    mcnt16s    ;decrement counter
-    brne    m16s_1    ;if not done, loop more
+mpy16s: 
+	clr  m16s3     		   	;clear result byte 3
+    sub  m16s2, m16s2    	;clear result byte 2 and carry
+    ldi  mcnt16s, 16     	;init loop counter
+m16s_1: 
+	brcc m16s_2    ;if carry (previous bit) set
+    add  m16s2, mc16sL    ;    add multiplicand Low to result byte 2
+    adc  m16s3, mc16sH    ;    add multiplicand High to result byte 3
+m16s_2: 
+	sbrc mp16sL, 0      	;if current bit set
+    sub  m16s2,mc16sL     ;    sub multiplicand Low from result byte 2
+    sbrc mp16sL, 0        ;if current bit set
+    sbc  m16s3,mc16sH     ;    sub multiplicand High from result byte 3
+    asr  m16s3            ;shift right result and multiplier
+    ror  m16s2
+    ror  m16s1
+    ror  m16s0
+    dec  mcnt16s    		;decrement counter
+    brne m16s_1    		;if not done, loop more
 m16sres:
     mov nds_low, r16
     rjmp CORE
