@@ -143,11 +143,11 @@ https://code.google.com/archive/p/subtle-stack/downloads
   
 # Notes
 
-1. Leaf routine does not do any call. Twig routines do.
+1. Primitives (Leaf) routine does not do any call. Compound (Twig) routines do.
 
-2. to translate forth names to assembler names, 
+2. To translate forth names to assembler names, 
    
-as prefix or sufix
+I use as prefix or sufix
     
     use LE for <=
     use GT for >=
