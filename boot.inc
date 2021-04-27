@@ -3,7 +3,7 @@
 ; code segment, flash
 ;
 .section .text
-; .org 0x00000
+.org 0x00000
 .global main
 main:
 
@@ -34,75 +34,6 @@ main:
     reti ; rjmp SPM_RDY ; Store Program Memory Ready Handler;
 
 ;----------------------------------------------------------------------
-;
-;    timer0 prescale using 64,  default for 8 MHz
-;
-;   miliseconds
-;
-;    count as 61, about 1008,07 Hz
-;    count as 62, about  992,07 Hz, 
-;
-;    counter cotinues while inside ? 
-;   without these instructions ?
-;
-TIM0_OVF:
-;    save flags and stop interrups
-    in R5, __SREG__
-    cli
-;    reset watch dog
-    wdr
-;    get counter
-    lds R3, TIMER
-    lds R2, TIMER+1
-;    increase counter
-    eor    R4, R4
-    inc R4
-    add R2, R4
-    dec R4
-    adc R2, R4
-;    put counter
-    sts TIMER, R3
-    sts TIMER+1, R2
-;    adjusts counter
-;    out TCNT0H, R2
-;    out TCNT0L, R3
-
-;    load flags and return
-    out __SREG__, R5
-    sei
-    reti
-
-;----------------------------------------------------------------------
-; watch dog
-;    WDTCSR = bit (WDIE) | bit (WDP2) | bit (WDP1);    // set WDIE, and 1 second delay
-;
-#define WDIE    6
-#define WDP2    2
-#define WDP1    1
-#define WDE     3
-#define WDCE    4
-
-; reset WDT
-    wdr
-;
-;  define watch dog counter
-;    ??? code
-;
-; write logical one to WDCE and WDE
-;    in wrk_low, WDTCR
-;    ori wrk_low, (1<<WDCE)|(1<<WDE)
-;    out WDTCR, wrk_low    
-; turn off wd
-;    ldi wrk_low, (0<<WDE)
-;    out WDTRC, wrk_low
-; set WDIE, and 1 second delay
-;    ori wrk_low, (1<<WDIE)|(1<<WDP2)|(1<<WDP1)
-;    out WDTCR, wrk_low
-
-; Enable interrupts
-    sei
-
-;----------------------------------------------------------------------
 ; 
 RESET:
 ; clear interrupts
@@ -111,11 +42,145 @@ RESET:
     eor _zero_, _zero_; exclusive or, xor
     out __SREG__, _zero_; clear sreg
 ; init real sp at end of sram
-    ldi wrk_high, hi8(SPP_TOP)
+    ldi wrk_high, hi8(SPU_TOP)
     out __SP_H__, wrk_high
-    ldi wrk_low, lo8(SPP_TOP)
+    ldi wrk_low, lo8(SPU_TOP)
     out __SP_L__, wrk_low
 ; eneble interrupts
     sei
-    rjmp BYE
+    rjmp BOOT
+
+;----------------------------------------------------------------------
+;
+;   timer0 prescale 
+;     for 8 MHz, prescale 64, offset 131, results about 1 ms
+;    64 * 125 = 8000 ; 
+;    256 - 125 = 131 ; offset
+;   miliseconds
+;
+;    counter continues while inside ? 
+;    without these instructions ?
+;
+TIM0_OVF:
+;    disable interrups
+    cli
+;    save flags
+    in r4, __SREG__
+;    get counter
+    lds r2, TIMER
+    lds r3, TIMER+1
+;    increase counter and clear R1
+    clr r1
+    inc r1
+    add r2, r1
+    dec r1
+    adc r3, r1
+;    put counter
+    sts TIMER, r2
+    sts TIMER+1, r3
+;    offset adjusts counter 256 - 125 = 131
+;    but was 18 clocks inside this to next out, 
+;    then 131 + 18 = 149
+    mov r2, r16
+	ldi r16, 149
+    out TCNT0, r16 
+    mov r16, r2
+;    reset watch dog
+    wdr
+;    load flags and return
+    out __SREG__, r4
+;    enable interrups
+    sei
+    reti
+/*
+;----------------------------------------------------------------------
+;792486AA–AVR–02/2013ATmega8(L)Note:1.   See “About Code Examples” on page 8
+;
+; from atmeg8 datasheet
+;
+#define EEWE    1
+#define EEMWE   2
+#define EERE    0
+
+EEPROM_write:
+; zzz from avr manual just copy
+; disable interrupts
+    cli
+EEPROM_write_wait:
+; Wait for completion of previous write
+    sbic EECR, EEWE
+    rjmp EEPROM_write_wait    
+; Set up address (r18:r17) in address register
+    out EEARH, r18
+    out EEARL, r17
+; Write data (r16) to data register
+    out EEDR, r16
+; Write logical one to EEMWE
+    sbi EECR, EEMWE
+; Start eeprom write by setting EEWE
+    sbi EECR, EEWE
+; enable interrupts
+    sei
+    ret
+
+EEPROM_read:
+; zzz from avr manual just copy
+; disable interrupts
+    cli
+EEPROM_read_wait:
+; Wait for completion of previous write
+    sbic EECR, EEWE
+    rjmp EEPROM_read_wait
+; Set up address (r18:r17) in address register
+    out EEARH, r18
+    out EEARL, r17
+; Start eeprom read by writing EERE
+    sbi EECR, EERE
+; Read data from data register
+    in r16, EEDR
+; enable interrupts
+    sei
+    ret
+*/
+
+;----------------------------------------------------------------------
+BOOT:
+; disable interrupts
+    cli
+
+;----------------------------------------------------------------------
+; preset of timer0, with internal clock 8MHz 
+; cycle   64
+; offset 131
+; timer cycle * offset / clock = 8k/8M = 1ms
+TIMER0_SET:
+; enable pre-escaler
+    in r16, TCCR0
+    ori r16, (1 << CS01) | (1 << CS00)
+    out (TCCR0), r16
+
+; offset counter, so it counts 125 clocks
+	ldi r16, 131
+    out (TCNT0), r16
+	
+; enable counter
+    in r16, TIMSK
+    ori r16, (1 << TOIE0) 
+    out (TIMSK), r16
+
+;----------------------------------------------------------------------
+; watch dog
+;
+; define watch dog counter
+WATCH_DOG_SET:
+; write logical one to WDCE and WDE, set WDP2, WDP1, WDP0 to ~ 2.0 s
+	in r16, WDTR
+    ori  r16, (1 << WDCE) | (1 << WDE)
+    ori  r16, (1 << WDP2) | (1 << WDP1) | (1 << WDP0)
+    out WDTR, r16
+
+;----------------------------------------------------------------------
+; enable interrupts
+    sei
+    ret
 

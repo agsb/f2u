@@ -11,40 +11,36 @@
 ;----------------------------------------------------------------------;
 ; assign stacks address for atmega8
 ;
-    SRAM_END = 0x45F	; SRAM from AVR manual
+    SRAM_END =   0x45F	; SRAM from AVR manual
     SRAM_START = 0x060 	; SRAM from AVR manual
     USER_START = 0x0C0	; still to be fixed at endings
 
 ;----------------------------------------------------------------------
 ; stacks and buffers
 ;
-    SPU_SIZE = 40 ; real Stack Pointer, reserved for interrupts and libraries
+    SPU_SIZE = PAD_SIZE; real Stack Pointer, reserved for interrupts and libraries
 
 ;----------------------------------------------------------------------
-; default sizes as forth83 (bytes)
+; default sizes in bytes and forth83 specs in bytes
 ;
-    PSP_SIZE = 64 ; minimum 32 words
-    RSP_SIZE = 48 ; minimum 24 words
+    PSP_SIZE = 40 ; 20 cells, minimum 32 words
+    RSP_SIZE = 40 ; 20 cells, minimum 24 words
     TIB_SIZE = 80 ; minimum 80 bytes
-    PAD_SIZE = 84 ; minumum 84 bytes
+    PAD_SIZE = 80 ; minumum 84 bytes
+
+; PAD will share SPU space
 
 ;----------------------------------------------------------------------
-; grows downwards SP = SP - 1
-;
-    SPP_TOP = SRAM_END 
-    RSP_TOP = SPP_TOP - SPU_SIZE
-    PSP_TOP = RSP_TOP - RSP_SIZE
-	PSP_END = PSP_TOP - PSP_SIZE
-
+; real stack grows downwards: push is SP = SP - 1, pull is SP = SP + 1
+; forth all grows upwards
+    SPU_TOP = SRAM_END 
+    PAD_TOP = SPU_TOP - PAD_SIZE
+	TIB_TOP = PAD_TOP - TIB_SIZE
+	PSP_TOP = TIP_TOP - PSP_SIZE
+	RSP_END = PSP_TOP - RSP_SIZE
 ;----------------------------------------------------------------------
-; grows upwards PT = PT + 1
-;
-    TIB_TOP = PSP_END - TIB_SIZE
+; at last 256 SRAM bytes, rests 16 words for exclusive variables
 
-;----------------------------------------------------------------------
-; grows upwards PT = PT + 1
-;
-    PAD_TOP = TIB_TOP - PAD_SIZE
 
 ;----------------------------------------------------------------------
 ; flags for words

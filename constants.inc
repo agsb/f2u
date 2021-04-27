@@ -67,16 +67,7 @@ NULL:
 .word    DOLIT
 .byte    NIL
 .byte    NIL
-.word    EXIT    ;    exit
-        
-;----------------------------------------------------------------------
-;      BELL = 7        ;    ^g    \a    bell mark
-;TWIG 2, "BE"
-;BE:
-;.word    DOLIT
-;.byte    _BE
-;.byte    NIL
-;.word    EXIT    ;    exit
+.word    _LAST    ;    exit
         
 ;----------------------------------------------------------------------
 ;      BSC = 8        ;    ^h    \b    backspace
@@ -85,17 +76,8 @@ BS:
 .word    DOLIT
 .byte    _BS
 .byte    NIL
-.word    EXIT    ;    exit
+.word    _LAST    ;    exit
         
-;----------------------------------------------------------------------
-;       TB = 9        ;    ^i    \t    horizontal tab
-TWIG 2, "TB"
-TB:
-.word    DOLIT
-.byte    _TB
-.byte    NIL
-.word    EXIT    ;    exit
-
 ;----------------------------------------------------------------------
 ;       LF = 10        ;    ^j    \n    line feed
 TWIG 2, "LF"
@@ -103,25 +85,7 @@ LF:
 .word    DOLIT
 .byte    _LF
 .byte    NIL
-.word    EXIT    ;    exit
-
-;----------------------------------------------------------------------
-;       VT = 11        ;    ^v    \v    vertical tab
-;TWIG 2, "VT"
-;VT:
-;.word    DOLIT
-;.byte    _VT
-;.byte    NIL
-;.word    EXIT    ;    exit
-
-;----------------------------------------------------------------------
-;       FF = 12        ;    ^l    \f    form feed, Ctrl-Enter
-;TWIG 2, "FF"
-;FF:
-;.word    DOLIT
-;.byte    _FF
-;.byte    NIL
-;.word    EXIT    ;    exit
+.word    _LAST    ;    exit
 
 ;----------------------------------------------------------------------
 ;       CR = 13        ;    ^m    \r    carriage return
@@ -130,16 +94,7 @@ CR:
 .word    DOLIT
 .byte    _CR
 .byte    NIL
-.word    EXIT    ;    exit
-
-;----------------------------------------------------------------------
-;       CN = 24        ;    CANCEL
-;TWIG 2, "CN"
-;CN:
-;.word    DOLIT
-;.byte    _CN
-;.byte    NIL
-;.word    EXIT    ;    exit
+.word    _LAST    ;    exit
 
 ;----------------------------------------------------------------------
 ;       ES = 27        ;    ^[    \e    escape
@@ -148,7 +103,7 @@ ES:
 .word    DOLIT
 .byte    _ES
 .byte    NIL
-.word    EXIT    ;    exit
+.word    _LAST    ;    exit
 
 ;----------------------------------------------------------------------
 ;        BL = 32        ;    space blank character
@@ -157,9 +112,8 @@ BL:
 .word    DOLIT
 .byte    _BL
 .byte    NIL
-.word    EXIT    ;    exit
+.word    _LAST    ;    exit
 
-;----------------------------------------------------------------------
 ;----------------------------------------------------------------------
 ;
 ;    why not ? just for fun
@@ -168,7 +122,7 @@ BL:
 ;
 TWIG 8, "ROULETTE"
 ROULETTE:
-.word    EXIT
+.word    _LAST
 .word   0
 .word   32
 .word   15

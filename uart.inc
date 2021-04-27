@@ -10,16 +10,16 @@ IOYO:
 	NOOP
     eor wrk_low, wrk_low
     out 0x20, wrk_low
-    ldi wrk_low,lo8(52)
-    out 0x9,wrk_low
-    in wrk_low,0xa
-    ori wrk_low,lo8(24)
-    out 0xa,wrk_low
-    ldi wrk_low,lo8(-114)
-    out 0x20,wrk_low
-    in wrk_low,0x20
+    ldi wrk_low, lo8(52)
+    out 0x9, wrk_low
+    in wrk_low, 0xa
+    ori wrk_low, lo8(24)
+    out 0xa, wrk_low
+    ldi wrk_low, lo8(-114)
+    out 0x20, wrk_low
+    in wrk_low, 0x20
     ori wrk_low,lo8(64)
-    out 0x20,wrk_low
+    out 0x20, wrk_low
     POON
 
 ;----------------------------------------------------------------------
@@ -33,7 +33,7 @@ RXAT:
     sbis 0xb, 7
     rjmp FFALSE
     in wrk_low, 0xc
-	eor wrk_high
+	eor wrk_high, wrk_high
 	pspush wrk_low, wrk_high 
     rjmp FTRUE
 

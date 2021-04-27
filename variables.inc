@@ -28,137 +28,102 @@
 TWIG 4, "BASE"
 BASE:
 .word DOLIT
-.word _BASE
-.word EXIT
+.word _wBASE
+.word _LAST
 
 TWIG 3, "TIB"
 TIB:
 .word DOLIT
-.word _TIB
-.word EXIT
+.word _wTIB
+.word _LAST
 
 TWIG 3, ">IN"
 TIN:
 .word DOLIT
-.word _TIN
-.word EXIT
+.word _wTIN
+.word _LAST
 
 TWIG 3, "CUR"
 CUR:
 .word DOLIT
-.word _CUR
-.word EXIT
+.word _wCUR
+.word _LAST
 
 TWIG 3, "CSP"
 CSP:
 .word DOLIT
-.word _CSP
-.word EXIT
+.word _wCSP
+.word _LAST
 
 TWIG 7, "CONTEXT"
 CONTEXT:
 .word DOLIT
-.word _CONTEXT
-.word EXIT
+.word _wCONTEXT
+.word _LAST
 
 TWIG 7, "CURRENT"
 CURRENT:
 .word DOLIT
-.word _CURRENT
-.word EXIT
+.word _wCURRENT
+.word _LAST
 
 TWIG 7, "HANDLER"
 HANDLER:
 .word DOLIT
-.word _HANDLER
-.word EXIT
+.word _wHANDLER
+.word _LAST
 
 TWIG 3, "HLD"
 HLD:
 .word DOLIT
-.word _HLD
-.word EXIT
+.word _wHLD
+.word _LAST
 
 TWIG 4, "SPAN"
 SPAN:
 .word DOLIT
-.word _SPAN
-.word EXIT
+.word _wSPAN
+.word _LAST
 
 TWIG 3, "SP0"
 SPZ:
 .word DOLIT
-.word _SP0
-.word EXIT
+.word _wSP0
+.word _LAST
 
 TWIG 3, "RP0"
 RPZ:
 .word DOLIT
-.word _RP0
-.word EXIT
+.word _wRP0
+.word _LAST
 
 TWIG 2, "UP"
 UP:
 .word DOLIT
-.word _UP
-.word EXIT
+.word _wUP
+.word _LAST
 
 TWIG 2, "CP"
 CP:
 .word DOLIT
-.word _CP
-.word EXIT
+.word _wCP
+.word _LAST
 
 TWIG 5, "STATE"
 STATE:
 .word DOLIT
-.word _STATE
-.word EXIT
+.word _wSTATE
+.word _LAST
 
 TWIG 5, "TIMER"
 TIMER:
 .word DOLIT
-.word _TIMER
-.word EXIT
+.word _wTIMER
+.word _LAST
 
 TWIG 4, "LAST"
 LAST:
 .word DOLIT
+.word _wLAST
 .word _LAST
-.word EXIT
-
-.section .data
-.global variables
-#.org    0x0060
-variables:
-
-_TIMER: .word 1      ;     16 bit counter miliseconds, linked to timer0 interrupt
-_RANDW: .word 1      ;     16 bit seed for randow recursive
-
-_HLD: .word 1        ;    pointer to buffer for number convertions
-_SPAN: .word 1       ;    number of characters in TIB
-_TIN: .word 1        ;     >IN     next character to be interpreted in TIB
-_TIH: .word 1        ;    #TIB     number of characters in TIB
-_TIB: .word 1        ;     'TIB    start terminal input buffer
-
-_BASE: .word 1       ;     base for show numbers
-_CONTEXT: .word 1    ;    pointer to name field of last word in dictionary
-_CURRENT: .word 1    ;    pointer to name field of last word in vocaburary
-_CP: .word 1         ;    pointer to top free vocabulary
-_UP: .word 1         ;     pointer to free user sram
-_LAST: .word 1       ;    pointer to name field of last word
-_STATE: .word 1      ;    state of $interpreter or $compiler
-
-_SP0: .word 1        ;     parameter stack
-_RP0: .word 1        ;    return stack
-
-_TTEVAL: .word 1     ;    reference to eval 
-_TTABORT: .word 1    ;    reference to abort
-_TTKEYQM: .word 1    ;    reference to key?
-_TTEMITQM: .word 1   ;    reference to emit?
-
-_CUR: .word 1        ;     current postion in TIB 
-_CSP: .word 1        ;
-
-_HANDLER: .word 1    ;    currenter handler for ?
 

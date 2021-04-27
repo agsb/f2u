@@ -14,10 +14,10 @@
 ; .set _zero_ , r1
 
 ; Z instruction pointer for access sram and flash high memory
-#define    ip_low    r30    
+#define    ips_low    r30    
 ;.set    ipl,    r30
 
-#define    ip_high    r31    
+#define    ips_high    r31    
 ;.set    iph,    r31
 
 ; Y return stack pointer for access sram
@@ -127,28 +127,48 @@
 
 ;----------------------------------------------------------------------
 .macro rspush low , high
-    st -Y , \high
-    st -Y , \low
+    st Y+ , \low
+    st Y+ , \high
 .endm
 
 ;----------------------------------------------------------------------
 .macro rspull low , high
-    ld \low  , Y+
-    ld \high , Y+
+    ld \high , -Y
+    ld \low  , -Y
 .endm
 
 ;----------------------------------------------------------------------
 .macro pspush low , high
-    st -X , \high
-    st -X , \low
+    st X+ , \low
+    st X+ , \high
 .endm
 
 ;----------------------------------------------------------------------
 .macro pspull low , high
-    ld \low  , X+
-    ld \high , X+
+    ld \high , -X
+    ld \low  , -X
 .endm
 
+;----------------------------------------------------------------------
+.macro pmload low , high
+    lpm \low  , Z+
+    lpm \high , Z+
+.endm
+
+;----------------------------------------------------------------------
+.macro srload low , high
+    ld \low  , Z+
+    ld \high , Z+
+.endm
+
+;----------------------------------------------------------------------
+.macro srsave low , high
+    st Z+, \low 
+    st Z+, \high
+.endm
+
+
+;----------------------------------------------------------------------
 ;----------------------------------------------------------------------
 ; also io@
 .macro peek byte , address
