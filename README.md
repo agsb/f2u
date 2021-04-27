@@ -141,9 +141,32 @@ https://code.google.com/archive/p/subtle-stack/downloads
     the memory model is not unified, separate address for flash, sdram;
     ??? minus one reference execution per each word in exchange of a NULL test
   
-# notes
+# Notes
 
 1. Leaf routine does not do any call. Twig routines do.
-2. 
 
+2. to translate forth names to assembler names, as prefix or sufix
 
+    use LE for <=
+    use GT for >=
+    use NE for <>
+    use LT for <
+    use GT for >
+    use EQ for =
+
+    use MUL for *
+    use DIV for /
+    use PLUS for +
+    use MINUS for -
+
+    use BY for /
+    use QM for ?
+    use AT for @
+    use TO for !
+    use TK for '
+    use CM for ,
+    use DT for .
+
+    use NIL for 0
+    use ONE for 1
+    use TWO for 2
