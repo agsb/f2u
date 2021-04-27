@@ -124,51 +124,61 @@
 
 ;----------------------------------------------------------------------
 ; little endian !!! AVR
-
+;
+;	Z (r31:r30) is used as generic address pointer
+;	Y (r29:r28) is used as return stack pointer
+;	X (r27:r26) is used as data/parameter stack pointer
+;	W (r25:r24) is used as generic work register
+;
 ;----------------------------------------------------------------------
+;	push into return stack, increments pointer
 .macro rspush low , high
     st Y+ , \low
     st Y+ , \high
 .endm
 
 ;----------------------------------------------------------------------
+;	pull from return stack, decrements pointer
 .macro rspull low , high
     ld \high , -Y
     ld \low  , -Y
 .endm
 
 ;----------------------------------------------------------------------
+;	push into data stack, increments pointer
 .macro pspush low , high
     st X+ , \low
     st X+ , \high
 .endm
 
 ;----------------------------------------------------------------------
+;	pull from data stack, decrements pointer
 .macro pspull low , high
     ld \high , -X
     ld \low  , -X
 .endm
 
 ;----------------------------------------------------------------------
+;	load from program memory (flash), increments pointer
 .macro pmload low , high
     lpm \low  , Z+
     lpm \high , Z+
 .endm
 
 ;----------------------------------------------------------------------
+;	load from static memory (sram), increments pointer
 .macro srload low , high
     ld \low  , Z+
     ld \high , Z+
 .endm
 
 ;----------------------------------------------------------------------
+;	save to static memory (sram), increments pointer
 .macro srsave low , high
     st Z+, \low 
     st Z+, \high
 .endm
 
-
-;----------------------------------------------------------------------
 ;----------------------------------------------------------------------
 ; also io@
 .macro peek byte , address
@@ -183,9 +193,9 @@
 ; also io!
 .macro poke byte , address
     .if (\address < $40)
-    out \byte , \address
+    out \address, \byte
     .else
-    sts \byte , \address
+    sts \address, \byte
     .endif
 .endm
 

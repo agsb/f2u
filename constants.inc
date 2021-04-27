@@ -60,6 +60,21 @@
         _BH = 92        ;   \ backslash
         _US = 95        ;   _ underscore
 
+		_XON =   0x11
+		_XOFF =  0x13
+
+.equ CR_=0x0d
+.equ LF_=0x0a
+.equ BS_=0x08
+.equ TAB_=0x09
+
+;----------------------------------------------------------------------
+; for tasks or process
+	_STOP = 0
+	_IDLE = 1
+	_BUSY = 2
+	_WAIT = 3
+
 ;----------------------------------------------------------------------
 ;       NIL = 0        ;    0    \0    null
 TWIG 2, "NIL"

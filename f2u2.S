@@ -395,7 +395,7 @@ QMBRANCH:
 	pspull wrk_low, wrk_high
 	mov _work_, wrk_high
 	or  _work_, wrk_low
-	brbs BIT_ZERO, BRANCH
+	brbs BIT_ZERO, BRANCH+2
 	rspull wrk_low, wrk_high
 	adiw wrk_low, CELL_SIZE
 	rspush wrk_low, wrk_high
@@ -445,7 +445,7 @@ XOR:
 	POON
 
 ;----------------------------------------------------------------------
-;ok ( w -- w * 2 ) same as shift left << 1
+;ok ( w -- w * 2 ) same as shift left << 1, unsigned
 LEAF 2, "2*"
 SHL:
 	NOOP
@@ -456,13 +456,44 @@ SHL:
 	POON
 
 ;----------------------------------------------------------------------
-;ok ( w -- w / 2 ) same as shift right >> 1
+;ok ( w -- w / 2 ) same as shift right >> 1, unsigned
 LEAF 2, "2/"
 SHR:
 	NOOP
 	pspull wrk_low, wrk_high
+	clc
 	lsr   wrk_low
 	ror   wrk_high
+	pspush wrk_low, wrk_high
+	POON
+
+;----------------------------------------------------------------------
+;ok ( w -- w * 2 ) same as shift left << 1, signed
+LEAF 2, "2*A"
+SHLA:
+	NOOP
+	pspull wrk_low, wrk_high
+	clc
+	bst wrk_high, 7
+	cbr	wrk_high, 7
+	lsl   wrk_low
+	rol   wrk_high
+	bld wrk_high, 7
+	pspush wrk_low, wrk_high
+	POON
+
+;----------------------------------------------------------------------
+;ok ( w -- w / 2 ) same as shift right >> 1, signed
+LEAF 3, "2/A"
+SHRA:
+	NOOP
+	pspull wrk_low, wrk_high
+	clc
+	bst wrk_high, 7
+	cbr	wrk_high, 7
+	lsr   wrk_low
+	ror   wrk_high
+	bld wrk_high, 7
 	pspush wrk_low, wrk_high
 	POON
 
@@ -472,10 +503,7 @@ LEAF 2, "><"
 ENDIAN:
 	NOOP
 	pspull wrk_low, wrk_high
-	mov _work_, wrk_low
-	mov wrk_low, wrk_high
-	mov wrk_high, _work_
-	pspush wrk_low, wrk_high
+	pspush wrk_high, wrk_low
 	POON
 
 ;----------------------------------------------------------------------
@@ -524,19 +552,18 @@ TO:
 	NOOP
 	pspull ips_low, ips_high
 	pspull wrk_low, wrk_high
-    st Z+, wrk_low
-    st Z+, wrk_high
+	srsave wrk_low, wrk_high
 	POON
 
-;----------------------------------------------------------------------T
+;----------------------------------------------------------------------
 ; ok C! ( c a -- )
 LEAF 1, "C!"
 CTO:
 	NOOP
-	movw ips_low, tos_low
+	pspull ips_low, ips_high
 	pspull wrk_low, wrk_high
-	movw ips_low, tos_low
-    st Z+, wrk_low
+	clr wrk_high
+	srsave wrk_low, wrk_high
 	POON
 
 ;----------------------------------------------------------------------
@@ -545,8 +572,7 @@ LEAF 1, "@"
 AT:
 	NOOP
 	pspull ips_low, ips_high
-    ld wrk_low, z+
-    ld wrk_high, z+
+    srload wrk_low, wrk_high
 	pspush wrk_low, wrk_high
     POON
 
@@ -556,7 +582,8 @@ LEAF 1, "C@"
 CAT:
 	NOOP
 	pspull ips_low, ips_high
-    ld wrk_low, z+
+    srload wrk_low, wrk_high
+	clr wrk_high
 	pspush wrk_low, wrk_high
     POON
 
@@ -590,8 +617,7 @@ LEAF 2, "0="
 ZEROEQ:
 	NOOP
 	pspull wrk_low, wrk_high
-	mov _work_, wrk_high
-	or  _work_, wrk_low
+	or  wrk_high, wrk_low
 	brbs BIT_ZERO, _ZEROEQ1
     rjmp FFALSE
 _ZEROEQ1:
@@ -838,7 +864,7 @@ LEAF 2, "CELL"
 CELLSZ:
 	NOOP
     ldi wrk_low, CELL_SIZE
-    eor wrk_high, wrk_high
+    clr wrk_high
 	pspush wrk_low, wrk_high
 	POON
 
