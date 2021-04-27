@@ -4,6 +4,7 @@
 .org    0x0060
 variables:
 
+_wNULL:	 .word 1	  ;     16 bit NULL must be zero.
 _wTIMER: .word 1      ;     16 bit counter miliseconds, linked to timer0 interrupt
 _wRANDW: .word 1      ;     16 bit seed for randow recursive
 

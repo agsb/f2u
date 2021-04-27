@@ -6,6 +6,7 @@
 ; ok UM/MOD
 LEAF 6, "UM/MOD"
 UMBYMOD:
+	NOOP
 ;
 ;***** Subroutine Register Variables
 
@@ -29,10 +30,12 @@ UMBYMOD:
 ;
 ;***** Code
 
-div16u: clr wrk_low ;clear remainder Low byte
+div16u: 
+	clr wrk_low ;clear remainder Low byte
     sub wrk_high,wrk_high;clear remainder High byte and carry
     ldi r16,17 ;init loop counter
-d16u_1: rol nds_low ;shift left dividend
+d16u_1: 
+	rol nds_low ;shift left dividend
     rol nds_high
     dec r16 ;decrement counter
     brne d16u_2 ;if done
@@ -44,7 +47,8 @@ d16ures:
     movw tos_low, r14
     rjmp CORE
 
-d16u_2: rol wrk_low ;shift dividend into remainder
+d16u_2: 
+	rol wrk_low ;shift dividend into remainder
     rol wrk_high
     sub wrk_low,tos_low ;remainder = remainder - divisor
     sbc wrk_high,tos_high ;

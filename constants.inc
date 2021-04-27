@@ -63,11 +63,6 @@
 		_XON =   0x11
 		_XOFF =  0x13
 
-.equ CR_=0x0d
-.equ LF_=0x0a
-.equ BS_=0x08
-.equ TAB_=0x09
-
 ;----------------------------------------------------------------------
 ; for tasks or process
 	_STOP = 0
@@ -76,16 +71,7 @@
 	_WAIT = 3
 
 ;----------------------------------------------------------------------
-;       NIL = 0        ;    0    \0    null
-TWIG 2, "NIL"
-NULL:
-.word    DOLIT
-.byte    NIL
-.byte    NIL
-.word    _LAST    ;    exit
-        
-;----------------------------------------------------------------------
-;      BSC = 8        ;    ^h    \b    backspace
+;      BS = 8        ;    ^h    \b    backspace
 TWIG 2, "BS"
 BS:
 .word    DOLIT
@@ -130,6 +116,14 @@ BL:
 .word    _LAST    ;    exit
 
 ;----------------------------------------------------------------------
+;        TB = 9        ;    \t	horizontal tab
+TWIG 2, "TB"
+TB:
+.word    DOLIT
+.byte    _TB
+.byte    NIL
+.word    _LAST    ;    exit
+;----------------------------------------------------------------------
 ;
 ;    why not ? just for fun
 ;
@@ -137,7 +131,7 @@ BL:
 ;
 TWIG 8, "ROULETTE"
 ROULETTE:
-.word    _LAST
+.word    DOLIT
 .word   0
 .word   32
 .word   15
@@ -175,5 +169,5 @@ ROULETTE:
 .word   35
 .word   3
 .word   26
-.word    0
+.word    _LAST
 ;----------------------------------------------------------------------

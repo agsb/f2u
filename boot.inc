@@ -3,13 +3,13 @@
 ; code segment, flash
 ;
 .section .text
-.org 0x00000
+.org 0x000
 .global main
 main:
 
 ;----------------------------------------------------------------------
 ;
-; interrup vector table
+; classic interrup vector table
 ;
 ;----------------------------------------------------------------------
 
@@ -38,8 +38,8 @@ main:
 RESET:
 ; clear interrupts
     cli
-; init _zero_as zero
-    eor _zero_, _zero_; exclusive or, xor
+; init _zero_ as zero
+    clr _zero_ ; exclusive or, xor
     out __SREG__, _zero_; clear sreg
 ; init real sp at end of sram
     ldi wrk_high, hi8(SPU_TOP)
@@ -67,23 +67,25 @@ TIM0_OVF:
 ;    save flags
     in r4, __SREG__
 ;    get counter
-    lds r2, TIMER
-    lds r3, TIMER+1
+    in r2, TIMER
+    in r3, TIMER+1
 ;    increase counter and clear R1
+	clc
     clr r1
     inc r1
     add r2, r1
     dec r1
     adc r3, r1
 ;    put counter
-    sts TIMER, r2
-    sts TIMER+1, r3
-;    offset adjusts counter 256 - 125 = 131
+    out TIMER, r2
+    out TIMER+1, r3
+;    offset counter 256 - 125 = 131
 ;    but was 18 clocks inside this to next out, 
 ;    then 131 + 18 = 149
     mov r2, r16
 	ldi r16, 149
-    out TCNT0, r16 
+    ;out TCNT0, r16 
+    out 0x32, r16 
     mov r16, r2
 ;    reset watch dog
     wdr
@@ -155,18 +157,23 @@ BOOT:
 ; timer cycle * offset / clock = 8k/8M = 1ms
 TIMER0_SET:
 ; enable pre-escaler
-    in r16, TCCR0
+	;in r16, TCCR0
+    in r16, 0x33
     ori r16, (1 << CS01) | (1 << CS00)
-    out (TCCR0), r16
+    ;out TCCR0, r16
+    out 0x33, r16
 
 ; offset counter, so it counts 125 clocks
 	ldi r16, 131
-    out (TCNT0), r16
+    ;out TCNT0, r16
+    out 0x32, r16
 	
 ; enable counter
-    in r16, TIMSK
+    ;in r16, TIMSK
+    in r16, 0x39
     ori r16, (1 << TOIE0) 
-    out (TIMSK), r16
+    ;out TIMSK, r16
+    out 0x39, r16
 
 ;----------------------------------------------------------------------
 ; watch dog
@@ -174,10 +181,12 @@ TIMER0_SET:
 ; define watch dog counter
 WATCH_DOG_SET:
 ; write logical one to WDCE and WDE, set WDP2, WDP1, WDP0 to ~ 2.0 s
-	in r16, WDTR
-    ori  r16, (1 << WDCE) | (1 << WDE)
-    ori  r16, (1 << WDP2) | (1 << WDP1) | (1 << WDP0)
-    out WDTR, r16
+	;in r16, WDTCR
+	in r16, 0x21
+    ori r16, (1 << WDCE) | (1 << WDE)
+    ori r16, (1 << WDP2) | (1 << WDP1) | (1 << WDP0)
+    ;out WDTCR, r16
+    out 0x21, r16
 
 ;----------------------------------------------------------------------
 ; enable interrupts

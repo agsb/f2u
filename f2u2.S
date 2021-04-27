@@ -124,6 +124,11 @@
 ; all forth variables in sdram
 ;
 ;----------------------------------------------------------------------
+.section .text
+.org 0x100
+.global forth
+forth:
+;----------------------------------------------------------------------
 ; inner interpreter, must have antoher name no LAST
 ;
 LEAF 4, "_LAST"
@@ -335,10 +340,9 @@ EQUAL:
 	NOOP
 	pspull wrk_low, wrk_high
 	pspull tos_low, tos_high
-	sub wrk_low, tos_low
-	brbc BIT_ZERO, FFALSE+2
-	sbc wrk_high, wrk_high
-	brbc BIT_ZERO, FFALSE+2
+	cp wrk_low, tos_low
+	cpc wrk_high, tos_high
+	brne FFALSE+2
 	rjmp FTRUE+2
 
 ;----------------------------------------------------------------------
@@ -348,10 +352,9 @@ LT:
 	NOOP
 	pspull wrk_low, wrk_high
 	pspull tos_low, tos_high
-	sub wrk_low, tos_low
-	brbs 1, FFALSE+2
-	sbc wrk_high, wrk_high
-	brbc 1, FFALSE+2
+	cp wrk_low, tos_low
+	cpc wrk_high, tos_high
+	brcs FFALSE+2
 	rjmp FTRUE+2
 
 ;----------------------------------------------------------------------
@@ -361,10 +364,9 @@ GT:
 	NOOP
 	pspull wrk_low, wrk_high
 	pspull tos_low, tos_high
-	sub wrk_low, tos_low
-	brbs 1, FFALSE+2
-	sbc wrk_high, wrk_high
-	brbc 1, FFALSE+2
+	cp wrk_low, tos_low
+	cpc wrk_high, tos_high
+	brcc FFALSE+2
 	rjmp FTRUE+2
 
 ;----------------------------------------------------------------------
@@ -914,3 +916,8 @@ RND:
 ;----------------------------------------------------------------------
 ;
 #include "variables.inc"
+
+#include "constants.inc"
+
+#include "uart.inc"
+
