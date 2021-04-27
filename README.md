@@ -90,10 +90,21 @@ https://code.google.com/archive/p/subtle-stack/downloads
     
 3. this F2U implementation for ATMEGA8, 
 
-    no use of SP intructions (pop, push, call, ret) reserving and leaving those for external extensions and libraries;
-    instruction pointer is Z (r31:r30) for lpm instruction;
-    first stack pointer is Y (r29:r28) for forth return stack;
-    working pair register is W (r25:r24) for forth working register;
+no use of CPU SP intructions (pop, push, call, ret), leaving those for external extensions and libraries;
+      
+      address pointer is Z (r31:r30) for lpm instruction;
+      first stack pointer is Y (r29:r28) for forth return stack;
+      second stack pointer is X (r27:r26) for forth data stack;
+      working pair register is W (r25:r24) for forth working register;
+      
+      temporary register T (r23:r22)
+      temporary register N (r21:r20)
+      register r0 as generic work 
+      register r1 as always zero
+      registers r2 to r4 used in interrupts
+      registers r5 to r15 free
+      registers r17:r16 and r19:r18 used in math operations
+    
     
 ; the interpreter
     
