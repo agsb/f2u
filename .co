@@ -1,2 +1,2 @@
 me=${@}
-git commit -m \" ${me} \" . 
+git commit -m \\" ${me} \\" . 
