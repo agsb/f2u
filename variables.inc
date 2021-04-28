@@ -43,18 +43,6 @@ TIN:
 .word _wTIN
 .word _LAST
 
-TWIG 3, "CUR"
-CUR:
-.word DOLIT
-.word _wCUR
-.word _LAST
-
-TWIG 3, "CSP"
-CSP:
-.word DOLIT
-.word _wCSP
-.word _LAST
-
 TWIG 7, "CONTEXT"
 CONTEXT:
 .word DOLIT
@@ -67,34 +55,10 @@ CURRENT:
 .word _wCURRENT
 .word _LAST
 
-TWIG 7, "HANDLER"
-HANDLER:
-.word DOLIT
-.word _wHANDLER
-.word _LAST
-
 TWIG 3, "HLD"
 HLD:
 .word DOLIT
 .word _wHLD
-.word _LAST
-
-TWIG 4, "SPAN"
-SPAN:
-.word DOLIT
-.word _wSPAN
-.word _LAST
-
-TWIG 3, "SP0"
-SPZ:
-.word DOLIT
-.word _wSP0
-.word _LAST
-
-TWIG 3, "RP0"
-RPZ:
-.word DOLIT
-.word _wRP0
 .word _LAST
 
 TWIG 2, "UP"

@@ -145,7 +145,6 @@ _NEXT:
 	lpm wrk_low, Z+
 	lpm wrk_high, Z+
 
-
 ; if zero then is a exec 
 _EXEC:
 	mov _work_, wrk_low
@@ -168,7 +167,7 @@ _ENTER:
 
 ;----------------------------------------------------------------------
 ; ok ( w -- ) ( -- W) 
-LEAF 2, ">R"
+LEAF 2, ">R" 	; 	F18A push
 GTR:
 	NOOP
 	pspull wrk_low, wrk_high
@@ -177,7 +176,7 @@ GTR:
 
 ;----------------------------------------------------------------------
 ; ok ( -- w ) ( w -- )
-LEAF 2, "R>"
+LEAF 2, "R>"	;	F18A pull
 RGT:
 	NOOP
 	rspull wrk_low, wrk_high
@@ -232,7 +231,7 @@ SPTO:
 
 ;----------------------------------------------------------------------
 ; ok ( -- w )
-LEAF 4, "PUSH"
+LEAF 4, "PUSH" ;	F18A
 PUSH:
 	NOOP
 	pspush wrk_low, wrk_high
@@ -240,7 +239,7 @@ PUSH:
 
 ;----------------------------------------------------------------------
 ; ok ( w -- )
-LEAF 4, "DROP"
+LEAF 4, "DROP"	;	F18A drop
 PULL:
 DROP:
 	NOOP
@@ -249,7 +248,7 @@ DROP:
 
 ;----------------------------------------------------------------------
 ; ok ( w -- w w)
-LEAF 3, "DUP"
+LEAF 3, "DUP"	; 	F18A dup
 DUP:
 	NOOP
 	pspull wrk_low, wrk_high
@@ -270,7 +269,7 @@ SWAP:
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- w1 w2 w1 )
-LEAF 4, "OVER"
+LEAF 4, "OVER"	; 	F18A over
 OVER:
 	NOOP
 	pspull wrk_low, wrk_high
@@ -295,7 +294,7 @@ ROT:
 
 ;----------------------------------------------------------------------
 ; ok ( w -- 0 | w w )
-LEAF 4, "?DUP"
+LEAF 4, "?DUP"	;	
 NZDUP:
 	NOOP
 	pspull wrk_low, wrk_high
@@ -306,6 +305,36 @@ NZDUP:
 	pspush wrk_low, wrk_high
 NZDUP_1:
 	POON 
+
+;----------------------------------------------------------------------
+;ok ( if tos = 0 branch )
+LEAF 6, "?BRANCH"	;	F18A	T=0
+QMBRANCH:
+	NOOP
+	pspull wrk_low, wrk_high
+	mov _work_, wrk_high
+	or  _work_, wrk_low
+	brbs BIT_ZERO, BRANCH+2
+	rspull wrk_low, wrk_high
+	adiw wrk_low, CELL_SIZE
+	rspush wrk_low, wrk_high
+	POON
+
+;----------------------------------------------------------------------
+;ok ( branch next reference )
+LEAF 5, "BRANCH"
+BRANCH:
+	NOOP
+	POON
+
+;----------------------------------------------------------------------
+;ok ( branch next reference )
+LEAF 4, "EXEC"	
+EXEC:
+	NOOP
+	pspull wrk_low, wrk_high
+	rspush wrk_low, wrk_high
+	POON
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- w2+w1 )
@@ -390,27 +419,6 @@ FFALSE:
 	POON
 
 ;----------------------------------------------------------------------
-;ok ( if tos = 0 branch )
-LEAF 6, "?BRANCH"
-QMBRANCH:
-	NOOP
-	pspull wrk_low, wrk_high
-	mov _work_, wrk_high
-	or  _work_, wrk_low
-	brbs BIT_ZERO, BRANCH+2
-	rspull wrk_low, wrk_high
-	adiw wrk_low, CELL_SIZE
-	rspush wrk_low, wrk_high
-	POON
-
-;----------------------------------------------------------------------
-;ok ( branch next reference )
-LEAF 5, "BRANCH"
-BRANCH:
-	NOOP
-	POON
-
-;----------------------------------------------------------------------
 ;ok ( w1 w2 -- w2 AND w1 )
 LEAF 3, "AND"
 AND:
@@ -452,6 +460,7 @@ LEAF 2, "2*"
 SHL:
 	NOOP
 	pspull wrk_low, wrk_high
+	clc
 	lsl   wrk_low
 	rol   wrk_high
 	pspush wrk_low, wrk_high
@@ -594,7 +603,7 @@ CAT:
     POON
 
 ;----------------------------------------------------------------------
-;  ok 0>
+;  ok 0>	must be signed
 LEAF 2, "0>"
 ZEROGT:
 	NOOP
@@ -607,7 +616,7 @@ _ZEROGT1:
 
 ;----------------------------------------------------------------------
 ;  ok 0<
-LEAF 2, "0<"
+LEAF 2, "0<" 
 ZEROLT:
 	NOOP
 	pspull wrk_low, wrk_high
