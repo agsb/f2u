@@ -104,48 +104,57 @@ do not use of CPU SP intructions (pop, push, call, ret), leaving those for exter
       registers r2 to r4 used in interrupts
       registers r5 to r15 free
       registers r17:r16 and r19:r18 used in math operations
+      
+      flash memory from $000 to $FFF ($0000 to $1FFF bytes)
+      sram memory from  $0C0 to $45F (1024 bytes)
+      if (flash dictionary at $460, and all primitives 
  
- internal clock of 8MHz
- uart at 9600, 8N1, asynchronous
- include timer at 1ms with 16 bits counter  ~ 65 s
- include watch dog at ~ 2.0 s
- include pseudo 16bit random generator 
- include djb 16bit hash generator
- uses MiniCore and optboot
+ harvard memory architeture;
+ using internal clock of 8MHz;
+ uart at 9600, 8N1, asynchronous;
+ include timer at 1ms with 16 bits counter  ~ 65 s;
+ include watch dog at ~ 2.0 s;
+ include pseudo 16bit random generator; 
+ include adapted djb hash generator for 16bits;
+ all 8bits and 16bits math from AVR200 manual;
+ uses MiniCore and optboot;
  
  **still do not write to flash.**
     
 ; the interpreter
-    
-    LAST:
+
+    ;
+    ; WARNING: this inner still only works for program memory (flash) 
+    ; 
+    ; does nothing and mark as primitive for instructions code
+    _LAST:
       nop
       nop
       
-    ; pull ip from rsp
     _EXIT:
-      rsp_pull ip_low, ip_high
+    ; pull ip from rsp
+     rsp_pull ip_low, ip_high
 
-    ; load w with contents of cell at ip, only works in program memory (flash)
     _NEXT:
+    ; load w with contents of cell at ip
      lpm wrk_low, Z+
      lpm wrk_high, Z+
 
-    ; push ip into rsp
-    _ENTER:
-     rsp_push ip_low, ip_high
-     
+    _EXEC:
     ; if zero then is a exec
      mov r0, r25
      or  r0, r24
-     brbs 1, _EXEC
-
+     brbc 1, _ENTER
+    ; jump to
+     ijmp
+    
+    _ENTER:
     ; else is a reference
+    ; push ip into rsp
+     rsp_push ip_low, ip_high
      movw ip_low, wrk_low
      rjmp _NEXT
 
-    _EXEC:
-     ijmp
-        
 ; the dicionary, inside PFA 
   
     leaf ==>  (0x0000), code ... code, (rjmp _EXIT)
@@ -158,9 +167,9 @@ do not use of CPU SP intructions (pop, push, call, ret), leaving those for exter
     twig dicionary is CPU independent;
     all twig words have a payload  last references;
     all leaf words have a payload as NULL and last jump;
-    the memory model is not unified, separate address for flash, sdram;
-    ??? minus one reference execution per each word in exchange of a NULL test
-  
+    the memory model is not unified, separate address for flash and for sdram;
+    ??? minus one reference execution per each compound word in exchange of a NULL test
+    
 # Notes
 
 1. Primitives (Leaf) routine does not do any call. Compound (Twig) routines do.
