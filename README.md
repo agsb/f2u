@@ -13,12 +13,10 @@ This is a evolution from what I learning with u2forth, ATMEGA8 assembler and for
 
 # References
 
-http://forth.org/OffeteStore/1013_eForthAndZen.pdf
-https://code.google.com/archive/p/subtle-stack/downloads
+1. In eforth for Cortex M4,  http://forth.org/OffeteStore/1013_eForthAndZen.pdf
+https://code.google.com/archive/p/subtle-stack/downloads, to use in a ESP32, Dr. C.H.Ting uses a optimal aprouach for forth engine, with cpu family specific instructions (ISA) *inline into dictionary*.
 
-1. In eforth for Cortex M4, a esp32, Dr. C.H.Ting uses a optimal aprouach for forth engine, but need cpu family specific instructions (ISA) *inline into dictionary*.
-
-  _in my opinion best and ideal solution per cpu_
+  _in my opinion best and ideal solution per cpu_ (at cost of size and portability)
 
 ; the interpreter, in macro code:
 
@@ -41,7 +39,7 @@ https://code.google.com/archive/p/subtle-stack/downloads
     the memory model is unified, flash and sdrom are continuous address;
     BL accepts +/- 32 Mb offset, then dictionary must be less than 32 MB.
     
-2. In amforth for AVR family,
+2. In amforth for AVR family, http://amforth.sourceforge.net/,  
 
 ; the interpreter, XH:XL is Instruction pointer, ZH:ZL is program memory pointer, WH:WL is working register, Tmp1:Tmp0 is a scratch temporary
 
@@ -88,39 +86,8 @@ https://code.google.com/archive/p/subtle-stack/downloads
     the memory model is not unified, separate address for flash, sdram.
     why two "adiw WL, 1" ????
     
-3. this F2U implementation for ATMEGA8, 
-
-do not use of CPU SP intructions (pop, push, call, ret), leaving those for external extensions and libraries;
+3. this F2U implementation for ATMEGA8, do not use any of real SP intructions (pop, push, call, ret), leaving those for external extensions and libraries;
       
-      address pointer is Z (r31:r30) for lpm (flash), lds (sram), sts (sram) instructions;
-      first stack pointer is Y (r29:r28) for forth return stack;
-      second stack pointer is X (r27:r26) for forth data stack;
-      working pair register is W (r25:r24) for forth working register;
-      
-      temporary register T (r23:r22)
-      temporary register N (r21:r20)
-      register r0 as generic work 
-      register r1 as always zero
-      registers r2 to r4 used in interrupts
-      registers r5 to r15 free
-      registers r17:r16 and r19:r18 used in math operations
-      
-      flash memory from $000 to $FFF ($0000 to $1FFF bytes)
-      sram memory from  $0C0 to $45F (1024 bytes)
-      if (flash dictionary at $460, and all primitives 
- 
- harvard memory architeture;
- using internal clock of 8MHz;
- uart at 9600, 8N1, asynchronous;
- include timer at 1ms with 16 bits counter  ~ 65 s;
- include watch dog at ~ 2.0 s;
- include pseudo 16bit random generator; 
- include adapted djb hash generator for 16bits;
- all 8bits and 16bits math from AVR200 manual;
- uses MiniCore and optboot;
- 
- **still do not write to flash.**
-    
 ; the interpreter
 
     ;
@@ -159,7 +126,7 @@ do not use of CPU SP intructions (pop, push, call, ret), leaving those for exter
   
     leaf ==>  (0x0000), code ... code, (rjmp _EXIT)
 
-    twig ==>  ptr ... ptr, (LAST)
+    twig ==>  ptr ... ptr, (_LAST)
     
 ; considerations
     
@@ -169,7 +136,60 @@ do not use of CPU SP intructions (pop, push, call, ret), leaving those for exter
     all leaf words have a payload as NULL and last jump;
     the memory model is not unified, separate address for flash and for sdram;
     ??? minus one reference execution per each compound word in exchange of a NULL test
+
+# Specifics
+
+      address pointer is Z (r31:r30) for lpm (flash), lds (sram), sts (sram) instructions;
+      first stack pointer is Y (r29:r28) for forth return stack;
+      second stack pointer is X (r27:r26) for forth data stack;
+      working pair register is W (r25:r24) for forth working register;
+      
+      temporary register T (r23:r22)
+      temporary register N (r21:r20)
+      register r0 as generic work 
+      register r1 as always zero
+
+      registers r2 to r4 used in interrupts
+      registers r15:14 used by counter of timer interrup, (borrow from flashforth)
+      registers r17:r16 and r19:r18 free
+      
+      flash memory from $000 to $FFF ($0000 to $1FFF bytes)
+      sram memory from  $0C0 to $45F (1024 bytes)
+      if (flash dictionary at $460, and all primitives 
+ 
+ harvard memory architeture;
+ 
+ using internal clock of 8MHz;
+ 
+ uart at 9600, 8N1, asynchronous;
+ 
+ include timer at 1ms with 16 bits counter  ~ 65 s;
+ 
+ include watch dog at ~ 2.0 s;
+ 
+ include pseudo 16bit random generator; 
+ 
+ include adapted djb hash generator for 16bits;
+ 
+ all 8bits and 16bits math from AVR200 manual;
+ 
+ uses MiniCore and optboot;
+ 
+ **still do not write to flash.**
     
+# Decisions
+
+  all dictionary in flash;
+  all constants and variables in sram;
+  eeprom preserves constants;
+  a cell is 16 bits;
+  a char is ASCII 7 bits, one byte at SRAM, one cell at stacks.
+  little endian, low byte at low address.
+  maximum word lenght is 15; 
+  four bits flags (IMMEDIATE, COMPILE, HIDEN, TOGGLE) per word;
+  numbers are signed two-complement;
+  
+  
 # Notes
 
 1. Primitives (Leaf) routine does not do any call. Compound (Twig) routines do.
