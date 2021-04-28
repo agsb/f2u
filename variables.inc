@@ -82,9 +82,16 @@ STATE:
 TWIG 5, "TIMER"
 TIMER:
 .word DOLIT
-.word _wTIMER
+.word _wTIMEW
 .word _LAST
 
+TWIG 5, "HASHR"
+HASHR:
+.word DOLIT
+.word _wHASHW
+.word _LAST
+
+TWIG 4, "LAST"
 TWIG 4, "LAST"
 LAST:
 .word DOLIT

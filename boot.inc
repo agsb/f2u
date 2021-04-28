@@ -67,9 +67,9 @@ TIM0_OVF:
 ;    save flags
     in r4, __SREG__
 ;    get counter
-    lds r2, TIMER+0
-    lds r3, TIMER+1
-;    increase counter and clear R1
+    lds r2, _wTIMEW+0
+    lds r3, _wTIMEW+1
+;    increase counter and also clear R1
 	clc
     clr r1
     inc r1
@@ -77,8 +77,8 @@ TIM0_OVF:
     dec r1
     adc r3, r1
 ;    put counter
-    sts TIMER+0, r2
-    sts TIMER+1, r3
+    sts _wTIMEW+0, r2
+    sts _wTIMEW+1, r3
 ;    offset counter 256 - 125 = 131
 ;    but was 18 clocks inside this to next out, 
 ;    then 131 + 18 = 149

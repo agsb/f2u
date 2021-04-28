@@ -1,6 +1,65 @@
 
 ;----------------------------------------------------------------------
 ;
+; "mpy16u" - 16x16 Bit Unsigned Multiplication
+;
+; ok UM*
+LEAF 3, "UM*"
+UMUL:
+	NOOP
+;
+;***** Subroutine Register Variables
+
+;#define mc16uL r16
+;#define mc16uH r17
+;#define mp16uL r18
+;#define mp16uH r19
+
+;#define m16u0 r18     
+;#define m16u1 r19     
+;#define m16u2 r20     
+;#define m16u3 r21     
+
+;#define mcnt16u r22     
+
+;
+;    move operands
+;
+	pspull tos_low, tos_high	; pull multiplicand
+	pspull nds_low, nds_high	; pull multiplier
+;
+;***** Code
+;
+mpy16u: 
+	ldi wrk_low, 16
+	mov _work_, wrk_low 	;init loop counter
+	sub wrk_low, wrk_low	;clear high result Low byte
+    sub wrk_high, wrk_high	;clear high result High byte and carry
+
+    lsr nds_high
+    ror nds_low
+
+m16u_1: 
+	brcc noad8 				;if bit 0 of multiplier set
+    add wrk_low, tos_low 	;add multiplicand Low to byte 2 of res
+    adc wrk_high, tos_high 	;add multiplicand high to byte 3 of res
+noad8: 
+	ror wrk_high 			;shift right result byte 3
+    ror wrk_low 			;rotate right result byte 2
+    ror nds_high			;rotate result byte 1 and multiplier High
+    ror nds_low				;rotate result byte 0 and multiplier Low
+    dec _work_ 				;decrement loop counter
+    brne m16u_1 			;if not done, loop more
+m16ures:
+;
+;    move operands
+;
+	pspush wrk_low, wrk_high
+    pspush nds_low, nds_high
+    POON
+
+;----------------------------------------------------------------------
+;
 ;    "div16u" - 16/16 Bit Unsigned Division
 ;
 ; ok UM/MOD
@@ -10,54 +69,58 @@ UMBYMOD:
 ;
 ;***** Subroutine Register Variables
 
-#define drem16uL r14
-#define drem16uH r15
-#define dres16uL r16
-#define dres16uH r17
+;#define drem16uL r14
+;#define drem16uH r15
+;#define dres16uL r16
+;#define dres16uH r17
 
-#define dd16uL r16
-#define dd16uH r17
-#define dv16uL r18
-#define dv16uH r19
+;#define dd16uL r16
+;#define dd16uH r17
+;#define dv16uL r18
+;#define dv16uH r19
 
 #define dcnt16u r20
 
 ;
 ;    move operands
 ;
-    movw r16, nds_low
-    movw r18, tos_low
+	pspull tos_low, tos_high	; pull divisor
+	pspull nds_low, nds_high	; pull dividend
 ;
 ;***** Code
 
 div16u: 
-	clr wrk_low ;clear remainder Low byte
-    sub wrk_high, wrk_high;clear remainder High byte and carry
-    ldi r16,17 ;init loop counter
+	ldi wrk_low, 17
+	mov _work_, wrk_low 	;init loop counter
+	sub wrk_low, wrk_low	;clear remainder Low byte
+    sub wrk_high, wrk_high	;clear remainder High byte and carry
+
 d16u_1: 
-	rol nds_low ;shift left dividend
+	rol nds_low 			;shift left dividend
     rol nds_high
-    dec r16 ;decrement counter
-    brne d16u_2 ;if done
+    dec _work_ 				;decrement counter
+    brne d16u_2 			;if done
+
 d16ures:
 ;
 ;    move operands
 ;
-    movw nds_low, r16
-    movw tos_low, r14
-    rjmp CORE
+	pspush wrk_low, wrk_high
+    pspush nds_low, nds_high
+    POON
 
 d16u_2: 
-	rol wrk_low ;shift dividend into remainder
+	rol wrk_low 			;shift dividend into remainder
     rol wrk_high
-    sub wrk_low, tos_low ;remainder = remainder - divisor
-    sbc wrk_high, tos_high ;
-    brcc d16u_3 ;if result negative
-    add wrk_low, tos_low ; restore remainder
+    sub wrk_low, tos_low 	;remainder = remainder - divisor
+    sbc wrk_high, tos_high 	;
+    brcc d16u_3 			;if result negative
+    add wrk_low, tos_low 	; restore remainder
     adc wrk_high, tos_high
-    clc ; clear carry to be shifted into result
-    rjmp d16u_1 ;else
-d16u_3: sec ; set carry to be shifted into result
+    clc 					; clear carry to be shifted into result
+    rjmp d16u_1 			;else
+d16u_3: 
+	sec 			 		; set carry to be shifted into result
     rjmp d16u_1
 
 
@@ -189,58 +252,6 @@ m16s_2:
     brne m16s_1    		;if not done, loop more
 m16sres:
     mov nds_low, r16
-    rjmp CORE
-
-;----------------------------------------------------------------------
-;
-; "mpy16u" - 16x16 Bit Unsigned Multiplication
-;
-; ok UM*
-LEAF 3, "UM*"
-UMUL:
-;
-;***** Subroutine Register Variables
-
-#define mc16uL r16
-#define mc16uH r17
-#define mp16uL r18
-#define mp16uH r19
-
-#define m16u0 r18     
-#define m16u1 r19     
-#define m16u2 r20     
-#define m16u3 r21     
-
-#define mcnt16u r22     
-
-;
-;    move operands
-;
-    movw r16, nds_low
-    movw r18, tos_low
-;
-;***** Code
-;
-mpy16u: clr wrk_high ;clear 2 highest bytes of result
-    clr wrk_low
-    ldi r16,16 ;init loop counter
-    lsr tos_high
-    ror tos_low
-
-m16u_1: brcc noad8 ;if bit 0 of multiplier set
-    add wrk_low,nds_low ;add multiplicand Low to byte 2 of res
-    adc wrk_high,nds_high ;add multiplicand high to byte 3 of res
-noad8: ror wrk_high ;shift right result byte 3
-    ror wrk_low ;rotate right result byte 2
-    ror r19 ;rotate result byte 1 and multiplier High
-    ror r18 ;rotate result byte 0 and multiplier Low
-    dec r16 ;decrement loop counter
-    brne m16u_1 ;if not done, loop more
-m16ures:
-;
-;    move operands
-;
-    movw nds_low, r18
     rjmp CORE
 
 ;----------------------------------------------------------------------

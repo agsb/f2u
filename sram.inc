@@ -5,9 +5,9 @@
 variables:
 
 _wNULL:	 .word 1	  ; 16 bit NULL must be zero.
-_wTIMER: .word 1      ; 16 bit counter miliseconds, linked to timer0 interrupt
+_wTIMEW: .word 1      ; 16 bit counter miliseconds, linked to timer0 interrupt
 _wRANDW: .word 1      ; 16 bit seed for pseudo random recursive
-_wHASH:	 .word 1	  ; 16 bit djd hash seed 5381 
+_wHASHW: .word 1	  ; 16 bit djd hash seed 5381 
 
 _wHLD: .word 1        ; pointer to buffer for number convertions
 _wTIN: .word 1        ; >IN     next character to be interpreted in TIB
