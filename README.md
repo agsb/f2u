@@ -14,9 +14,9 @@ This is a evolution from what I learning with u2forth, ATMEGA8 assembler and for
 # References
 
 1. In eforth for Cortex M4,  http://forth.org/OffeteStore/1013_eForthAndZen.pdf
-https://code.google.com/archive/p/subtle-stack/downloads, to use in a ESP32, Dr. C.H.Ting uses a optimal aprouach for forth engine, with cpu family specific instructions (ISA) *inline into dictionary*.
+https://code.google.com/archive/p/subtle-stack/downloads, to use in a ESP32, Dr. C.H.Ting uses a optimal approach for forth engine, with cpu family specific instructions (ISA) *inline into dictionary*.
 
-  _in my opinion best and ideal solution per cpu_ (at cost of size and portability)
+_in my opinion best and ideal solution per cpu_ (at cost of size and portability)
 
 ; the interpreter, in macro code:
 
@@ -73,9 +73,9 @@ https://code.google.com/archive/p/subtle-stack/downloads, to use in a ESP32, Dr.
 
 ; the dicionary, inside PFA 
   
-    leaf ==>  (Self), code ... code, rjmp DO_NEXT
+    leaf ==>  (Self), code ... code, (rjmp DO_NEXT)
     
-    twig ==>  DO_COLON, ptr ... ptr, DO_EXIT
+    twig ==>  (DO_COLON), ptr ... ptr, (DO_EXIT)
 
 ; considerations
     
@@ -84,16 +84,16 @@ https://code.google.com/archive/p/subtle-stack/downloads, to use in a ESP32, Dr.
     all twig words have a payload as first and last references;
     all leaf words have a payload as self reference and last jump;
     the memory model is not unified, separate address for flash, sdram.
-    why two "adiw WL, 1" ????
+    why two "adiw WL, 1" ? Adjust Z to a even address
     
-3. this F2U implementation for ATMEGA8, do not use any of real SP intructions (pop, push, call, ret), leaving those for external extensions and libraries;
+4. this F2U implementation for ATMEGA8, do not use any of real SP intructions (pop, push, call, ret), leaving those for external extensions and libraries;
       
 ; the interpreter
 
     ;
     ; WARNING: this inner still only works for program memory (flash) 
     ; 
-    ; does nothing and mark as primitive for instructions code
+    ; does nothing and mark as primitive
     _LAST:
       nop
       nop
@@ -103,7 +103,7 @@ https://code.google.com/archive/p/subtle-stack/downloads, to use in a ESP32, Dr.
      rsp_pull ip_low, ip_high
 
     _NEXT:
-    ; load w with contents of cell at ip
+    ; load w with contents of cell at ip and auto increments ip
      lpm wrk_low, Z+
      lpm wrk_high, Z+
 
@@ -132,10 +132,10 @@ https://code.google.com/archive/p/subtle-stack/downloads, to use in a ESP32, Dr.
     
     efficient code;
     twig dicionary is CPU independent;
-    all twig words have a payload  last references;
-    all leaf words have a payload as NULL and last jump;
+    all twig words have only a payload at last references;
+    all leaf words have a payload as NULL and at last jump;
     the memory model is not unified, separate address for flash and for sdram;
-    ??? minus one reference execution per each compound word in exchange of a NULL test
+    ??? minus one reference execution per each compound word  at cost of a test if NULL
 
 # Specifics
 
