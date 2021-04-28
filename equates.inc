@@ -41,7 +41,7 @@
     SPU_TOP = SRAM_END 
     PAD_TOP = SPU_TOP - PAD_SIZE
 	TIB_TOP = PAD_TOP - TIB_SIZE
-	PSP_TOP = TIP_TOP - PSP_SIZE
+	PSP_TOP = TIB_TOP - PSP_SIZE
 	RSP_END = PSP_TOP - RSP_SIZE
 ;----------------------------------------------------------------------
 ; at last 256 SRAM bytes, rests 16 words for exclusive variables

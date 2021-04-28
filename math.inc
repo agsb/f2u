@@ -30,7 +30,7 @@ UMUL:
 ;
 ;***** Code
 ;
-mpy16u: 
+mul16u: 
 	ldi wrk_low, 16
 	mov _work_, wrk_low 	;init loop counter
 	sub wrk_low, wrk_low	;clear high result Low byte
@@ -43,6 +43,7 @@ m16u_1:
 	brcc noad8 				;if bit 0 of multiplier set
     add wrk_low, tos_low 	;add multiplicand Low to byte 2 of res
     adc wrk_high, tos_high 	;add multiplicand high to byte 3 of res
+
 noad8: 
 	ror wrk_high 			;shift right result byte 3
     ror wrk_low 			;rotate right result byte 2
@@ -50,6 +51,7 @@ noad8:
     ror nds_low				;rotate result byte 0 and multiplier Low
     dec _work_ 				;decrement loop counter
     brne m16u_1 			;if not done, loop more
+
 m16ures:
 ;
 ;    move operands
@@ -99,15 +101,7 @@ d16u_1:
 	rol nds_low 			;shift left dividend
     rol nds_high
     dec _work_ 				;decrement counter
-    brne d16u_2 			;if done
-
-d16ures:
-;
-;    move operands
-;
-	pspush wrk_low, wrk_high
-    pspush nds_low, nds_high
-    POON
+    breq d16ures 			;if done
 
 d16u_2: 
 	rol wrk_low 			;shift dividend into remainder
@@ -122,6 +116,14 @@ d16u_2:
 d16u_3: 
 	sec 			 		; set carry to be shifted into result
     rjmp d16u_1
+
+d16ures:
+;
+;    move operands
+;
+	pspush wrk_low, wrk_high
+    pspush nds_low, nds_high
+    POON
 
 
 ;----------------------------------------------------------------------
@@ -158,25 +160,33 @@ SDIV:
 ;
 ;***** Code
 ;
-div16s: mov    d16s,dd16sH    ;move dividend High to sign register
+div16s: 
+	mov    d16s,dd16sH    ;move dividend High to sign register
     eor    d16s,dv16sH    ;xor divisor High with sign register
     sbrs    dd16sH,7    ;if MSB in dividend set
     rjmp    d16s_1
-    com    dd16sH    ;    change sign of dividend
+    
+	com    dd16sH    ;    change sign of dividend
     com    dd16sL
     subi    dd16sL,lo8(-1)
     sbci    dd16sL,hi8(-1)
-d16s_1: sbrs    dv16sH,7    ;if MSB in divisor set
+
+d16s_1: 
+	sbrs    dv16sH,7    ;if MSB in divisor set
     rjmp    d16s_2
-    com    dv16sH    ;    change sign of divisor
+    
+	com    dv16sH    ;    change sign of divisor
     com    dv16sL
     subi    dv16sL,lo8(-1)
     sbci    dv16sL,hi8(-1)
-d16s_2: clr    drem16sL    ;clear remainder Low byte
+
+d16s_2: 
+	clr    drem16sL    ;clear remainder Low byte
     sub    drem16sH,drem16sH;clear remainder High byte and carry
     ldi    dcnt16s,17     ;init loop counter
 
-d16s_3: rol    dd16sL    ;shift left dividend
+d16s_3: 
+	rol    dd16sL    ;shift left dividend
     rol    dd16sH
     dec    dcnt16s    ;decrement counter
     brne    d16s_5    ;if done
@@ -192,7 +202,8 @@ d16sres:
     movw tos_low, r14
     rjmp CORE
 
-d16s_5: rol    drem16sL    ;shift dividend into remainder
+d16s_5: 
+	rol    drem16sL    ;shift dividend into remainder
     rol    drem16sH
     sub    drem16sL,dv16sL ;remainder = remainder - divisor
     sbc    drem16sH,dv16sH ;
@@ -201,7 +212,8 @@ d16s_5: rol    drem16sL    ;shift dividend into remainder
     adc    drem16sH,dv16sH
     clc     ;    clear carry to be shifted into result
     rjmp    d16s_3    ;else
-d16s_6: sec     ;    set carry to be shifted into result
+d16s_6: 
+	sec     ;    set carry to be shifted into result
     rjmp    d16s_3
 
 ;----------------------------------------------------------------------

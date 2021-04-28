@@ -5,59 +5,48 @@
 ;    use with -x assembler-with-cpp
 ;
 ;----------------------------------------------------------------------
+; can't use alias 
+
 ; generic use
-#define    _work_    r0    
-; .set _work_ , r0    
+#define _work_ r0
 
 ; always zero
-#define    _zero_    r1    
-; .set _zero_ , r1
+#define _zero_ r1
+
+; counter for timer0
+#define tmr_low r2
+#define tmr_high r2
+
+; offset for timer0
+#define offs_low r4
+
+; sreg reserved
+#define sreg_low r5
 
 ; Z instruction pointer for access sram and flash high memory
-#define    ips_low    r30    
-;.set    ipl,    r30
-
-#define    ips_high    r31    
-;.set    iph,    r31
+#define ips_low r30
+#define ips_high r31
 
 ; Y return stack pointer for access sram
-#define    rsp_low    r28    
-;.set    rspl,    r28
-
-#define    rsp_high    r29    
-;.set    rsph,    r29
+#define rsp_low r28
+#define rsp_high r29
 
 ; X parameter stack pointer for access sram
-#define    psp_low    r26    
-;.set    pspl,    r26
-
-#define    psp_high    r27    
-;.set    psph,    r27
+#define psp_low r26
+#define psp_high r27
 
 ; work registers
-#define    wrk_low    r24    
-;.set    wl,    r24
-
-#define    wrk_high    r25    
-;.set    wh,    r25
+#define wrk_low r24
+#define wrk_high r25
 
 ; second value parameter stack
-#define    nds_low    r22    
-;.set    nl,    r22
-
-#define    nds_high    r23    
-;.set    nh, r23
+#define nds_low r22
+#define nds_high r23
 
 ; fist value parameter stack
-#define    tos_low    r20    
-;.set    tl,    r20
+#define tos_low r20
+#define tos_high r21
 
-#define    tos_high    r21    
-;.set    th,    r21
-
-;----------------------------------------------------------------------
-;
-; version information
 ;----------------------------------------------------------------------
 ;
 ; version information

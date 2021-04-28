@@ -46,7 +46,8 @@ RESET:
     out __SP_H__, wrk_high
     ldi wrk_low, lo8(SPU_TOP)
     out __SP_L__, wrk_low
-; eneble interrupts
+
+; enable interrupts
     sei
     rjmp BOOT
 
@@ -62,13 +63,10 @@ RESET:
 ;    without these instructions ?
 ;
 TIM0_OVF:
+;    save flags
+    in r5, __SREG__
 ;    disable interrups
     cli
-;    save flags
-    in r4, __SREG__
-;    get counter
-    lds r2, _wTIMEW+0
-    lds r3, _wTIMEW+1
 ;    increase counter and also clear R1
 	clc
     clr r1
@@ -76,21 +74,14 @@ TIM0_OVF:
     add r2, r1
     dec r1
     adc r3, r1
-;    put counter
-    sts _wTIMEW+0, r2
-    sts _wTIMEW+1, r3
 ;    offset counter 256 - 125 = 131
-;    but was 18 clocks inside this to next out, 
-;    then 131 + 18 = 149
-    mov r2, r16
-	ldi r16, 149
-    ;out TCNT0, r16 
-    out 0x32, r16 
-    mov r16, r2
+;    but was 10 clocks till out, 
+;    then 131 + 10 = 141
+    out 0x32, r4
 ;    reset watch dog
     wdr
 ;    load flags and return
-    out __SREG__, r4
+    out __SREG__, r5
 ;    enable interrups
     sei
     reti
@@ -149,6 +140,14 @@ EEPROM_read_wait:
 BOOT:
 ; disable interrupts
     cli
+
+; clear timer0 counter
+	clr r2
+	clr r3
+
+; define timer0 offset
+	ldi r16, 141
+	mov r4, r16
 
 ;----------------------------------------------------------------------
 ; preset of timer0, with internal clock 8MHz 

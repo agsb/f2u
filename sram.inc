@@ -4,10 +4,8 @@
 .org    0x0060
 variables:
 
-_wNULL:	 .word 1	  ; 16 bit NULL must be zero.
-_wTIMEW: .word 1      ; 16 bit counter miliseconds, linked to timer0 interrupt
-_wRANDW: .word 1      ; 16 bit seed for pseudo random recursive
-_wHASHW: .word 1	  ; 16 bit djd hash seed 5381 
+_wNULL:	 .word 0	  ; 16 bit NULL must be zero.
+_wRANDW: .word 0      ; 16 bit seed for pseudo random recursive
 
 _wHLD: .word 1        ; pointer to buffer for number convertions
 _wTIN: .word 1        ; >IN     next character to be interpreted in TIB
@@ -15,13 +13,13 @@ _wTIH: .word 1        ; #TIB    number of characters in TIB
 _wTIB: .word 1        ; 'TIB    start terminal input buffer
 
 _wSTATE: .word 1      ;    state of $interpreter or $compiler
-_wBASE: .word 1       ;    base for show numbers
+_wBASE: .word 16       ;    base for show numbers
 
 _wCONTEXT: .word 4    ;    pointer to vocabularies (primitives, devices, forth, applications)
 _wCURRENT: .word 1    ;    pointer to current vocaburary
 _wLAST: .word 1       ;    pointer to last word of vocabulary
 
-_wCP: .word 1         ;    pointer to top free vocabulary
+_wDP: .word 1         ;    pointer to top free vocabulary
 _wUP: .word 1         ;    pointer to free user sram
 
 _wTTEVAL: .word 1     ;    reference to eval 

@@ -8,7 +8,7 @@
 LEAF 3, "IO!"
 IOYO:
     NOOP
-    eor wrk_low, wrk_low
+    clr wrk_low
     out 0x20, wrk_low
     ldi wrk_low, lo8(52)
     out 0x9, wrk_low
@@ -51,3 +51,12 @@ TXTO:
     out 0xc, wrk_low
     rjmp FTRUE
 
+;----------------------------------------------------------------------
+;
+; ok non block, test if can send a char ( ch -- ch 0x00 | 0xFF )
+;
+LEAF 6, "MILLIS"
+MILLIS:
+	NOOP
+	pspush tmr_low, tmr_high
+	POON

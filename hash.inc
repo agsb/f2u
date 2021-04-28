@@ -1,12 +1,12 @@
-;.equ HASH=5381
 ; hash = (hash << 5) + str[i]
 ; for ascii chars in sram, in bytes not cells
 ; ( u a -- w ) djb hash
+.equ djbHASH, 5381
 LEAF 4, "HASH"
 HASH:
 	NOOP
-	lds nds_low, _wHASHW
-	lds nds_high, _wHASHW+1
+	ldi nds_low, lo8(djbHASH)
+	ldi nds_high, hi8(djbHASH)
 	pspull ips_low, ips_high
 	pspull wrk_low, wrk_high
 

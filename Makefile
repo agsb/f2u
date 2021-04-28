@@ -106,6 +106,7 @@ CFLAGS += -Wa,-adhlns=$(<:.c=.lst)
 CFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
 CFLAGS += $(CSTANDARD)
 CFLAGS += -nostartfiles
+#CFLAGS += -x assembler-with-cpp 
 #CFLAGS += --strip-debug
 
 # Assembler flags.
