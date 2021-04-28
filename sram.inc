@@ -19,7 +19,7 @@ _wCONTEXT: .word 4    ;    pointer to vocabularies (primitives, devices, forth, 
 _wCURRENT: .word 1    ;    pointer to current vocaburary
 _wLAST: .word 1       ;    pointer to last word of vocabulary
 
-_wDP: .word 1         ;    pointer to top free vocabulary
+_wCP: .word 1         ;    pointer to top free vocabulary
 _wUP: .word 1         ;    pointer to free user sram
 
 _wTTEVAL: .word 1     ;    reference to eval 

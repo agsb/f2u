@@ -1,16 +1,39 @@
 
 ;----------------------------------------------------------------------
 ;	eforth	ok 
+
+;----------------------------------------------------------------------
+;
+TWIG 7 | F_COMPILE, "COMPILE"
+COMPILE: 
+.word 	RTO, DUP, AT, COMMA, CELLPLUS, TOR, _LAST
+
+;----------------------------------------------------------------------
+;
+TWIG 7 | F_IMMEDIATE, "LITERAL"
+LITERAL: 
+.word 	COMPILE, doLIT, COMMA, _LAST
+
+;----------------------------------------------------------------------
 ;
 TWIG 1, ","
 COMMA: 
 .word   HERE, DUP, CELLPLUS, CP, TO, TO, _LAST
 
 ;----------------------------------------------------------------------
-;	: .word  VARIABLE CREATE  0 , ;
+;
+TWIG 6, "TWOTOR"
+TWOTOR: .word SWAP, TOR, TOR, _LAST
+
+;----------------------------------------------------------------------
+;
+TWIG 6, "TWORTO"
+TWORTO: .word RTO, RTO, SWAP, _LAST
+
+;----------------------------------------------------------------------
+;
 TWIG 8, "VARIABLE"
-VARIABLE: 
-.word   CREATE, LITERAL, 0x0000, COMMA, _LAST
+VARIABLE: .word   CREATE, LITERAL, 0x0000, COMMA, _LAST
 
 ;----------------------------------------------------------------------
 ;
@@ -125,12 +148,12 @@ TWIG 2, "<#"
 BDIGS: .word   PAD, HLD, TO, _LAST
 
 ;----------------------------------------------------------------------
-TWIG 5, "BEGIN"
-.word IMMEDIATE, HERE , _LAST
+TWIG 5 | F_IMMEDIATE, "BEGIN"
+.word HERE , _LAST
 
 ;----------------------------------------------------------------------
-TWIG 5, "DO"
-.word IMMEDIATE, POSTPONE, TWOTOR, HERE , _LAST
+TWIG 5| F_IMMEDIATE, "DO"
+.word POSTPONE, TWOTOR, HERE , _LAST
 
 ;----------------------------------------------------------------------
 TWIG 1, ":"
@@ -141,7 +164,7 @@ COLON:
 
 ;----------------------------------------------------------------------
 TWIG 1, ";"
-.word POSTPONE, _LAST, REVEAL, POSTPONE, OPENCOL, EXIT
+.word POSTPONE, _LAST, REVEAL, POSTPONE, OPENCOL, _LAST
 
 ;----------------------------------------------------------------------
 ;	eforth	ok 
@@ -162,7 +185,7 @@ THROW:
 ;
 TWIG 1, "'"
 TICK: 
-.word   TOKEN, NAMEQ, QMBRANCH, _LAST, THROW, EXIT
+.word   TOKEN, NAMEQ, QMBRANCH, _LAST, THROW, _LAST
 
 ;----------------------------------------------------------------------
 ;	eforth	ok 
@@ -200,28 +223,28 @@ TWIG 4, "VARIABLE"
 ;
 TWIG 4, "doVAR"
 doVAR: 
-.word   EXIT
+.word   _LAST
 
 ;----------------------------------------------------------------------
 ; eforth
 ;
 TWIG 4, "doVOC"
 doVOC: 
-.word   EXIT
+.word   _LAST
 
 ;----------------------------------------------------------------------
 ; eforth
 ;
 TWIG 4, "doUSER"
 doUSER: 
-.word   EXIT
+.word   _LAST
 
 ;----------------------------------------------------------------------
 ; eforth
 ;
 TWIG 4, "FORTH"
 FORTH: 
-.word   EXIT
+.word   _LAST
 
 
 

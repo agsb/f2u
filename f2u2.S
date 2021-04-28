@@ -168,7 +168,7 @@ _ENTER:
 ;----------------------------------------------------------------------
 ; ok ( w -- ) ( -- W) 
 LEAF 2, ">R" 	; 	F18A push
-GTR:
+TOR:
 	NOOP
 	pspull wrk_low, wrk_high
 	rspush wrk_low, wrk_high
@@ -177,7 +177,7 @@ GTR:
 ;----------------------------------------------------------------------
 ; ok ( -- w ) ( w -- )
 LEAF 2, "R>"	;	F18A pull
-RGT:
+RTO:
 	NOOP
 	rspull wrk_low, wrk_high
 	pspush wrk_low, wrk_high
@@ -377,7 +377,7 @@ EQUAL:
 ;----------------------------------------------------------------------
 ; nok ( w1 w2 -- 0 | -1 )
 LEAF 1, "<"
-LT: 
+LTHAN: 
 	NOOP
 	pspull wrk_low, wrk_high
 	pspull tos_low, tos_high
@@ -389,7 +389,7 @@ LT:
 ;----------------------------------------------------------------------
 ; nok ( w1 w2 -- 0 | -1 )
 LEAF 1, ">"
-GT: 
+GTHAN: 
 	NOOP
 	pspull wrk_low, wrk_high
 	pspull tos_low, tos_high
@@ -904,6 +904,91 @@ CELLS:
 
 ;----------------------------------------------------------------------
 ;
+; ok 
+;
+LEAF 2, "CELL+"
+CELLPLUS:
+	NOOP
+	pspull wrk_low, wrk_high
+	adiw wrk_low, CELL_SIZE
+	pspush wrk_low, wrk_high
+	POON
+
+;----------------------------------------------------------------------
+;
+; ok 
+;
+LEAF 2, "CELL-"
+CELLMINUS:
+	NOOP
+	pspull wrk_low, wrk_high
+	sbiw wrk_low, CELL_SIZE
+	pspush wrk_low, wrk_high
+	POON
+
+;----------------------------------------------------------------------
+;
+; ok 
+;
+LEAF 2, "1+"
+ONEPLUS:
+	NOOP
+	pspull wrk_low, wrk_high
+	adiw wrk_low, 1
+	pspush wrk_low, wrk_high
+	POON
+
+;----------------------------------------------------------------------
+;
+; ok 
+;
+LEAF 2, "1-"
+ONEMINUS:
+	NOOP
+	pspull wrk_low, wrk_high
+	sbiw wrk_low, 1
+	pspush wrk_low, wrk_high
+	POON
+
+;----------------------------------------------------------------------
+;
+; ok 
+;
+LEAF 2, "2+"
+TWOPLUS:
+	NOOP
+	pspull wrk_low, wrk_high
+	adiw wrk_low, 2
+	pspush wrk_low, wrk_high
+	POON
+
+;----------------------------------------------------------------------
+;
+; ok 
+;
+LEAF 2, "2-"
+TWOMINUS:
+	NOOP
+	pspull wrk_low, wrk_high
+	sbiw wrk_low, 2
+	pspush wrk_low, wrk_high
+	POON
+
+;----------------------------------------------------------------------
+;
+; ok 
+;
+LEAF 2, "+!"
+PLUSTO:
+	NOOP
+	pspull ips_low, ips_high
+	pspull wrk_low, wrk_high
+	srsave wrk_low
+	srsave wrk_high
+	POON
+
+;----------------------------------------------------------------------
+;
 #include "variables.inc"
 
 #include "constants.inc"
@@ -914,3 +999,6 @@ CELLS:
 
 #include "rand.inc"
 
+#include "longs.inc"
+
+#include "twigs.inc"

@@ -67,10 +67,10 @@ UP:
 .word _wUP
 .word _LAST
 
-TWIG 2, "DP"
-DP:
+TWIG 2, "CP"
+CP:
 .word DOLIT
-.word _wDP
+.word _wCP
 .word _LAST
 
 TWIG 5, "STATE"
