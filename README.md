@@ -80,11 +80,19 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
 ; considerations
     
     traditional efficient code;
-    twig dicionary is CPU independent;
+    twig dictionary is CPU independent;
     all twig words have a payload as first and last references;
     all leaf words have a payload as self reference and last jump;
     the memory model is not unified, separate address for flash, sdram.
     why two "adiw WL, 1" ? Adjust Z to a even address
+
+3. In flashforth, https://flashforth.com/index.html, for avr uCs with at least 32k flash
+    uses SP for return stack, uses Y for data stack, uses Z as address pointer
+
+    interleaves rcall and rjmp inside dictionary;
+    all dicionary is CPU dependent;
+    all twig words have a payload as first and last references;
+    all leaf words have a payload as self reference and last jump;
     
 4. this F2U implementation for ATMEGA8, do not use any of real SP intructions (pop, push, call, ret), leaving those for external extensions and libraries;
       
@@ -134,6 +142,7 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     twig dicionary is CPU independent;
     all twig words have only a payload at last references;
     all leaf words have a payload as NULL and at last jump;
+    all internal words defined between parentheses;
     the memory model is not unified, separate address for flash and for sdram;
     ??? minus one reference execution per each compound word  at cost of a test if NULL
 
@@ -146,12 +155,15 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
       
       temporary register T (r23:r22)
       temporary register N (r21:r20)
-      register r0 as generic work 
+      register r0 as generic scratch 
       register r1 as always zero
 
-      registers r2 to r4 used in interrupts
-      registers r15:14 used by counter of timer interrup, (borrow from flashforth)
-      registers r17:r16 and r19:r18 free
+      registers r2 to r5 used in interrupts
+          registers r2:r3 used by counter of timer interrup, (borrow from flashforth)
+          register r4, constant offset for timer0 
+          register r5, preserve sreg
+      registers r6::r19 free
+     
       
       flash memory from $000 to $FFF ($0000 to $1FFF bytes)
       sram memory from  $0C0 to $45F (1024 bytes)
