@@ -29,7 +29,7 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
 
     leaf ==> instr, instr, instr, instr, _next
     
-    twig ==> _nest, *BL* ptr, *BL* ptr, *BL* ptr, _unest        
+    twig ==> _nest, *BL* ptr, *BL* ptr, *BL* ptr, _unest         
 
 ; considerations
     
