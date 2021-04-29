@@ -204,9 +204,16 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
   
 # Notes
 
-1. Primitives (Leaf) routine does not do any call. Compound (Twig) routines do.
+  1. Primitives (Leaf) routine does not do any call. Compound (Twig) routines do.
+  2. No bounds check, none.
+  3. COMPARE compare bytes and return FALSE or TRUE, only;
+  4. MOVE move bytes, "from to" upwards, only;
+  5. word names lenght can be 1 to 15, padded with space (0x20);
 
-2. To translate forth names to assembler names, 
+
+# Notation
+
+1. To translate forth names to assembler names, 
    
 I use as prefix or sufix
     
