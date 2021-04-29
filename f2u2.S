@@ -137,8 +137,7 @@ _NEXT:
 
 ; if zero then is a exec 
 _EXEC:
-	mov _work_, wrk_low
-	or  _work_, wrk_high
+	cp wrk_low, wrk_high
 	brbc BIT_ZERO, _ENTER
 	ijmp
 
@@ -281,8 +280,7 @@ HEADER "?DUP", "ZDUP"
 	NOOP
 	pspull wrk_low, wrk_high
 	pspush wrk_low, wrk_high
-	mov _work_, wrk_low
-	or  _work_, wrk_high
+	cp wrk_low, wrk_high
 	brbs BIT_ZERO, NZDUP_1
 	pspush wrk_low, wrk_high
 NZDUP_1:
@@ -294,8 +292,7 @@ NZDUP_1:
 HEADER "?BRANCH", "ZBRANCH"
 	NOOP
 	pspull wrk_low, wrk_high
-	mov _work_, wrk_high
-	or  _work_, wrk_low
+	cp wrk_low, wrk_high
 	brbs BIT_ZERO, BRANCH+2
 	rspull wrk_low, wrk_high
 	adiw wrk_low, CELL_SIZE
@@ -587,7 +584,7 @@ _ZEROLT1:
 HEADER "0=", "ZEROEQ"
 	NOOP
 	pspull wrk_low, wrk_high
-	or  wrk_high, wrk_low
+	cp wrk_high, wrk_low
 	brbs BIT_ZERO, _ZEROEQ1
     rjmp FFALSE
 _ZEROEQ1:
@@ -624,14 +621,14 @@ HEADER "ABS", "ABS"
 
 ;----------------------------------------------------------------------
 ;
-; compare cells from source++ to destination++, decrease count--
+; compare bytes from source++ to destination++, decrease count--
 ; ( a1 u1 a2 u2 -- flag)
 ;
 HEADER "COMPARE", "COMPARE"
 	NOOP
     ; WARNING No bound check and counter equal 0 moves nothing
 
-	; puul lenght 
+	; pull lenght 
 	pspull tos_low, tos_high
 
 	; pull address
@@ -640,7 +637,7 @@ HEADER "COMPARE", "COMPARE"
 	; pull lenght
 	pspull nds_low, nds_high
 
-    ; pull length
+    ; pull address
 	pspull wrk_low, wrk_high
 
 	; push psp
@@ -651,81 +648,47 @@ HEADER "COMPARE", "COMPARE"
 
     ; no offset
 
-_COMPARE:
-	ld wrk_low, Z+
-	ld wrk_high, X+
-	or wrk_low, wrk_high
-	brne _COMPARE_NOT_EQUAL
+_COMPARE_LOOP:
 
-_COMPARE_TEST_LENGTH_1:
-	movw wrk_low, tos_low
-	sbiw wrk_low, 1
+	cp  tos_low, tos_high
 	brbs BIT_ZERO, _COMPARE_EQUAL
-	movw tos_low, wrk_low
 
-_COMPARE_TEST_LENGTH_2:
-	movw wrk_low, nds_low
-	sbiw wrk_low, 1
+	cp  nds_low, nds_high
 	brbs BIT_ZERO, _COMPARE_EQUAL
-	movw nds_low, wrk_low
-	rjmp _COMPARE
+
+	ld wrk_low, X+
+	ld wrk_high, Z+
+	cp wrk_low, wrk_high
+	brbc BIT_ZERO, _COMPARE_DIFF
+
+	subi tos_low, 1
+	sbci tos_high, 0
+
+	subi nds_low, 1
+	sbci nds_high, 0
+
+    ; again
+	rjmp _COMPARE_LOOP
 
 _COMPARE_EQUAL:
+	
+	cp tos_low, nds_low
+	brbc BIT_ZERO, _COMPARE_DIFF
+
+	cp tos_high, nds_high
+	brbc BIT_ZERO, _COMPARE_DIFF
+
 	clr wrk_low
 	clr wrk_high
 	rjmp _COMPARE_ENDS
-_COMPARE_NOT_EQUAL:
+
+_COMPARE_DIFF:
 	ser wrk_low
 	ser wrk_high
+
 _COMPARE_ENDS:
 	rspull psp_low, psp_high
 	pspush wrk_low, wrk_high	
-	POON
-
-;----------------------------------------------------------------------
-;
-; MOVE copy cells from source++ to destination++, decrease count--
-HEADER "MOVE", "MOVE"
-	NOOP
-    ; WARNING No bound check and counter equal 0 moves nothing
-
-	; pull origin
-	pspull tos_low, tos_high
-	
-	; pull destination
-	pspull ips_low, ips_high
-
-    ; pull counter
-	pspull wrk_low, wrk_high
-
-	; push psp
-	rspush psp_low, psp_high
-
-	; copy orign
-	movw psp_low, tos_low
-
-    ; no offset
-
-_MOVE1:
-    ; decrease counter
-
-    sbiw wrk_low, 1
-    brlt _MOVE2
-
-    ; move a byte
-    ld _work_, X+
-    st Z+, _work_
-    
-	; move a byte
-    ld _work_, X+
-    st Z+, _work_
-
-    ; again
-    rjmp _MOVE1
-
-_MOVE2:
-	; pull psp
-	rspull psp_low, psp_high
 	POON
 
 ;----------------------------------------------------------------------
@@ -752,78 +715,30 @@ HEADER "CMOVE", "CMOVE"
 
     ; no offset
 
-_CMOVE1:
-    ; decrease counter
-
-    sbiw wrk_low, 1
-    brlt _CMOVE2
+_CMOVE_LOOP:
+	; test if zero
+	cp wrk_low, wrk_high
+	brbs BIT_ZERO, _CMOVE_ENDS
 
     ; move a byte
     ld _work_, X+
     st Z+, _work_
     
-    ; again
-    rjmp _CMOVE1
-
-_CMOVE2:
-	; pull psp
-	rspull psp_low, psp_high
-	POON
-
-;----------------------------------------------------------------------
-;
-; CMOVE copy bytes from source+count-- to destination+count--, decrease count--
-HEADER "CMOVE>", "CMOVEGT"
-	NOOP
-    ; WARNING No bound check and counter equal 0 moves nothing
-
-	; pull origin
-	pspull tos_low, tos_high
-	
-	; pull destination
-	pspull ips_low, ips_high
-
-    ; pull counter
-	pspull wrk_low, wrk_high
-
-	; push psp
-	rspush psp_low, psp_high
-
-	; copy orign
-	movw psp_low, tos_low
-
-    ; do offset
-
-    adiw wrk_low, 1
-
-    add psp_low, wrk_low
-    adc psp_high, wrk_high
-
-    add ips_low, wrk_low
-    adc ips_high, wrk_high
-
-    sbiw wrk_low, 1
-
-_CMOVEGT1:
     ; decrease counter
 
-    sbiw wrk_low, 1
-    brlt _CMOVEGT2
+	subi wrk_low, 1
+	sbci wrk_high, 0
 
-    ; move a byte
-    ld _work_, -X
-    st -Z, _work_
-    
     ; again
-    rjmp _CMOVEGT1
+    rjmp _CMOVE_LOOP
 
-_CMOVEGT2:
+_CMOVE_ENDS:
 	; pull psp
 	rspull psp_low, psp_high
 	POON
 
 ;----------------------------------------------------------------------
-;  data space pointer align to CELL, ZZZZ
+;  data space pointer align to CELL, atmega is always
 HEADER "ALIGN", "ALLIGN"
 	NOOP
     POON
@@ -841,7 +756,7 @@ HEADER "CELL", "CELLSZ"
 
 ;----------------------------------------------------------------------
 ;
-; ok CELL is 2, multiply by 2
+; ok CELL is 2, multiply by 2, easy way
 ;
 HEADER "CELLS", "CELLS"
 	NOOP
