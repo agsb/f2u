@@ -154,6 +154,7 @@ BOOT:
 ; cycle   64
 ; offset 131
 ; timer cycle * offset / clock = 8k/8M = 1ms
+
 TIMER0_SET:
 ; enable pre-escaler
 	;in r16, TCCR0
@@ -190,5 +191,6 @@ WATCH_DOG_SET:
 ;----------------------------------------------------------------------
 ; enable interrupts
     sei
-    ret
+   
+	rjmp COLD 
 

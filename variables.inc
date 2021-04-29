@@ -11,78 +11,43 @@
 ;
 ;    puts literal (word) into parameter stack
 ;
-
-;----------------------------------------------------------------------
-;
-;    ok  push address of "" into parameter stack
-;
-;    .s/.equ \+\(.\+\) ,.\+/TWIG 0, "\1"\r;ISVARIABLE \1\r/
-
-;
-;----------------------------------------------------------------------
-
 ;----------------------------------------------------------------------
 ;
 ;    creates forth variables, pushes the address
 ;
-TWIG 4, "BASE"
-BASE:
-.word DOLIT
-.word _wBASE
-.word _LAST
+HEADER "RSP0", "RSP0"
+.word DOLIT, _wRSP0, _LAST
 
-TWIG 3, "TIB"
-TIB:
-.word DOLIT
-.word _wTIB
-.word _LAST
+HEADER "PSP0", "PSP0"
+.word DOLIT, _wPSP0, _LAST
 
-TWIG 3, ">IN"
-TIN:
-.word DOLIT
-.word _wTIN
-.word _LAST
+HEADER "BASE", "BASE"
+.word DOLIT, _wBASE, _LAST
 
-TWIG 7, "CONTEXT"
-CONTEXT:
-.word DOLIT
-.word _wCONTEXT
-.word _LAST
+HEADER "TIB", "TIB"
+.word DOLIT, _wTIB, _LAST
 
-TWIG 7, "CURRENT"
-CURRENT:
-.word DOLIT
-.word _wCURRENT
-.word _LAST
+HEADER ">IN", "TOIN"
+.word DOLIT, _wTIN, _LAST
 
-TWIG 3, "HLD"
-HLD:
-.word DOLIT
-.word _wHLD
-.word _LAST
+HEADER "CONTEXT", "CONTEXT"
+.word DOLIT, _wCONTEXT, _LAST
 
-TWIG 2, "UP"
-UP:
-.word DOLIT
-.word _wUP
-.word _LAST
+HEADER "CURRENT", "CURRENT"
+.word DOLIT, _wCURRENT, _LAST
 
-TWIG 2, "CP"
-CP:
-.word DOLIT
-.word _wCP
-.word _LAST
+HEADER "HLD", "HLD"
+.word DOLIT, _wHLD, _LAST
 
-TWIG 5, "STATE"
-STATE:
-.word DOLIT
-.word _wSTATE
-.word _LAST
+HEADER "UP", "UP"
+.word DOLIT, _wUP, _LAST
 
-TWIG 4, "LAST"
-TWIG 4, "LAST"
-LAST:
-.word DOLIT
-.word _wLAST
-.word _LAST
+HEADER "CP", "CP"
+.word DOLIT, _wCP, _LAST
+
+HEADER "STATE", "STATE"
+.word DOLIT, _wSTATE, _LAST
+
+HEADER "LAST", "LAST"
+.word DOLIT, _wLAST, _LAST
 

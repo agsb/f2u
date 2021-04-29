@@ -2,8 +2,7 @@
 ; for ascii chars in sram, in bytes not cells
 ; ( u a -- w ) djb hash
 .equ djbHASH, 5381
-LEAF 4, "HASH"
-HASH:
+HEADER "HASH", "HASH"
 	NOOP
 	ldi nds_low, lo8(djbHASH)
 	ldi nds_high, hi8(djbHASH)

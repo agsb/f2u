@@ -1,6 +1,6 @@
 
 /*
- *  DISCLAIMER:
+ *  DISCLAIMER"
  *
  *  Copyright © 2020, Alvaro Barcellos,
  *  Permission is hereby granted, free of charge, to any person obtaining
@@ -9,7 +9,7 @@
  *  without limitation the rights to use, copy, modify, merge, publish,
  *  distribute, sublicense, and/or sell copies of the Software, and to
  *  permit persons to whom the Software is furnished to do so, subject to
- *  the following conditions:
+ *  the following conditions"
  *
  *  The above copyright notice and this permission notice shall be
  *  included in all copies or substantial portions of the Software.
@@ -46,7 +46,7 @@
 ;
  .word  link    link to previous
  .byte  size    sizeof name OR mask 0x1F
- .ascii "name"  name, plus a pad byte with BL (0x32) if size is odd
+ .ascii "name" name, plus a pad byte with BL (0x32) if size is odd
  .word  param,  many
 
 ;----------------------------------------------------------------------
@@ -91,15 +91,6 @@
 ;
 ; any leaf must start with NOOP and end with POON
 ;
-;.macro NOOP
-;        nop
-;        nop
-;.endm
-;
-;.macro POON
-;		rjmp _EXIT
-;.endm
-
 ;----------------------------------------------------------------------
 ;
 ; it is the forth engine,
@@ -129,10 +120,9 @@
 .global forth
 forth:
 ;----------------------------------------------------------------------
-; inner interpreter, must have antoher name no LAST
+; inner interpreter, must have another name no LAST
 ;
-LEAF 4, "_LAST"
-_LAST:			
+HEADER "_LAST", "_LAST"
 ; does nothing and mark instructions code
 	NOOP
 
@@ -167,8 +157,8 @@ _ENTER:
 
 ;----------------------------------------------------------------------
 ; ok ( w -- ) ( -- W) 
-LEAF 2, ">R" 	; 	F18A push
-TOR:
+; 	F18A push
+HEADER ">R", "TOR"
 	NOOP
 	pspull wrk_low, wrk_high
 	rspush wrk_low, wrk_high
@@ -176,8 +166,8 @@ TOR:
 
 ;----------------------------------------------------------------------
 ; ok ( -- w ) ( w -- )
-LEAF 2, "R>"	;	F18A pull
-RTO:
+;	F18A pull
+HEADER "R>", "RTO"
 	NOOP
 	rspull wrk_low, wrk_high
 	pspush wrk_low, wrk_high
@@ -185,8 +175,7 @@ RTO:
 
 ;----------------------------------------------------------------------
 ; ok ( -- w ) ( w -- w )
-LEAF 2, "R@"
-RAT:
+HEADER "R@", "RAT"
 	NOOP
 	rspull wrk_low, wrk_high
 	rspush wrk_low, wrk_high
@@ -195,8 +184,7 @@ RAT:
 
 ;----------------------------------------------------------------------
 ; ok ( -- rsp)  
-LEAF 2, "RP@"
-RPAT:
+HEADER "RP@", "RPAT"
 	NOOP
 	movw wrk_low, rsp_low
 	pspush wrk_low, wrk_high
@@ -204,8 +192,7 @@ RPAT:
 
 ;----------------------------------------------------------------------
 ; ok ( rsp -- )
-LEAF 2, "RP!"
-RPTO:
+HEADER "RP!", "RPTO"
 	NOOP
 	pspull wrk_low, wrk_high
 	movw rsp_low, wrk_low
@@ -213,8 +200,7 @@ RPTO:
 
 ;----------------------------------------------------------------------
 ; ok ( -- psp )
-LEAF 2, "SP@"
-SPAT:
+HEADER "SP@", "SPAT"
 	NOOP
 	movw wrk_low, psp_low
 	pspush wrk_low, wrk_high
@@ -222,8 +208,7 @@ SPAT:
 
 ;----------------------------------------------------------------------
 ; ok ( psp -- )
-LEAF 2, "SP!"
-SPTO:
+HEADER "SP!", "SPTO"
 	NOOP
 	pspull wrk_low, wrk_high
 	movw psp_low, wrk_low
@@ -231,25 +216,25 @@ SPTO:
 
 ;----------------------------------------------------------------------
 ; ok ( -- w )
-LEAF 4, "PUSH" ;	F18A
-PUSH:
+;	F18A
+HEADER "PUSH", "PUSH"
 	NOOP
 	pspush wrk_low, wrk_high
 	POON
 
 ;----------------------------------------------------------------------
 ; ok ( w -- )
-LEAF 4, "DROP"	;	F18A drop
+;	F18A drop
+HEADER "DROP", "DROP"
 PULL:
-DROP:
 	NOOP
 	pspull wrk_low, wrk_high
 	POON
 
 ;----------------------------------------------------------------------
 ; ok ( w -- w w)
-LEAF 3, "DUP"	; 	F18A dup
-DUP:
+; 	F18A dup
+HEADER "DUP", "DUP"
 	NOOP
 	pspull wrk_low, wrk_high
 	pspush wrk_low, wrk_high
@@ -258,8 +243,7 @@ DUP:
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- w2 w1 )
-LEAF 4, "SWAP"
-SWAP:
+HEADER "SWAP", "SWAP"
 	NOOP
 	pspull wrk_low, wrk_high
 	pspull tos_low, tos_high
@@ -269,8 +253,8 @@ SWAP:
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- w1 w2 w1 )
-LEAF 4, "OVER"	; 	F18A over
-OVER:
+; 	F18A over
+HEADER "OVER", "OVER"
 	NOOP
 	pspull wrk_low, wrk_high
 	pspull tos_low, tos_high
@@ -281,8 +265,7 @@ OVER:
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 w3 -- w2 w3 w1 )
-LEAF 4, "ROT"
-ROT:
+HEADER "ROT", "ROT"
 	NOOP
 	pspull wrk_low, wrk_high
 	pspull tos_low, tos_high
@@ -294,8 +277,7 @@ ROT:
 
 ;----------------------------------------------------------------------
 ; ok ( w -- 0 | w w )
-LEAF 4, "?DUP"	;	
-NZDUP:
+HEADER "?DUP", "ZDUP"
 	NOOP
 	pspull wrk_low, wrk_high
 	pspush wrk_low, wrk_high
@@ -308,8 +290,8 @@ NZDUP_1:
 
 ;----------------------------------------------------------------------
 ;ok ( if tos = 0 branch )
-LEAF 6, "?BRANCH"	;	F18A	T=0
-QMBRANCH:
+;	F18A	T=0
+HEADER "?BRANCH", "ZBRANCH"
 	NOOP
 	pspull wrk_low, wrk_high
 	mov _work_, wrk_high
@@ -322,15 +304,13 @@ QMBRANCH:
 
 ;----------------------------------------------------------------------
 ;ok ( branch next reference )
-LEAF 5, "BRANCH"
-BRANCH:
+HEADER "BRANCH", "BRANCH"
 	NOOP
 	POON
 
 ;----------------------------------------------------------------------
 ;ok ( branch next reference )
-LEAF 4, "EXEC"	
-EXEC:
+HEADER "EXEC", "EXEC"
 	NOOP
 	pspull wrk_low, wrk_high
 	rspush wrk_low, wrk_high
@@ -338,8 +318,7 @@ EXEC:
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- w2+w1 )
-LEAF 1, "+"
-PLUS: 
+HEADER "+", "PLUS"
 	NOOP
 	clc
 	pspull wrk_low, wrk_high
@@ -351,8 +330,7 @@ PLUS:
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- w2-w1 )
-LEAF 1, "-"
-MINUS: 
+HEADER "-", "MINUS" 
 	NOOP
 	clc
 	pspull wrk_low, wrk_high
@@ -364,8 +342,7 @@ MINUS:
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- 0 | -1)
-LEAF 1, "="
-EQUAL: 
+HEADER "=", "EQUAL"
 	NOOP
 	pspull wrk_low, wrk_high
 	pspull tos_low, tos_high
@@ -376,8 +353,7 @@ EQUAL:
 
 ;----------------------------------------------------------------------
 ; nok ( w1 w2 -- 0 | -1 )
-LEAF 1, "<"
-LTHAN: 
+HEADER "<", "LTHAN"
 	NOOP
 	pspull wrk_low, wrk_high
 	pspull tos_low, tos_high
@@ -388,8 +364,7 @@ LTHAN:
 
 ;----------------------------------------------------------------------
 ; nok ( w1 w2 -- 0 | -1 )
-LEAF 1, ">"
-GTHAN: 
+HEADER ">", "GTHAN"
 	NOOP
 	pspull wrk_low, wrk_high
 	pspull tos_low, tos_high
@@ -400,8 +375,7 @@ GTHAN:
 
 ;----------------------------------------------------------------------
 ; ok ( -- -1 )
-LEAF 4, "TRUE"
-FTRUE:
+HEADER "TRUE", "FTRUE"
 	NOOP
 	ser wrk_low
 	ser wrk_high
@@ -410,8 +384,7 @@ FTRUE:
 
 ;----------------------------------------------------------------------
 ;ok ( -- 0 )
-LEAF 5, "FALSE"
-FFALSE:
+HEADER "FALSE", "FFALSE"
 	NOOP
 	eor wrk_low, wrk_low
 	eor wrk_high, wrk_high
@@ -420,8 +393,7 @@ FFALSE:
 
 ;----------------------------------------------------------------------
 ;ok ( w1 w2 -- w2 AND w1 )
-LEAF 3, "AND"
-AND:
+HEADER "AND", "AND"
 	NOOP
 	pspull wrk_low, wrk_high
 	pspull tos_low, tos_high
@@ -432,8 +404,7 @@ AND:
 
 ;----------------------------------------------------------------------
 ;ok ( w1 w2 -- w2 OR w1 )
-LEAF 2, "OR"
-OR:
+HEADER "OR", "OR"
 	NOOP
 	pspull wrk_low, wrk_high
 	pspull tos_low, tos_high
@@ -444,8 +415,7 @@ OR:
 
 ;----------------------------------------------------------------------
 ;ok ( w1 w2 -- w2 XOR w1 )
-LEAF 3, "XOR"
-XOR:
+HEADER "XOR", "XOR"
 	NOOP
 	pspull wrk_low, wrk_high
 	pspull tos_low, tos_high
@@ -456,8 +426,7 @@ XOR:
 
 ;----------------------------------------------------------------------
 ;ok ( w -- w * 2 ) same as shift left << 1, unsigned
-LEAF 2, "2*"
-SHL:
+HEADER "2*", "SHL"
 	NOOP
 	pspull wrk_low, wrk_high
 	clc
@@ -468,8 +437,7 @@ SHL:
 
 ;----------------------------------------------------------------------
 ;ok ( w -- w / 2 ) same as shift right >> 1, unsigned
-LEAF 2, "2/"
-SHR:
+HEADER "2/", "SHR"
 	NOOP
 	pspull wrk_low, wrk_high
 	clc
@@ -480,8 +448,7 @@ SHR:
 
 ;----------------------------------------------------------------------
 ;ok ( w -- w * 2 ) same as shift left << 1, signed
-LEAF 2, "2*A"
-SHLA:
+HEADER "2*A", "SHLA"
 	NOOP
 	pspull wrk_low, wrk_high
 	clc
@@ -495,8 +462,7 @@ SHLA:
 
 ;----------------------------------------------------------------------
 ;ok ( w -- w / 2 ) same as shift right >> 1, signed
-LEAF 3, "2/A"
-SHRA:
+HEADER "2/A", "SHRA"
 	NOOP
 	pspull wrk_low, wrk_high
 	clc
@@ -510,8 +476,7 @@ SHRA:
 
 ;----------------------------------------------------------------------
 ;ok ( nAnB -- nBnA ) swap bytes in a word
-LEAF 2, "><"
-ENDIAN:
+HEADER "><", "ENDIAN"
 	NOOP
 	pspull wrk_low, wrk_high
 	pspush wrk_high, wrk_low
@@ -519,8 +484,7 @@ ENDIAN:
 
 ;----------------------------------------------------------------------
 ;  os doLIT ( -- w ), from flash program memory to data stack
-LEAF 5, "DOLIT"
-DOLIT:
+HEADER "DOLIT", "DOLIT"
 	NOOP
 	rspull ips_low, ips_high
 ; load from flash program memory
@@ -531,7 +495,7 @@ DOLIT:
 
 ;----------------------------------------------------------------------
 ;  os doVAR ( -- w ) from sram memory to data stack
-LEAF 5, "DOVAR"
+HEADER "DOVAR", "DOVAR"
 	NOOP
 	rspull ips_low, ips_high
 ; load from static ram memory
@@ -541,11 +505,9 @@ LEAF 5, "DOVAR"
 	pspush wrk_low, wrk_high
 	POON
 
-DOVAR:
 ;----------------------------------------------------------------------
 ;  os doCON ( -- w ) from sram memory to data stack
-LEAF 5, "DOCON"
-DOCON:
+HEADER "DOCON", "DOCON"
 	NOOP
 	rspull ips_low, ips_high
 ; load from static ram memory
@@ -561,8 +523,7 @@ DOCON:
 
 ;----------------------------------------------------------------------
 ; ok ! to (x a -- )
-LEAF 1, "!"
-TO:
+HEADER "!", "TO"
 	NOOP
 	pspull ips_low, ips_high
 	pspull wrk_low, wrk_high
@@ -572,8 +533,7 @@ TO:
 
 ;----------------------------------------------------------------------
 ; ok C! ( c a -- )
-LEAF 1, "C!"
-CTO:
+HEADER "C!", "CTO"
 	NOOP
 	pspull ips_low, ips_high
 	pspull wrk_low, wrk_high
@@ -582,8 +542,7 @@ CTO:
 
 ;----------------------------------------------------------------------
 ; ok @ at ( a -- w )
-LEAF 1, "@"
-AT:
+HEADER "@", "AT"
 	NOOP
 	pspull ips_low, ips_high
     srload wrk_low
@@ -593,8 +552,7 @@ AT:
 
 ;----------------------------------------------------------------------
 ; ok C@ cat
-LEAF 1, "C@"
-CAT:
+HEADER "C@", "CAT"
 	NOOP
 	pspull ips_low, ips_high
     srload wrk_low
@@ -604,8 +562,7 @@ CAT:
 
 ;----------------------------------------------------------------------
 ;  ok 0>	must be signed
-LEAF 2, "0>"
-ZEROGT:
+HEADER "0>", "ZEROGT"
 	NOOP
 	pspull wrk_low, wrk_high
     sbiw wrk_low, 1
@@ -616,8 +573,7 @@ _ZEROGT1:
 
 ;----------------------------------------------------------------------
 ;  ok 0<
-LEAF 2, "0<" 
-ZEROLT:
+HEADER "0<", "ZEROLT"
 	NOOP
 	pspull wrk_low, wrk_high
     sbiw wrk_low, 1
@@ -628,8 +584,7 @@ _ZEROLT1:
 
 ;----------------------------------------------------------------------
 ; ok 0=
-LEAF 2, "0="
-ZEROEQ:
+HEADER "0=", "ZEROEQ"
 	NOOP
 	pspull wrk_low, wrk_high
 	or  wrk_high, wrk_low
@@ -640,8 +595,7 @@ _ZEROEQ1:
 
 ;----------------------------------------------------------------------
 ; ok INV
-LEAF 3, "INV"
-INV:
+HEADER "INV", "INV"
 	NOOP
 	pspull wrk_low, wrk_high
     com wrk_low
@@ -651,8 +605,7 @@ INV:
 
 ;----------------------------------------------------------------------
 ; ok NEG
-LEAF 3, "NEG"
-NEG:
+HEADER "NEG", "NEG"
 	NOOP
 	pspull wrk_low, wrk_high
     neg wrk_low
@@ -662,8 +615,7 @@ NEG:
 
 ;----------------------------------------------------------------------
 ; ok ABS
-LEAF 3, "ABS"
-ABS:
+HEADER "ABS", "ABS"
 	NOOP
 	pspull wrk_low, wrk_high
     cbr wrk_high, 7
@@ -675,8 +627,7 @@ ABS:
 ; compare cells from source++ to destination++, decrease count--
 ; ( a1 u1 a2 u2 -- flag)
 ;
-LEAF 4, "COMPARE"
-COMPARE:
+HEADER "COMPARE", "COMPARE"
 	NOOP
     ; WARNING No bound check and counter equal 0 moves nothing
 
@@ -734,8 +685,7 @@ _COMPARE_ENDS:
 ;----------------------------------------------------------------------
 ;
 ; MOVE copy cells from source++ to destination++, decrease count--
-LEAF 4, "MOVE"
-MOVE:
+HEADER "MOVE", "MOVE"
 	NOOP
     ; WARNING No bound check and counter equal 0 moves nothing
 
@@ -781,8 +731,7 @@ _MOVE2:
 ;----------------------------------------------------------------------
 ;
 ; CMOVE copy bytes from source++ to destination++, decrease count--
-LEAF 5, "CMOVE"
-CMOVE:
+HEADER "CMOVE", "CMOVE"
 	NOOP
     ; WARNING No bound check and counter equal 0 moves nothing
 
@@ -824,8 +773,7 @@ _CMOVE2:
 ;----------------------------------------------------------------------
 ;
 ; CMOVE copy bytes from source+count-- to destination+count--, decrease count--
-LEAF 5, "CMOVE>"
-CMOVEGT:
+HEADER "CMOVE>", "CMOVEGT"
 	NOOP
     ; WARNING No bound check and counter equal 0 moves nothing
 
@@ -876,8 +824,7 @@ _CMOVEGT2:
 
 ;----------------------------------------------------------------------
 ;  data space pointer align to CELL, ZZZZ
-LEAF 5, "ALIGN"
-ALLIGN:
+HEADER "ALIGN", "ALLIGN"
 	NOOP
     POON
 
@@ -885,8 +832,7 @@ ALLIGN:
 ;
 ; ok CELL is 2 ; size of a cell
 ;
-LEAF 2, "CELL"
-CELLSZ:
+HEADER "CELL", "CELLSZ"
 	NOOP
     ldi wrk_low, CELL_SIZE
     clr wrk_high
@@ -897,8 +843,7 @@ CELLSZ:
 ;
 ; ok CELL is 2, multiply by 2
 ;
-LEAF 5, "CELLS"
-CELLS:
+HEADER "CELLS", "CELLS"
 	NOOP
     rjmp SHL+2
 
@@ -906,8 +851,7 @@ CELLS:
 ;
 ; ok 
 ;
-LEAF 2, "CELL+"
-CELLPLUS:
+HEADER "CELL+", "CELLPLUS"
 	NOOP
 	pspull wrk_low, wrk_high
 	adiw wrk_low, CELL_SIZE
@@ -918,8 +862,7 @@ CELLPLUS:
 ;
 ; ok 
 ;
-LEAF 2, "CELL-"
-CELLMINUS:
+HEADER "CELL-", "CELLMINUS"
 	NOOP
 	pspull wrk_low, wrk_high
 	sbiw wrk_low, CELL_SIZE
@@ -930,8 +873,7 @@ CELLMINUS:
 ;
 ; ok 
 ;
-LEAF 2, "1+"
-ONEPLUS:
+HEADER "1+", "ONEPLUS"
 	NOOP
 	pspull wrk_low, wrk_high
 	adiw wrk_low, 1
@@ -942,8 +884,7 @@ ONEPLUS:
 ;
 ; ok 
 ;
-LEAF 2, "1-"
-ONEMINUS:
+HEADER "1-", "ONEMINUS"
 	NOOP
 	pspull wrk_low, wrk_high
 	sbiw wrk_low, 1
@@ -954,8 +895,7 @@ ONEMINUS:
 ;
 ; ok 
 ;
-LEAF 2, "2+"
-TWOPLUS:
+HEADER "2+", "TWOPLUS"
 	NOOP
 	pspull wrk_low, wrk_high
 	adiw wrk_low, 2
@@ -966,8 +906,7 @@ TWOPLUS:
 ;
 ; ok 
 ;
-LEAF 2, "2-"
-TWOMINUS:
+HEADER "2-", "TWOMINUS"
 	NOOP
 	pspull wrk_low, wrk_high
 	sbiw wrk_low, 2
@@ -978,8 +917,7 @@ TWOMINUS:
 ;
 ; ok 
 ;
-LEAF 2, "+!"
-PLUSTO:
+HEADER "+!", "PLUSTO"
 	NOOP
 	pspull ips_low, ips_high
 	pspull wrk_low, wrk_high
@@ -987,11 +925,20 @@ PLUSTO:
 	srsave wrk_high
 	POON
 
+
+;----------------------------------------------------------------------
+; fake
+HEADER  "WARM", "WARM"
+	NOOP
+	POON
+
 ;----------------------------------------------------------------------
 ;
 #include "variables.inc"
 
 #include "constants.inc"
+
+#include "cold.inc"
 
 #include "uart.inc"
 
@@ -1001,4 +948,4 @@ PLUSTO:
 
 #include "longs.inc"
 
-#include "twigs.inc"
+##include "twigs.inc"

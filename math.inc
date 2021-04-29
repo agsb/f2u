@@ -2,11 +2,10 @@
 ; 7FFF FFFF FFFF FFFF = 9.223.372.036.854.775.807
 ;----------------------------------------------------------------------
 ;
-; "mpy16u" - 16x16 Bit Unsigned Multiplication
+; "mpy16u" "- 16x16 Bit Unsigned Multiplication
 ;
 ; ok UM*
-LEAF 3, "UM*"
-UMUL:
+HEADER "UM*" "UMUL"
 	NOOP
 ;
 ;***** Subroutine Register Variables
@@ -53,7 +52,7 @@ noad8:
     dec _work_ 				;decrement loop counter
     brne m16u_1 			;if not done, loop more
 
-m16ures:
+m16ures"
 ;
 ;    move operands
 ;
@@ -63,11 +62,10 @@ m16ures:
 
 ;----------------------------------------------------------------------
 ;
-;    "div16u" - 16/16 Bit Unsigned Division
+;    "div16u" "- 16/16 Bit Unsigned Division
 ;
 ; ok UM/MOD
-LEAF 6, "UM/MOD"
-UMBYMOD:
+HEADER "UM/MOD" "UMBYMOD"
 	NOOP
 ;
 ;***** Subroutine Register Variables
@@ -118,7 +116,7 @@ d16u_3:
 	sec 			 		; set carry to be shifted into result
     rjmp d16u_1
 
-d16ures:
+d16ures"
 ;
 ;    move operands
 ;
@@ -129,11 +127,10 @@ d16ures:
 
 ;----------------------------------------------------------------------
 ;
-;    "div16s" - 16/16 Bit Signed Division
+;    "div16s" "- 16/16 Bit Signed Division
 ;
 ; ok /
-LEAF 1, "/"
-SDIV:
+HEADER "/" "SDIV"
 ;
 ;***** Subroutine Register Variables
 ;
@@ -198,7 +195,7 @@ d16s_3:
     subi    dres16sL,lo8(-1)
     sbci    dres16sH,hi8(-1)
 d16s_4:      ;    return
-d16sres:
+d16sres"
     movw nds_low, r16
     movw tos_low, r14
     rjmp CORE
@@ -219,10 +216,9 @@ d16s_6:
 
 ;----------------------------------------------------------------------
 ;
-;* "mpy16s" - 16x16 Bit Signed Multiplication
+;* "mpy16s" "- 16x16 Bit Signed Multiplication
 ; ok *
-LEAF 1, "*"
-SMUL:
+HEADER "*" "SMUL"
 ;***** Subroutine Register Variables
 
 #define mc16sL r16
@@ -263,7 +259,7 @@ m16s_2:
     ror  m16s0
     dec  mcnt16s    		;decrement counter
     brne m16s_1    		;if not done, loop more
-m16sres:
+m16sres"
     mov nds_low, r16
     rjmp CORE
 
@@ -285,7 +281,7 @@ m16sres:
 ;cycle: 20 ... 170
 ;
 
-bin16_ascii:
+bin16_ascii"
 
     ldi    r20, -1 + '0'
 _bcd1:  inc    r20

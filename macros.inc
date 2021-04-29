@@ -53,31 +53,17 @@
 ;
 .equ version, 0x0100
 
-;----------------------------------------------------------------------
-;
-; start reverse linked list
-;
-.set _LINK , 0x0
-.set _THIS , 0x0
 
 ;----------------------------------------------------------------------
 ;
-; header of leaf word in dictionary
-; must start with nop, nop
-; must end with RJMP NOOP
+;	adapted from amforth-6.9
 ;
-.macro LEAF size , name
-.set _THIS, .
-.word _LINK
-.set _LINK, _THIS 
-.byte \size
-.ascii "\name"
-;was odd, so we need to pad it
-.if ! ( \size & 1 ) 
-.byte 0x20
-.endif
-.balign 2
-.endm
+;.macro STRINGS string
+;    .word DOSLIT
+;    .byte 8f - 7f
+;7:  .ascii "\string"
+;8:  .balign 2
+;.endm
 
 ;----------------------------------------------------------------------
 ;
@@ -94,21 +80,21 @@
 
 ;----------------------------------------------------------------------
 ;
-; header of twig word in dictionary
-; hold a list of reference address
-; must end with reference to NOOP
+; start reverse linked list
 ;
-.macro TWIG size , name
-.set _THIS, .
-.word _LINK
-.set _LINK, _THIS 
-.byte \size
-.ascii "\name"
-;was odd, so we need to pad it
-.if ! ( \size & 1 ) 
-.byte 0x20
-.endif
-.balign 2
+.set link , 0x0
+;----------------------------------------------------------------------
+;
+; header of leaf word in dictionary
+;
+.macro HEADER name label
+	.p2align 1,0x00
+7:	.word link
+	.set link, 7b
+	.byte 9f - 8f
+8: 	.ascii "\name"
+9: 	.p2align 1,0x20
+	\label:
 .endm
 
 ;----------------------------------------------------------------------

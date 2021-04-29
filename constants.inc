@@ -16,7 +16,7 @@
 \n    newline (implementation dependent , e.g., CR/LF, CR, LF, LF/CR)
 \e    ESC(escape,ASCII 27)
 \q    double-quote (ASCII 34)
-\"    double-quote(ASCII 34)
+\", "   double-quote(ASCII 34)
 \\    backslash itself(ASCII 92)
 \x    〈hexdigit〉〈hexdigit〉    The resulting character is the conversion of these two hexadecimal digits. 
                             An ambiguous conditions exists if \x is not followed by two hexadecimal characters.
@@ -34,7 +34,7 @@
 : ';' [ CHAR ; ] LITERAL ;
 : '(' [ CHAR ( ] LITERAL ;
 : ')' [ CHAR ) ] LITERAL ;
-: '"' [ CHAR " ] LITERAL ;
+: '"' [ CHAR ", "] LITERAL ;
 : 'A' [ CHAR A ] LITERAL ;
 : '0' [ CHAR 0 ] LITERAL ;
 : '-' [ CHAR - ] LITERAL ;
@@ -54,7 +54,7 @@
         _ES = 27        ;   ^[    \e    escape
 
         _BL = 32        ;    space blank character
-        _QK = 34        ;   " quotation mark
+        _QK = 34        ;   ", "quotation mark
         _OP = 40        ;   ( open
         _CP = 41        ;   ) close
         _BH = 92        ;   \ backslash
@@ -72,8 +72,7 @@
 
 ;----------------------------------------------------------------------
 ;      BS = 8        ;    ^h    \b    backspace
-TWIG 2, "BS"
-BS:
+HEADER "BS", "BS"
 .word    DOLIT
 .byte    _BS
 .byte    NIL
@@ -81,8 +80,7 @@ BS:
         
 ;----------------------------------------------------------------------
 ;       LF = 10        ;    ^j    \n    line feed
-TWIG 2, "LF"
-LF:
+HEADER "LF", "LF"
 .word    DOLIT
 .byte    _LF
 .byte    NIL
@@ -90,8 +88,7 @@ LF:
 
 ;----------------------------------------------------------------------
 ;       CR = 13        ;    ^m    \r    carriage return
-TWIG 2, "CR"
-CR:
+HEADER "CR", "CR"
 .word    DOLIT
 .byte    _CR
 .byte    NIL
@@ -99,8 +96,7 @@ CR:
 
 ;----------------------------------------------------------------------
 ;       ES = 27        ;    ^[    \e    escape
-;TWIG 2, "ES"
-ES:
+;HEADER "ES", "ES"
 .word    DOLIT
 .byte    _ES
 .byte    NIL
@@ -108,8 +104,7 @@ ES:
 
 ;----------------------------------------------------------------------
 ;        BL = 32        ;    space blank character
-TWIG 2, "BL"
-BL:
+HEADER "BL", "BL"
 .word    DOLIT
 .byte    _BL
 .byte    NIL
@@ -117,8 +112,7 @@ BL:
 
 ;----------------------------------------------------------------------
 ;        TB = 9        ;    \t	horizontal tab
-TWIG 2, "TB"
-TB:
+HEADER "TB", "TB"
 .word    DOLIT
 .byte    _TB
 .byte    NIL
@@ -129,8 +123,7 @@ TB:
 ;
 ;    ROULETTE    37 numbers of roullete in european order
 ;
-TWIG 8, "ROULETTE"
-ROULETTE:
+HEADER "ROULETTE", "ROULETTE"
 .word    DOLIT
 .word   0
 .word   32

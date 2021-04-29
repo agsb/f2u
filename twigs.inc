@@ -2,115 +2,153 @@
 ;----------------------------------------------------------------------
 ;	eforth	ok 
 
+#define	X_COMPILE = 0
+#define X_INTERPRET = 1
 ;----------------------------------------------------------------------
 ;
-TWIG 7 | F_COMPILE, "COMPILE"
-COMPILE: 
+HEADER "WARMi", "WARMi", "
+.word doLIT, 0x0010, BASE, TO, doLIT, 0x0000, STATE, TO, _LAST
+
+HEADER "["	
+LBRACKET:	.word doLIT, X_COMPILE, STATE, TO, _LAST
+		
+HEADER  "]"	
+RBRACKET:	.word doLIT, X_INTERPRET, STATE, TO, _LAST
+		
+HEADER "HEX"	
+HEX:	.word doLIT, 16, BASE, TO, _LAST
+
+HEADER "DEC", "DEC:	.word doLIT, 10, BASE, TO, _LAST
+
+;----------------------------------------------------------------------
+;
+HEADER "QUIT", "QUIT: 	.word HEX, LBRACKET, 
+	  	.word RSP0, RP!, PSP0, SP!, 
+		.word STATE, AT, ZEQUAL, ZBRANCH, QUIT2, 
+		.word PPTREADY
+QUIT2:	.word REFILL, PPTINPUT, ZBRANCH, QUIT3,
+		.word DOLIT, INTERPRET, CATCH, ZDUP, ZBRANCH, QUIT3,
+		.word DUP, DOLIT, -2, LESS, ZBRANCH, QUIT5,
+		.word PPTERROR,
+QUIT5:	.word BRANCH, QUIT,
+QUIT3:	.word PPTOKEY,
+		.word BRANCH, QUIT2,
+	  	.word _LAST
+
+;----------------------------------------------------------------------
+;
+HEADER ".ready", "PPTREADY:	.word CR, 
+			.string "> ", "			.word TYPE, 
+			.word _LAST
+
+;----------------------------------------------------------------------
+;
+HEADER ".input", "PPTINPUT:	.word CR, 
+			.word _LAST
+
+;----------------------------------------------------------------------
+;
+HEADER ".error", "PPTERROR:	.word CR, 
+			.string ", "??? " 			.word TYPE, BASE, AT, TOR, DEC, DOT, TOIN, AT, DOT, RTO, BASE, TO, _LAST
+
+;----------------------------------------------------------------------
+;
+HEADER ".ok", "PPTOKEY:	.word STATE, AT, DROP,
+			.word CR,
+			.string ", "ok" 			.word TYPE, 
+			.word _LAST
+
+;----------------------------------------------------------------------
+;----------------------------------------------------------------------
+;----------------------------------------------------------------------
+;
+HEADER "COMPILE", "COMPILE"
 .word 	RTO, DUP, AT, COMMA, CELLPLUS, TOR, _LAST
 
 ;----------------------------------------------------------------------
 ;
-TWIG 7 | F_IMMEDIATE, "LITERAL"
-LITERAL: 
+HEADER "LITERAL", "LITERAL"
 .word 	COMPILE, doLIT, COMMA, _LAST
 
 ;----------------------------------------------------------------------
 ;
-TWIG 1, ","
-COMMA: 
+HEADER ",", "COMMA"
 .word   HERE, DUP, CELLPLUS, CP, TO, TO, _LAST
 
 ;----------------------------------------------------------------------
 ;
-TWIG 6, "TWOTOR"
-TWOTOR: .word SWAP, TOR, TOR, _LAST
+HEADER "TWOTOR", "TWOTOR: .word SWAP, TOR, TOR, _LAST
 
 ;----------------------------------------------------------------------
 ;
-TWIG 6, "TWORTO"
-TWORTO: .word RTO, RTO, SWAP, _LAST
+HEADER "TWORTO", "TWORTO: .word RTO, RTO, SWAP, _LAST
 
 ;----------------------------------------------------------------------
 ;
-TWIG 8, "VARIABLE"
-VARIABLE: .word   CREATE, LITERAL, 0x0000, COMMA, _LAST
+HEADER "VARIABLE", "VARIABLE: .word   CREATE, doLIT, 0x0000, COMMA, _LAST
 
 ;----------------------------------------------------------------------
 ;
-TWIG 5, "ALLOT"
-ALLOT: .word   LITERAL, CP, PLUSTO, _LAST
+HEADER "ALLOT", "ALLOT: .word   doLIT, CP, PLUSTO, _LAST
 
 ;----------------------------------------------------------------------
 ;
-TWIG 4, "HERE"
-HERE: .word   LITERAL, CP, AT, _LAST
+HEADER "HERE", "HERE: .word   doLIT, CP, AT, _LAST
 
 ;----------------------------------------------------------------------
 ;
-TWIG 3, "PAD"
-PAD: .word   HERE, LITERAL, BUFFER_SIZE, PLUS, _LAST
+HEADER "PAD", "PAD: .word   HERE, doLIT, BUFFER_SIZE, PLUS, _LAST
 
 ;----------------------------------------------------------------------
 ;
-TWIG 5, "COUNT"
-COUNT: .word   DUP, ONEPLUS, SWAP, CAT, _LAST
+HEADER "COUNT", "COUNT: .word   DUP, ONEPLUS, SWAP, CAT, _LAST
 
 ;----------------------------------------------------------------------
-TWIG 5, "KEY"
-KEY: .word   KEYQM, QMBRANCH, KEY, _LAST	
+HEADER "KEY", "KEY: .word   KEYQM, QMBRANCH, KEY, _LAST	
 
 ;----------------------------------------------------------------------
-TWIG 5, "EMIT"
-EMIT: .word   EMITQM, QMBRANCH, EMIT, _LAST	
+HEADER "EMIT", "EMIT: .word   EMITQM, QMBRANCH, EMIT, _LAST	
 
 ;----------------------------------------------------------------------
-TWIG 5, "CR"
-CREMIT: .word   CR, EMIT, LF, EMIT, _LAST		
+HEADER "CR", "CREMIT: .word   CR, EMIT, LF, EMIT, _LAST		
 
 ;----------------------------------------------------------------------
-TWIG 5, "BL"
-BLEMIT: .word   BL, EMIT, _LAST		
+HEADER "BL", "BLEMIT: .word   BL, EMIT, _LAST		
 
 ;----------------------------------------------------------------------
-TWIG 10, "IMMEDIATE?"
-IMMEDIATEQM: .word   LITERAL, F_IMMEDIATE, ZEROEQ, QMBRANCH, FTRUE, FFALSE, _LAST		
+HEADER "IMMEDIATE?", "IMMEDIATEQM: .word   doLIT, F_IMMEDIATE, ZEROEQ, QMBRANCH, FTRUE, FFALSE, _LAST		
 
 ;----------------------------------------------------------------------
 ;	COMPILE?
-TWIG 8, "COMPILE?"
-COMPILEQM: .word   LITERAL, F_COMPILE, ZEROEQ, QMBRANCH, FTRUE, FFALSE, _LAST		
+HEADER "COMPILE?", "COMPILEQM: .word   doLIT, F_COMPILE, ZEROEQ, QMBRANCH, FTRUE, FFALSE, _LAST		
 
 ;----------------------------------------------------------------------
 ;	HIDDEN?
-TWIG 7, "HIDDEN?"
-HIDDEN: .word   LITERAL, F_HIDDEN, ZEROEQ, QMBRANCH, FTRUE, FFALSE, _LAST
+HEADER "HIDDEN?", "HIDDEN: .word   doLIT, F_HIDDEN, ZEROEQ, QMBRANCH, FTRUE, FFALSE, _LAST
 
 
 ;----------------------------------------------------------------------
 ; forth2012
 ;	but only ASCII, not UTF-8 aka CHAR
 ;
-TWIG 5, "TYPE"
-TYPE: .word   DUP, QMBRANCH, _TYPE1, OVER, CAT, EMIT, ONEMINUS, SWAP, ONEPLUS, SWAP, BRANCH, DUP	
+HEADER "TYPE", "TYPE: .word   DUP, QMBRANCH, _TYPE1, OVER, CAT, EMIT, ONEMINUS, SWAP, ONEPLUS, SWAP, BRANCH, DUP	
 _TYPE1: .word   TWODROP, _LAST		
 
 ;----------------------------------------------------------------------
 ; forth2012
 ;	but only ASCII, not UTF-8 aka CHAR
 ;
-TWIG 5, "EXPECT"
-EXPECT: .word   DUP, QMBRANCH, _EXPECT1, OVER, CAT, EMIT, ONEMINUS, SWAP, ONEPLUS, SWAP, BRANCH, DUP	
+HEADER "EXPECT", "EXPECT: .word   DUP, QMBRANCH, _EXPECT1, OVER, CAT, EMIT, ONEMINUS, SWAP, ONEPLUS, SWAP, BRANCH, DUP	
 _EXPECT1: .word   TWODROP, _LAST		
 
 ;----------------------------------------------------------------------
 ;	ok	[	state is execute
-TWIG 1, "["		
-ISEXEC: .word   LITERAL, FFALSE, STATE, TO, _LAST
+HEADER "["		
+ISEXEC: .word   doLIT, FFALSE, STATE, TO, _LAST
 
 ;----------------------------------------------------------------------
 ;	ok	]	state is compile
-TWIG 1, "]"
-ISCOMP: .word   LITERAL, FTRUE, STATE, TO, _LAST
+HEADER "]", "ISCOMP: .word   doLIT, FTRUE, STATE, TO, _LAST
 
 ;----------------------------------------------------------------------
 ;
@@ -126,124 +164,103 @@ ISCOMP: .word   LITERAL, FTRUE, STATE, TO, _LAST
 
 ;----------------------------------------------------------------------
 ; OCTAL		;	0	\0	null
-TWIG 3, "OCT"
-.word  LITERAL, 0x0008, BASE, TO, _LAST
+HEADER "OCT", ".word  doLIT, 0x0008, BASE, TO, _LAST
 
 ;----------------------------------------------------------------------
 ; DECIMAL		;	0	\0	null
-TWIG 3, "DEC"
-.word  LITERAL, 0x000A, BASE, TO, _LAST
+HEADER "DEC", ".word  doLIT, 10, BASE, TO, _LAST
 
 ;----------------------------------------------------------------------
 ; HEXADECIMAL		;	0	\0	null
-TWIG 3, "HEX"
-.word  LITERAL, 0x0010, BASE, TO, _LAST
+HEADER "HEX", ".word  doLIT, 16, BASE, TO, _LAST
 
 ;----------------------------------------------------------------------
-TWIG 5, "DIGIT"
-.word LITERAL, 0x0009, OVER, LTHAN, LITERAL, 0x0007, AND, PLUS, LITERAL, '0', PLUS, _LAST
+HEADER "DIGIT", ".word doLIT, 0x0900, OVER, LTHAN, doLIT, 0x0700, AND, PLUS, doLIT, '0', PLUS, _LAST
 
 ;----------------------------------------------------------------------
-TWIG 2, "<#"
-BDIGS: .word   PAD, HLD, TO, _LAST
+HEADER "<#", "BDIGS: .word   PAD, HLD, TO, _LAST
 
 ;----------------------------------------------------------------------
-TWIG 5 | F_IMMEDIATE, "BEGIN"
-.word HERE , _LAST
+HEADER "BEGIN", ".word HERE , _LAST
 
 ;----------------------------------------------------------------------
-TWIG 5| F_IMMEDIATE, "DO"
-.word POSTPONE, TWOTOR, HERE , _LAST
+HEADER "DO", ".word POSTPONE, TWOTOR, HERE , _LAST
 
 ;----------------------------------------------------------------------
-TWIG 1, ":"
-COLON: 
+HEADER ":", "COLON"
 .word   ISCOMP, BEGIN, BL, FIND, DUP, IF, FFALSE, EQUAL, IF, EXECUTE, STACKQ, ABORTQT
-.ascii	" stack empty \"" 
+.ascii	", "stack empty \"" 
 .word   ELSE, COMMA, THEN, ELSE, _LAST
 
 ;----------------------------------------------------------------------
-TWIG 1, ";"
-.word POSTPONE, _LAST, REVEAL, POSTPONE, OPENCOL, _LAST
+HEADER ";", ".word POSTPONE, _LAST, REVEAL, POSTPONE, OPENCOL, _LAST
 
 ;----------------------------------------------------------------------
 ;	eforth	ok 
 ;
-TWIG 5, "CATCH"
-CATCH: 
+HEADER "CATCH", "CATCH"
 .word   SPAT, GTR, HANDLER, AT, GTR, RPAT, HANDLER, TO, EXECUTE, RGT, HANDLER, TO, RGT, DROP, FFALSE, _LAST
 
 ;----------------------------------------------------------------------
 ;	eforth	ok 
 ;
-TWIG 5, "THROW"
-THROW: 
+HEADER "THROW", "THROW"
 .word   HANDLER, AT, PSTO, RGT, HANDLER, TO, RGT, SWAP, RGT, SPTO, DROP, RGT, _LAST
 
 ;----------------------------------------------------------------------
 ;	eforth	ok 
 ;
-TWIG 1, "'"
-TICK: 
+HEADER "'", "TICK"
 .word   TOKEN, NAMEQ, QMBRANCH, _LAST, THROW, _LAST
 
 ;----------------------------------------------------------------------
 ;	eforth	ok 
 ;
-TWIG 4, "[COMPILE]"
-COMPILEMD: 
+HEADER "[COMPILE]", "COMPILEMD"
 .word   RGT, DUP, AT, COMMA, CELLPLUS, RGT, PLUSTO , _LAST
 
 ;----------------------------------------------------------------------
 ;	
 ;	create a word in dictionary, uses next word in TIB pointed by
 ;
-TWIG 4, "CREATE"
-.word _LAST
+HEADER "CREATE", ".word _LAST
 
 ;----------------------------------------------------------------------
 ;	
 ;	create a word in dictionary, uses next word in TIB pointed by
 ;
-TWIG 4, "DOES>"
-.word _LAST
+HEADER "DOES>", ".word _LAST
 
 ;----------------------------------------------------------------------
 ;
-TWIG 4, "CONSTANT"
-.word CREATE, COMMA, DOES, AT, _LAST
+HEADER "CONSTANT", ".word CREATE, COMMA, DOES, AT, _LAST
 
 ;----------------------------------------------------------------------
 ;
-TWIG 4, "VARIABLE"
-.word CREATE, LITERAL, 0x0000, COMMA, _LAST
+HEADER "VARIABLE", ".word CREATE, doLIT, 0x0000, COMMA, _LAST
 
 ;-----------------------------------------------------------------
 ; eforth
 ;
-TWIG 4, "doVAR"
-doVAR: 
+HEADER "doVAR", "doVAR"
 .word   _LAST
 
 ;----------------------------------------------------------------------
 ; eforth
 ;
-TWIG 4, "doVOC"
-doVOC: 
+HEADER "doVOC", "doVOC"
 .word   _LAST
 
 ;----------------------------------------------------------------------
 ; eforth
 ;
-TWIG 4, "doUSER"
-doUSER: 
+HEADER "doUSER", "doUSER"
 .word   _LAST
 
 ;----------------------------------------------------------------------
 ; eforth
 ;
-TWIG 4, "FORTH"
-FORTH: 
+HEADER "FORTH", "FORTH"
 .word   _LAST
 
 

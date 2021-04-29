@@ -12,8 +12,7 @@
 ;    92FF C206 0ECD 9361 2823
 ;    BE0B B303 6462 0E4C 3D24
 ;
-LEAF 3, "_RND_"
-RND:
+HEADER "_RND_", "RND"
 	NOOP
 ;    load seed
     lds wrk_low, _wRANDW

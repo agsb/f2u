@@ -5,8 +5,7 @@
 ;
 ;    defaults to 9600, 8N1, no control
 ;
-LEAF 3, "IO!"
-IOYO:
+HEADER "IO!", "IOYO"
     NOOP
     clr wrk_low
     out 0x20, wrk_low
@@ -26,8 +25,7 @@ IOYO:
 ;
 ; ok non block, test if can receive a char ( -- 0x00 | ch 0xFF )
 ;
-LEAF 4, "KEY?"
-KEYQM:
+HEADER "KEY?", "KEYQM"
 RXAT:
     NOOP
     sbis 0xb, 7
@@ -41,8 +39,7 @@ RXAT:
 ;
 ; ok non block, test if can send a char ( ch -- ch 0x00 | 0xFF )
 ;
-LEAF 5, "EMIT?"
-EMITQM:
+HEADER "EMIT?", "EMITQM"
 TXTO:
     NOOP
     sbis 0xb, 5
@@ -55,8 +52,7 @@ TXTO:
 ;
 ; ok non block, test if can send a char ( ch -- ch 0x00 | 0xFF )
 ;
-LEAF 6, "MILLIS"
-MILLIS:
+HEADER "MILLIS", "MILLIS"
 	NOOP
 	pspush tmr_low, tmr_high
 	POON

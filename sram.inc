@@ -7,6 +7,9 @@ variables:
 _wNULL:	 .word 0	  ; 16 bit NULL must be zero.
 _wRANDW: .word 0      ; 16 bit seed for pseudo random recursive
 
+_wRSP0: .word 1		  ; address of top return stack
+_wPSP0: .word 1		  ; address of top parameter stack
+
 _wHLD: .word 1        ; pointer to buffer for number convertions
 _wTIN: .word 1        ; >IN     next character to be interpreted in TIB
 _wTIH: .word 1        ; #TIB    number of characters in TIB
