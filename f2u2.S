@@ -386,8 +386,8 @@ HEADER "TRUE", "FTRUE"
 ;ok ( -- 0 )
 HEADER "FALSE", "FFALSE"
 	NOOP
-	eor wrk_low, wrk_low
-	eor wrk_high, wrk_high
+	clr wrk_low
+	clr wrk_high
 	pspush wrk_low, wrk_high
 	POON
 

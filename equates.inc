@@ -9,16 +9,16 @@
     __SP_L__ = 0x3d
 
 ;----------------------------------------------------------------------;
-	;TCCR0	= 0x33
-	;TCNT0	= 0x32
-	;TIMSK	= 0x39
+    ;TCCR0    = 0x33
+    ;TCNT0    = 0x32
+    ;TIMSK    = 0x39
 
 ;----------------------------------------------------------------------;
 ; assign stacks address for atmega8
 ;
-    SRAM_END =   0x45F	; SRAM from AVR manual
-    SRAM_START = 0x060 	; SRAM from AVR manual
-    USER_START = 0x0C0	; still to be fixed at endings
+    SRAM_END =   0x45F    ; SRAM from AVR manual
+    SRAM_START = 0x060    ; SRAM from AVR manual
+    USER_START = 0x0C0    ; still to be fixed at endings
 
 ;----------------------------------------------------------------------
 ; stacks and buffers
@@ -40,11 +40,11 @@
 ; forth all grows upwards
     SPU_TOP = SRAM_END 
     PAD_TOP = SPU_TOP - PAD_SIZE
-	TIB_TOP = PAD_TOP - TIB_SIZE
-	PSP_TOP = TIB_TOP - PSP_SIZE
-	RSP_END = PSP_TOP - RSP_SIZE
+    TIB_TOP = PAD_TOP - TIB_SIZE
+    PSP_TOP = TIB_TOP - PSP_SIZE
+    RSP_TOP = PSP_TOP - RSP_SIZE
 ;----------------------------------------------------------------------
-; at last 256 SRAM bytes, rests 16 words for exclusive variables
+; at last 256 SRAM bytes, rests 16 bytes for 8 exclusive variables
 
 
 ;----------------------------------------------------------------------
@@ -68,12 +68,8 @@
     CELL_SIZE = 2
 
 ;---------------------------------------------------------------------
-;	status register ZERO bit  
+;    status register ZERO bit  
 
-	BIT_ZERO = 1
-
-;---------------------------------------------------------------------
-; default init cell, in dictionary ????
-;
-    _INIT = 200
+	BIT_CARRY = 0
+    BIT_ZERO = 1
 

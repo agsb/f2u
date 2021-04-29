@@ -35,17 +35,17 @@
 #define psp_low r26
 #define psp_high r27
 
-; work registers
-#define wrk_low r24
-#define wrk_high r25
-
 ; second value parameter stack
-#define nds_low r22
-#define nds_high r23
+#define nds_low r20
+#define nds_high r21
 
 ; fist value parameter stack
-#define tos_low r20
-#define tos_high r21
+#define tos_low r22
+#define tos_high r23
+
+; work register
+#define wrk_low r24
+#define wrk_high r25
 
 ;----------------------------------------------------------------------
 ;
@@ -71,7 +71,6 @@
 ;
 .macro NOOP
 	nop
-	nop
 .endm
 
 .macro POON
@@ -82,28 +81,29 @@
 ;
 ; start reverse linked list
 ;
-.set link , 0x0
+.set _link_ , 0x0
 ;----------------------------------------------------------------------
 ;
 ; header of leaf word in dictionary
 ;
 .macro HEADER name label
+hd_\label:
 	.p2align 1,0x00
-7:	.word link
-	.set link, 7b
+7:	.word _link_
+	.set _link_, 7b
 	.byte 9f - 8f
 8: 	.ascii "\name"
 9: 	.p2align 1,0x20
-	\label:
+\label:
 .endm
 
 ;----------------------------------------------------------------------
 ; little endian !!! AVR
 ;
-;	Z (r31:r30) is used as generic address pointer
-;	Y (r29:r28) is used as return stack pointer
-;	X (r27:r26) is used as data/parameter stack pointer
-;	W (r25:r24) is used as generic work register
+;	A	Z (r31:r30) is used as generic address pointer
+;	R	Y (r29:r28) is used as return stack pointer	
+;	S	X (r27:r26) is used as data/parameter stack pointer
+;	W	W (r25:r24) is used as generic work register
 ;
 ;----------------------------------------------------------------------
 ;	push into return stack, increments pointer
