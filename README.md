@@ -204,10 +204,10 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
   
 # Notes
 
-  1. Primitives (Leaf) routine does not do any call. Compound (Twig) routines do.
-  2. No bounds check, none.
-  3. COMPARE compare bytes and return FALSE or TRUE, only;
-  4. MOVE move bytes, "from to" upwards, only;
+  1. primitives (Leaf) routine does not do any call. Compound (Twig) routines do.
+  2. no bounds check, none.
+  3. compare bytes: COMPARE return FALSE or TRUE, only;
+  4. move bytes: CMOVE upwards, CMOVE> downwards;
   5. word names lenght can be 1 to 15, padded with space (0x20);
 
 
