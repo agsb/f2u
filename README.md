@@ -101,34 +101,35 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     ;
     ; WARNING: this inner still only works for program memory (flash) 
     ; 
-    ; does nothing and mark as primitive
     _LAST:
-      nop
-      nop
+      ; does nothing and mark as primitive
+     nop
       
     _EXIT:
-    ; pull ip from rsp
+      ; pull ip from rsp
      rsp_pull ip_low, ip_high
 
     _NEXT:
-    ; load w with contents of cell at ip and auto increments ip
+      ; load w with contents of cell at ip and auto increments ip
      lpm wrk_low, Z+
      lpm wrk_high, Z+
-
-    _EXEC:
-    ; if zero then is a exec
-     mov r0, r25
-     or  r0, r24
-     brbc 1, _ENTER
-    ; jump to
-     ijmp
-    
-    _ENTER:
-    ; else is a reference
-    ; push ip into rsp
+     
+      ; if zero then is a exec
+     cp r25, r24
+     brbs 1, _EXEC
+     
+    _ENTER
+      ; else is a reference
+      ; push ip into rsp
      rsp_push ip_low, ip_high
      movw ip_low, wrk_low
-     rjmp _NEXT
+     rjmp _NEXT brbc 1, 
+    
+    _EXEC
+      ; jump to
+     ijmp
+    
+    
 
 ; the dicionary, inside PFA 
   
@@ -205,10 +206,11 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
 # Notes
 
   1. primitives (Leaf) routine does not do any call. Compound (Twig) routines do.
-  2. no bounds check, none.
-  3. compare bytes: COMPARE return FALSE or TRUE, only;
-  4. move bytes: CMOVE upwards, CMOVE> downwards;
-  5. word names lenght can be 1 to 15, padded with space (0x20);
+  2. index routines counts downwards until 0, ever, exact as [ for ( n ; n != 0 ; n-- ) ]
+  3. no bounds check, none.
+  4. compare bytes: COMPARE return FALSE or TRUE, only;
+  5. move bytes: CMOVE upwards, CMOVE> downwards;
+  6. word names lenght can be 1 to 15, padded with space (0x20);
 
 
 # Notation
