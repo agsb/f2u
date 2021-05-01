@@ -96,7 +96,7 @@ HEADER "CR", "CR"
 
 ;----------------------------------------------------------------------
 ;       ES = 27        ;    ^[    \e    escape
-;HEADER "ES", "ES"
+HEADER "ESC", "ESC"
 .word    DOLIT
 .byte    _ES
 .byte    NIL

@@ -136,18 +136,19 @@ _NEXT:
 	lpm wrk_high, Z+
 
 ; if zero then is a exec 
-_EXEC:
 	cp wrk_low, wrk_high
-	brbc BIT_ZERO, _ENTER
-	ijmp
+	brbs BIT_ZERO, _EXEC
 
 ; else is a reference
-; push ip into rsp
 _ENTER:			
 	rspush ips_low, ips_high
+
+; push ip into rsp
 	movw ips_low, wrk_low
 	rjmp _NEXT
 
+_EXEC:
+	ijmp
 
 ;----------------------------------------------------------------------
 ; 
@@ -694,7 +695,7 @@ _COMPARE_ENDS:
 ;----------------------------------------------------------------------
 ;
 ; CMOVE copy bytes from source++ to destination++, decrease count--
-HEADER "CMOVE", "CMOVE"
+HEADER "CMOVE", "MOVE"
 	NOOP
     ; WARNING No bound check and counter equal 0 moves nothing
 
@@ -707,6 +708,10 @@ HEADER "CMOVE", "CMOVE"
     ; pull counter
 	pspull wrk_low, wrk_high
 
+	; test if zero
+	cp wrk_low, wrk_high
+	brbs BIT_ZERO, _CMOVE_ENDS
+
 	; push psp
 	rspush psp_low, psp_high
 
@@ -716,23 +721,66 @@ HEADER "CMOVE", "CMOVE"
     ; no offset
 
 _CMOVE_LOOP:
-	; test if zero
-	cp wrk_low, wrk_high
-	brbs BIT_ZERO, _CMOVE_ENDS
 
     ; move a byte
     ld _work_, X+
     st Z+, _work_
     
     ; decrease counter
-
 	subi wrk_low, 1
 	sbci wrk_high, 0
 
     ; again
-    rjmp _CMOVE_LOOP
+	brbc BIT_ZERO, _CMOVE_LOOP
 
 _CMOVE_ENDS:
+	; pull psp
+	rspull psp_low, psp_high
+	POON
+
+;----------------------------------------------------------------------
+;
+; CMOVE> copy bytes from source+count-- to destination--, decrease count--
+HEADER "CMOVE>", "CMOVEGT"
+	NOOP
+    ; WARNING No bound check and counter equal 0 moves nothing
+
+	; pull origin
+	pspull tos_low, tos_high
+	
+	; pull destination
+	pspull ips_low, ips_high
+
+    ; pull counter
+	pspull wrk_low, wrk_high
+
+	; test if zero
+	cp wrk_low, wrk_high
+	brbs BIT_ZERO, _CMOVE_ENDS
+
+	; push psp
+	rspush psp_low, psp_high
+
+	; copy orign
+	movw psp_low, tos_low
+
+    ; do offset
+	add ips_low, wrk_low
+	adc ips_high, wrk_high
+	add psp_low, wrk_low
+	adc psp_high, wrk_high
+
+_CMOVEGT_LOOP:
+    ; move a byte
+    ld _work_, -X
+    st -Z, _work_
+    
+    ; decrease counter
+	subi wrk_low, 1
+	sbci wrk_high, 0
+	brbc BIT_ZERO, _CMOVEGT_LOOP
+
+_CMOVEGT_ENDS:
 	; pull psp
 	rspull psp_low, psp_high
 	POON
@@ -741,7 +789,11 @@ _CMOVE_ENDS:
 ;  data space pointer align to CELL, atmega is always
 HEADER "ALIGN", "ALLIGN"
 	NOOP
-    POON
+	pspull wrk_low, wrk_high
+	adiw wrk_low, 1
+	and wrk_low, 0xFE
+	pspush wrk_low, wrk_high
+	POON
 
 ;----------------------------------------------------------------------
 ;
@@ -863,4 +915,6 @@ HEADER  "WARM", "WARM"
 
 #include "longs.inc"
 
-##include "twigs.inc"
+;#include "twigs.inc"
+
+#include "efesp32.inc"

@@ -1,154 +1,173 @@
 
 ;----------------------------------------------------------------------
-;	eforth	ok 
+;	from various forths
+;	prime eforth	
+;
+;	this is a already "COMPILED" dictionary
+;
 
-#define	X_COMPILE = 0
-#define X_INTERPRET = 1
+#define	X_COMPILE = 1
+#define X_INTERPRET = 0
 ;----------------------------------------------------------------------
 ;
-HEADER "WARMi", "WARMi", "
-.word doLIT, 0x0010, BASE, TO, doLIT, 0x0000, STATE, TO, _LAST
+HEADER "WARM", "WARM"
+.word DOLIT, 16, BASE, TO, DOLIT, 0, STATE, TO, COLD _LAST
 
-HEADER "["	
-LBRACKET:	.word doLIT, X_COMPILE, STATE, TO, _LAST
+HEADER "[", "LBRACKET"
+.word DOLIT, X_COMPILE, STATE, TO, _LAST
 		
-HEADER  "]"	
-RBRACKET:	.word doLIT, X_INTERPRET, STATE, TO, _LAST
+HEADER  "]", "RBRACKET"
+.word DOLIT, X_INTERPRET, STATE, TO, _LAST
 		
-HEADER "HEX"	
-HEX:	.word doLIT, 16, BASE, TO, _LAST
+HEADER "HEX", "HEX"
+.word DOLIT, 16, BASE, TO, _LAST
 
-HEADER "DEC", "DEC:	.word doLIT, 10, BASE, TO, _LAST
+HEADER "DEC", "DEC"
+.word DOLIT, 10, BASE, TO, _LAST
 
-;----------------------------------------------------------------------
-;
-HEADER "QUIT", "QUIT: 	.word HEX, LBRACKET, 
-	  	.word RSP0, RP!, PSP0, SP!, 
-		.word STATE, AT, ZEQUAL, ZBRANCH, QUIT2, 
-		.word PPTREADY
-QUIT2:	.word REFILL, PPTINPUT, ZBRANCH, QUIT3,
-		.word DOLIT, INTERPRET, CATCH, ZDUP, ZBRANCH, QUIT3,
-		.word DUP, DOLIT, -2, LESS, ZBRANCH, QUIT5,
-		.word PPTERROR,
-QUIT5:	.word BRANCH, QUIT,
-QUIT3:	.word PPTOKEY,
-		.word BRANCH, QUIT2,
-	  	.word _LAST
+HEADER "2>R", "TWOTOR"
+.word SWAP, TOR, TOR, _LAST
 
-;----------------------------------------------------------------------
-;
-HEADER ".ready", "PPTREADY:	.word CR, 
-			.string "> ", "			.word TYPE, 
-			.word _LAST
+HEADER "2R>", "TWORTO"
+.word RTO, RTO, SWAP, _LAST
 
-;----------------------------------------------------------------------
-;
-HEADER ".input", "PPTINPUT:	.word CR, 
-			.word _LAST
+HEADER "VARIABLE", "VARIABLE"
+.word   CREATE, COMPILE, DOLIT, 0x0000, COMMA, _LAST
 
-;----------------------------------------------------------------------
-;
-HEADER ".error", "PPTERROR:	.word CR, 
-			.string ", "??? " 			.word TYPE, BASE, AT, TOR, DEC, DOT, TOIN, AT, DOT, RTO, BASE, TO, _LAST
-
-;----------------------------------------------------------------------
-;
-HEADER ".ok", "PPTOKEY:	.word STATE, AT, DROP,
-			.word CR,
-			.string ", "ok" 			.word TYPE, 
-			.word _LAST
-
-;----------------------------------------------------------------------
-;----------------------------------------------------------------------
-;----------------------------------------------------------------------
-;
-HEADER "COMPILE", "COMPILE"
-.word 	RTO, DUP, AT, COMMA, CELLPLUS, TOR, _LAST
-
-;----------------------------------------------------------------------
-;
+; : LITERAL COMPILE DOLIT , ; IMMEDIATE
 HEADER "LITERAL", "LITERAL"
-.word 	COMPILE, doLIT, COMMA, _LAST
+.word COMPILE, DOLIT, COMMA, _LAST
+
+HEADER "PAD", "PAD"
+.word   PAD, AT, _LAST
+
+HEADER "TIB", "TIB"
+.word   TIB, AT, _LAST
+
+HEADER "ALLOT", "ALLOT"
+.word   CP, PLUSTO, _LAST
+
+HEADER "HERE", "HERE"
+.word   CP, AT, _LAST
+
+HEADER "," "COMMA"
+.word	HERE, TO, CELL, ALLOT, _LAST
+
+HEADER "<MARK" "LMARK"
+.word HERE, _LAST
+
+HEADER "<RESOLVE" "LRESOLVE"
+.word COMMA, LAST
+
+HEADER ">MARK" "GMARK"
+.word HERE, 0, COMMA, _LAST
+
+HEADER ">RESOLVE" "GRESOLVE"
+.word HERE, SWAP, CELL, MINUS,  TO, _LAST
+
+HEADER "COMPILE" "COMPILE"
+.word TICK, COMMA, _LAST
+
+; : IF COMPILE ?BRANCH >MARK ; IMMEDIATE
+HEADER "IF", "IF"
+.word COMPILE, ZBRANCH, GMARK, _LAST
+
+HEADER "ELSE", "ELSE"
+.word COMPILE, BRANCH, GMARK, SWAP, GRESOLVE, _LAST 
+
+: THEN >RESOLVE ; IMMEDIATE
+HEADER "THEN", "THEN"
+.word GRESOLVE, _LAST 
+
+; : BEGIN <MARK ; IMMEDIATE
+HEADER "BEGIN", "BEGIN"
+.word LMARK, _LAST
+
+; : AGAIN COMPILE BRANCH <RESOLVE ; IMMEDIATE
+HEADER "AGAIN", "AGAIN"
+.word COMPILE, BRANCH, LRESOLVE, _LAST
+
+; : UNTIL COMPILE ?BRANCH <RESOLVE ; IMMEDIATE
+HEADER "UNTIL", "UNTIL"
+.word COMPILE, ZBRANCH, LRESOLVE, _LAST
+
+; : FOR COMPILE >R <MARK ; IMMEDIATE
+HEADER "FOR", "FOR"
+.word COMPILE, TOR, LMARK, _LAST
+
+: NEXT COMPILE NEXT <RESOLVE ; IMMEDIATE
+HEADER "NEXT", "NEXT"
+.word COMPILE, DONEXT, LRESOLVE, _LAST
+
+; PASSPARSE
+HEADER "CPARSE", "CPARSE"
+.word  	OVER, OVER, ONEPLUS, ROT, CAT, ROT, EQUAL,  _LAST
+
+; PARSE (c1 a1 -- ca u)
+HEADER "PARSE", "PARSE"
+.word  	PASSPARSE, INV, ZBRANCH, PARSE,	ONEMINUS, DUP, ROT, SWAP,
+PARSE2: 
+.word 	PASSPARSE, ZBRANCH, PARSE2, ONEMINUS, SWAP, DROP, OVER, MINUS, _LAST
+	 
+;----------------------------------------------------------------------
+; : ELSE [COMPILE] AHEAD SWAP [COMPILE] THEN ; IMMEDIATE
+HEADER "ELSE", "ELSE"
+.word  
+
+: WHILE [COMPILE] IF SWAP ; IMMEDIATE
+: WHEN [COMPILE] IF OVER ; IMMEDIATE
+: REPEAT [COMPILE] AGAIN >RESOLVE ; IMMEDIATE
+: RECURSE LAST @ NAME> , ; IMMEDIATE
+
 
 ;----------------------------------------------------------------------
-;
-HEADER ",", "COMMA"
-.word   HERE, DUP, CELLPLUS, CP, TO, TO, _LAST
+HEADER "'" "TICK"
+.word	zzzzzz, _LAST
+
+HEADER "[COMPILE]", "DOCOMPILE"
+.word	TICK, COMMA, _LAST
+
+HEADER "PARSE", "PARSE"
+.word  TOIN, DUP, ZBRANCH, DUP, @, DUP, 
 
 ;----------------------------------------------------------------------
-;
-HEADER "TWOTOR", "TWOTOR: .word SWAP, TOR, TOR, _LAST
+HEADER "KEY", "KEY"
+.word   KEYQM, QMBRANCH, KEY, _LAST	
 
 ;----------------------------------------------------------------------
-;
-HEADER "TWORTO", "TWORTO: .word RTO, RTO, SWAP, _LAST
+HEADER "EMIT", "EMIT"
+.word   EMITQM, QMBRANCH, EMIT, _LAST	
 
 ;----------------------------------------------------------------------
-;
-HEADER "VARIABLE", "VARIABLE: .word   CREATE, doLIT, 0x0000, COMMA, _LAST
+HEADER "CR", "CREMIT"
+.word   CR, EMIT, LF, EMIT, _LAST		
 
 ;----------------------------------------------------------------------
-;
-HEADER "ALLOT", "ALLOT: .word   doLIT, CP, PLUSTO, _LAST
+HEADER "BL", "BLEMIT"
+.word   BL, EMIT, _LAST		
 
 ;----------------------------------------------------------------------
-;
-HEADER "HERE", "HERE: .word   doLIT, CP, AT, _LAST
-
-;----------------------------------------------------------------------
-;
-HEADER "PAD", "PAD: .word   HERE, doLIT, BUFFER_SIZE, PLUS, _LAST
-
-;----------------------------------------------------------------------
-;
-HEADER "COUNT", "COUNT: .word   DUP, ONEPLUS, SWAP, CAT, _LAST
-
-;----------------------------------------------------------------------
-HEADER "KEY", "KEY: .word   KEYQM, QMBRANCH, KEY, _LAST	
-
-;----------------------------------------------------------------------
-HEADER "EMIT", "EMIT: .word   EMITQM, QMBRANCH, EMIT, _LAST	
-
-;----------------------------------------------------------------------
-HEADER "CR", "CREMIT: .word   CR, EMIT, LF, EMIT, _LAST		
-
-;----------------------------------------------------------------------
-HEADER "BL", "BLEMIT: .word   BL, EMIT, _LAST		
-
-;----------------------------------------------------------------------
-HEADER "IMMEDIATE?", "IMMEDIATEQM: .word   doLIT, F_IMMEDIATE, ZEROEQ, QMBRANCH, FTRUE, FFALSE, _LAST		
+HEADER "IMMEDIATE?", "IMMEDIATEQM"
+.word   DOLIT, F_IMMEDIATE, ZEROEQ, QMBRANCH, FTRUE, FFALSE, _LAST		
 
 ;----------------------------------------------------------------------
 ;	COMPILE?
-HEADER "COMPILE?", "COMPILEQM: .word   doLIT, F_COMPILE, ZEROEQ, QMBRANCH, FTRUE, FFALSE, _LAST		
+HEADER "COMPILE?", "COMPILEQM"
+.word   DOLIT, F_COMPILE, ZEROEQ, QMBRANCH, FTRUE, FFALSE, _LAST		
 
 ;----------------------------------------------------------------------
 ;	HIDDEN?
-HEADER "HIDDEN?", "HIDDEN: .word   doLIT, F_HIDDEN, ZEROEQ, QMBRANCH, FTRUE, FFALSE, _LAST
-
-
-;----------------------------------------------------------------------
-; forth2012
-;	but only ASCII, not UTF-8 aka CHAR
-;
-HEADER "TYPE", "TYPE: .word   DUP, QMBRANCH, _TYPE1, OVER, CAT, EMIT, ONEMINUS, SWAP, ONEPLUS, SWAP, BRANCH, DUP	
-_TYPE1: .word   TWODROP, _LAST		
+HEADER "HIDDEN?", "HIDDEN"
+.word   DOLIT, F_HIDDEN, ZEROEQ, QMBRANCH, FTRUE, FFALSE, _LAST
 
 ;----------------------------------------------------------------------
 ; forth2012
 ;	but only ASCII, not UTF-8 aka CHAR
 ;
-HEADER "EXPECT", "EXPECT: .word   DUP, QMBRANCH, _EXPECT1, OVER, CAT, EMIT, ONEMINUS, SWAP, ONEPLUS, SWAP, BRANCH, DUP	
-_EXPECT1: .word   TWODROP, _LAST		
-
-;----------------------------------------------------------------------
-;	ok	[	state is execute
-HEADER "["		
-ISEXEC: .word   doLIT, FFALSE, STATE, TO, _LAST
-
-;----------------------------------------------------------------------
-;	ok	]	state is compile
-HEADER "]", "ISCOMP: .word   doLIT, FTRUE, STATE, TO, _LAST
+HEADER "TYPE", "TYPE"
+.word   DUP, QMBRANCH, _TYPE1, OVER, CAT, EMIT, ONEMINUS, SWAP, ONEPLUS, SWAP, BRANCH, DUP	
+_TYPE1:
+.word   TWODROP, _LAST		
 
 ;----------------------------------------------------------------------
 ;
@@ -162,29 +181,14 @@ HEADER "]", "ISCOMP: .word   doLIT, FTRUE, STATE, TO, _LAST
 		DUO = 12
 		HEX = 16
 
-;----------------------------------------------------------------------
-; OCTAL		;	0	\0	null
-HEADER "OCT", ".word  doLIT, 0x0008, BASE, TO, _LAST
 
 ;----------------------------------------------------------------------
-; DECIMAL		;	0	\0	null
-HEADER "DEC", ".word  doLIT, 10, BASE, TO, _LAST
+HEADER "DIGIT", "DIGIT"
+.word DOLIT, 0x0900, OVER, LTHAN, DOLIT, 0x0700, AND, PLUS, DOLIT, '0', PLUS, _LAST
 
 ;----------------------------------------------------------------------
-; HEXADECIMAL		;	0	\0	null
-HEADER "HEX", ".word  doLIT, 16, BASE, TO, _LAST
-
-;----------------------------------------------------------------------
-HEADER "DIGIT", ".word doLIT, 0x0900, OVER, LTHAN, doLIT, 0x0700, AND, PLUS, doLIT, '0', PLUS, _LAST
-
-;----------------------------------------------------------------------
-HEADER "<#", "BDIGS: .word   PAD, HLD, TO, _LAST
-
-;----------------------------------------------------------------------
-HEADER "BEGIN", ".word HERE , _LAST
-
-;----------------------------------------------------------------------
-HEADER "DO", ".word POSTPONE, TWOTOR, HERE , _LAST
+HEADER "<#", "BDIGS"
+.word   PAD, HLD, TO, _LAST
 
 ;----------------------------------------------------------------------
 HEADER ":", "COLON"
@@ -193,7 +197,8 @@ HEADER ":", "COLON"
 .word   ELSE, COMMA, THEN, ELSE, _LAST
 
 ;----------------------------------------------------------------------
-HEADER ";", ".word POSTPONE, _LAST, REVEAL, POSTPONE, OPENCOL, _LAST
+HEADER ";", "SEMMI"
+.word POSTPONE, _LAST, REVEAL, POSTPONE, OPENCOL, _LAST
 
 ;----------------------------------------------------------------------
 ;	eforth	ok 
@@ -223,21 +228,25 @@ HEADER "[COMPILE]", "COMPILEMD"
 ;	
 ;	create a word in dictionary, uses next word in TIB pointed by
 ;
-HEADER "CREATE", ".word _LAST
+HEADER "CREATE", "CREATE"
+.word _LAST
 
 ;----------------------------------------------------------------------
 ;	
 ;	create a word in dictionary, uses next word in TIB pointed by
 ;
-HEADER "DOES>", ".word _LAST
+HEADER "DOES>", "DOES>"
+.word _LAST
 
 ;----------------------------------------------------------------------
 ;
-HEADER "CONSTANT", ".word CREATE, COMMA, DOES, AT, _LAST
+HEADER "CONSTANT", "CONSTANT"
+.word CREATE, COMMA, DOES, AT, _LAST
 
 ;----------------------------------------------------------------------
 ;
-HEADER "VARIABLE", ".word CREATE, doLIT, 0x0000, COMMA, _LAST
+HEADER "VARIABLE", "VARIABLE"
+.word CREATE, DOLIT, 0x0000, COMMA, _LAST
 
 ;-----------------------------------------------------------------
 ; eforth

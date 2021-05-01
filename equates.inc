@@ -32,6 +32,7 @@
     RSP_SIZE = 40 ; 20 cells, minimum 24 words
     TIB_SIZE = 80 ; minimum 80 bytes
     PAD_SIZE = 80 ; minumum 84 bytes
+    HLD_SIZE = 16 ; minumum 84 bytes
 
 ; PAD will share SPU space
 
@@ -43,6 +44,8 @@
     TIB_TOP = PAD_TOP - TIB_SIZE
     PSP_TOP = TIB_TOP - PSP_SIZE
     RSP_TOP = PSP_TOP - RSP_SIZE
+    HLD_TOP = RSP_TOP - HLD_SIZE
+
 ;----------------------------------------------------------------------
 ; at last 256 SRAM bytes, rests 16 bytes for 8 exclusive variables
 
