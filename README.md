@@ -5,21 +5,19 @@
 # *"To master riding bicycles you have do ride bicycles"*
 
 This is a evolution from what I learning with u2forth, ATMEGA8 gcc assembler and forth interpreters from eforth, avr-forth, gforth, flashforth, etc
-
 For now:
 
-  The inner interpreter is done and is almost effcient.
-  The primitive words are done, as like eforth set.
+  The inner interpreter is done and is veryeffcient.
+  The primitive words are done, as minimal set from eforth plus some extras.
   
-  Now I'm at easten egg of forth:
-    have sources of words as : word ~~~ ; and need a forth done to compile or
-    have sources of words compiled with a forth and need use same engine
+  Now I'm at easter egg of forth:
+    I have sources of words as : word ~~~ ; and I need a forth done to compile or
+    I have sources of words compiled with some forth and need use same forth engine
 
 # Introduction
 
   I want a forth for a Atmega8 MCU, with harvard architeture, 8k program flash memory, 1k static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, but (R16 to R31) could be used as 16 bits.
-  I want a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a CPU family.
-  I want a a outer interpreter and compound words independent of any specific CPU family, like a table with rellocable references.
+  But there is no need for speed, because I want a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a CPU family and a outer interpreter and compound words independent of any specific CPU family, like a imutable list with rellocable references.
 
 # References
 
@@ -191,24 +189,16 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
       
 # Specifics
  
- harvard memory architeture;
- 
- using internal clock of 8MHz;
- 
- uart at 9600, 8N1, asynchronous;
- 
- include timer at 1ms with 16 bits counter  ~ 65 s;
- 
- include watch dog at ~ 2.0 s;
- 
- include pseudo 16bit random generator; 
- 
- include adapted djb hash generator for 16bits;
- 
- all 8bits and 16bits math from AVR200 manual;
- 
- uses MiniCore and optboot;
- 
+ For ATmega8 MCU specifics plan, using 
+    a MiniCore and optboot;
+    a internal clock of 8MHz and 
+    a uart at 9600, 8N1, asynchronous;
+    a timer at 1ms with 16 bits counter  ~ 65 s;
+    a watch dog at ~ 2.0 s;
+    a pseudo 16bit random generator; 
+    a adapted djb hash generator for 16bits;
+    all 8bits and 16bits math from AVR200 manual;
+   
  **still do not write to flash.**
     
 # Decisions
@@ -223,7 +213,6 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
   four bits flags (IMMEDIATE, COMPILE, HIDEN, TOGGLE) per word;
   numbers are signed two-complement;
   
-  
 # Notes
 
   1. primitives (Leaf) routine does not do any call. Compound (Twig) routines do.
@@ -232,7 +221,6 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
   4. compare bytes: COMPARE return FALSE or TRUE, only;
   5. move bytes: CMOVE upwards, CMOVE> downwards;
   6. word names lenght can be 1 to 15, padded with space (0x20);
-
 
 # Notation
 
