@@ -1,4 +1,3 @@
-
 /*
  *  DISCLAIMER"
  *
@@ -34,8 +33,6 @@
   still no interrupts
  
   still no multitasks
- 
-	
 	
 	the little endian method, the low byte of the address or value occupies the lower memory address. 
 
@@ -288,16 +285,18 @@ NZDUP_1:
 	POON 
 
 ;----------------------------------------------------------------------
-;ok ( if tos = 0 branch )
+;ok ( u -- )
 ;	F18A	T=0
-HEADER "?BRANCH", "ZBRANCH"
+HEADER "?BRANCH", "QBRANCH"
 	NOOP
 	pspull wrk_low, wrk_high
 	cp wrk_low, wrk_high
-	brbs BIT_ZERO, BRANCH+2
+	brbs BIT_ZERO, BRANCH_END
+_ADVANCE:
 	rspull wrk_low, wrk_high
 	adiw wrk_low, CELL_SIZE
 	rspush wrk_low, wrk_high
+_BRANCH_END:
 	POON
 
 ;----------------------------------------------------------------------
