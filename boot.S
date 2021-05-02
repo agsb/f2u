@@ -4,9 +4,8 @@
 ;
 .section .text
 .org 0x000
-.global main
-main:
-
+.global boot
+boot:
 ;----------------------------------------------------------------------
 ;
 ; classic interrup vector table
@@ -46,7 +45,6 @@ RESET:
     out __SP_H__, wrk_high
     ldi wrk_low, lo8(SPU_TOP)
     out __SP_L__, wrk_low
-
 ; enable interrupts
     sei
     rjmp BOOT
@@ -54,13 +52,13 @@ RESET:
 ;----------------------------------------------------------------------
 ;
 ;   timer0 prescale 
-;     for 8 MHz, prescale 64, offset 131, results about 1 ms
+;    for 8 MHz, prescale 64, offset 131, results about 1 ms
 ;    64 * 125 = 8000 ; 
 ;    256 - 125 = 131 ; offset
 ;   miliseconds
-;
-;    counter continues while inside ? 
-;    without these instructions ?
+;   r3:r2	counter each 1ms
+;	r4		offset to prescale
+;	r5		save SREG
 ;
 TIM0_OVF:
 ;    save flags
@@ -145,52 +143,59 @@ BOOT:
 	clr r2
 	clr r3
 
-; define timer0 offset
-	ldi r16, 141
-	mov r4, r16
-
 ;----------------------------------------------------------------------
-; preset of timer0, with internal clock 8MHz 
-; cycle   64
-; offset 131
+; init timer0, with internal clock 8MHz, from gcc public code, io ports as constants
+;
+; preset of timer0, with internal clock 8MHz ; cycle   64 ; offset 131
 ; timer cycle * offset / clock = 8k/8M = 1ms
-
+;
 TIMER0_SET:
 ; enable pre-escaler
-	;in r16, TCCR0
     in r16, 0x33
     ori r16, (1 << CS01) | (1 << CS00)
-    ;out TCCR0, r16
     out 0x33, r16
-
-; offset counter, so it counts 125 clocks
-	ldi r16, 131
-    ;out TCNT0, r16
+; offset counter, so it counts 125 clocks inside the interrup routines
+	ldi r16, 141
+; preserve offset
+	mov r4, r16
     out 0x32, r16
-	
 ; enable counter
-    ;in r16, TIMSK
     in r16, 0x39
     ori r16, (1 << TOIE0) 
-    ;out TIMSK, r16
     out 0x39, r16
 
 ;----------------------------------------------------------------------
-; watch dog
+; init watch dog, from avr-gcc public code, io ports as constants
 ;
-; define watch dog counter
-WATCH_DOG_SET:
 ; write logical one to WDCE and WDE, set WDP2, WDP1, WDP0 to ~ 2.0 s
-	;in r16, WDTCR
+;
+WATCHDOG_SET:
 	in r16, 0x21
     ori r16, (1 << WDCE) | (1 << WDE)
     ori r16, (1 << WDP2) | (1 << WDP1) | (1 << WDP0)
-    ;out WDTCR, r16
     out 0x21, r16
+
+;----------------------------------------------------------------------
+; init usart, from avr-gcc public code, io ports as constants
+;
+;    defaults to 9600, 8N1, no control
+;
+USART_SET:
+    clr wrk_low
+    out 0x20, wrk_low
+    ldi wrk_low, lo8(52)
+    out 0x9, wrk_low
+    in wrk_low, 0xa
+    ori wrk_low, lo8(24)
+    out 0xa, wrk_low
+    ldi wrk_low, lo8(-114)
+    out 0x20, wrk_low
+    in wrk_low, 0x20
+    ori wrk_low,lo8(64)
+    out 0x20, wrk_low
 
 ;----------------------------------------------------------------------
 ; enable interrupts
     sei
-   
 	rjmp COLD 
 

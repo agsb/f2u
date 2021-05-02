@@ -23,21 +23,6 @@
 */
 
 /*
-
-  inspired on eforth from books and papers from C. H. Ting
- 
-  just experience for small microcontrolers
- 
-  emulates a virtual uCi,  
-	
-  still no interrupts
- 
-  still no multitasks
-	
-	the little endian method, the low byte of the address or value occupies the lower memory address. 
-
-	Notation: top is at right, eg ROT (w1 w2 -- w1 w2 w1) w1 is 2nd at stack, w2 is 1st at stack
- 
 ;---------------------------------------------------------------------
 ; dictionary structure
 ;
@@ -47,6 +32,10 @@
  .word  param,  many
 
 ;----------------------------------------------------------------------
+
+02/05/2021
+
+	Rewrite again using sectorforth as minimal design
 
 18/04/2021
 
@@ -59,35 +48,9 @@
     .LIST
 
 ;----------------------------------------------------------------------
-; get some magic constants
- 
-#include <avr/io.h>
-
-;----------------------------------------------------------------------
-
-#include "equates.inc" 
-
-;----------------------------------------------------------------------
-
-#include "macros.inc"
-
-;----------------------------------------------------------------------
-
-#include "sram.inc"
-
-;----------------------------------------------------------------------
-
-#include "boot.inc"
-
-;----------------------------------------------------------------------
 ; start of dictionary
 ;
-;----------------------------------------------------------------------
 
-;----------------------------------------------------------------------
-;
-; any leaf must start with NOOP and end with POON
-;
 ;----------------------------------------------------------------------
 ;
 ; it is the forth engine,
@@ -105,11 +68,7 @@
 ;
 ; only LPM access flash ? YES!
 ;
-;	if a vocabulary is in ram ? for atmega8 it will could not.
-;
-; all forth constants in flash
-;
-; all forth variables in sdram
+; all forth constants and variables in sdram
 ;
 ;----------------------------------------------------------------------
 .section .text
@@ -146,6 +105,9 @@ _ENTER:
 
 _EXEC:
 	ijmp
+
+;---------------------------------------------------------------------
+
 
 ;----------------------------------------------------------------------
 ; 
