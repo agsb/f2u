@@ -6,6 +6,14 @@
 
 This is a evolution from what I learning with u2forth, ATMEGA8 gcc assembler and forth interpreters from eforth, avr-forth, gforth, flashforth, etc
 
+For now:
+
+  The inner interpreter is done and is almost effcient.
+  The primitive words are done, as like eforth set.
+  
+  Now I'm at easten egg of forth:
+    have sources of words as : word ~~~ ; and need a forth done to compile or
+    have sources of words compiled with a forth and need use same engine
 
 # Introduction
 
