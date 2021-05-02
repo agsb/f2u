@@ -16,8 +16,9 @@ For now:
 
 # Introduction
 
-  I want a forth for a Atmega8 MCU, with harvard architeture, 8k program flash memory, 1k static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, but (R16 to R31) could be used as 16 bits.
-  But there is no need for speed, because I want a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a CPU family and a outer interpreter and compound words independent of any specific CPU family, like a imutable list with rellocable references.
+  I want a forth for a Atmega8, but there is no need for speed, because I want a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a MPU family and a outer interpreter and compound words independent of any specific CPU family, like a imutable list with rellocable references.
+
+PS Atmega8 is a MCU with harvard architeture, 8k program flash memory, 1k static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, but (R16 to R31) could be used as 16 bits.
 
 # References
 
@@ -212,6 +213,11 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
   maximum word lenght is 15; 
   four bits flags (IMMEDIATE, COMPILE, HIDEN, TOGGLE) per word;
   numbers are signed two-complement;
+  parameter stack is 20 words, return stack is 20 words;
+  terminal input buffer is 80 bytes, scratch-pad is 80 bytes, hold is 16 bytes;
+  variables and constants uses 128bytes
+  free ram is about 640 bytes;
+  word names are padded with space (0x20)
   
 # Notes
 
