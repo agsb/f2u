@@ -12,14 +12,16 @@ For now:
   The primitive words are done, as minimal set from eforth plus some extras.
   
   But I'm at easter egg of forth:
-    I have sources of words as : word ~~~ ; and I need a forth done to compile or
-    I have sources of words compiled with some forth and need use same forth engine
+    I have sources of words as ": word ~~~ ;" and I need a forth done to compile or
+    I have sources of words compiled with some forth and need use same forth engine;
   
-  Then sectorforth comes to simplifly all.
-
+  Then sectorforth (https://github.com/cesarblum/sectorforth) comes to simplifly all, and I restart again.
+  
+  01/05/2021  Still no operational
+  
 # Introduction
 
-  I want a forth for a Atmega8, but there is no need for speed, because I want a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a MPU family and a outer interpreter and compound words independent of any specific CPU family, like a imutable list with rellocable references.
+I want a forth for a Atmega8, but there is no need for speed, because I want a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a MPU family and a outer interpreter and compound words independent of any specific CPU family, like a imutable list with rellocable references.
 
 PS Atmega8 is a MCU with harvard architeture, 8k program flash memory, 1k static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, but (R16 to R31) could be used as 16 bits.
 
