@@ -5,14 +5,17 @@
 # *"To master riding bicycles you have do ride bicycles"*
 
 This is a evolution from what I learning with u2forth, ATMEGA8 gcc assembler and forth interpreters from eforth, avr-forth, gforth, flashforth, etc
+
 For now:
 
-  The inner interpreter is done and is veryeffcient.
+  The inner interpreter is done and is very effcient.
   The primitive words are done, as minimal set from eforth plus some extras.
   
-  Now I'm at easter egg of forth:
+  But I'm at easter egg of forth:
     I have sources of words as : word ~~~ ; and I need a forth done to compile or
     I have sources of words compiled with some forth and need use same forth engine
+  
+  Then sectorforth comes to simplifly all.
 
 # Introduction
 
