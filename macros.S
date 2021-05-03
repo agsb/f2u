@@ -153,6 +153,24 @@ hd_\label:
 .endm
 
 ;----------------------------------------------------------------------
+;	load from memory increments pointer
+.macro mmload byte
+1:   ; all dictionary above $0460 in flash
+     movw wrk_low, ips_low
+     subi wrk_low, $60
+     sbic wrk_high, $04
+     brge 3f
+2:  ; read from sram
+     srload wrk_low
+     srload wrk_high
+     rjmp 4f
+3:  ; read from flash
+     pmload wrk_low
+     pmload wrk_high
+4:
+.endm
+ 
+;----------------------------------------------------------------------
 ; also io@
 .macro peek byte , address
     .if (\address < $40)
@@ -185,12 +203,18 @@ hd_\label:
 ;----------------------------------------------------------------------
 ; 	flags 
 ;
-    F_IMMEDIATE = 0x080
-    F_COMPILE = 0x040
-    F_HIDDEN = 0x020
+    F_IMMEDIATE = 0x80
+    F_COMPILE = 0x40
+    F_HIDDEN = 0x20
+	F_TOMASK = 0xE0
+	F_UNMASK = 0x1F
+	F_FOUND = 0x01
 
-    F_MASKZ = 0x01F
-    F_MASKO = 0x0E0
+.ifdef SMALL_NAMES
+	F_EXTRA	= 0x10
+    F_TOMASK = 0xF0
+    F_UNMASK = 0x0F
+.endif
 
 ;---------------------------------------------------------------------
 ; default base
@@ -207,5 +231,19 @@ hd_\label:
 
     BIT_CARRY = 0
     BIT_ZERO = 1
+
+;---------------------------------------------------------------------
+; from avr manual
+;
+    __SREG__ = 0x3f
+    __SP_H__ = 0x3e
+    __SP_L__ = 0x3d
+
+;----------------------------------------------------------------------;
+; assign stacks address for atmega8
+;
+    SRAM_END =   0x45F    ; SRAM from AVR manual
+    SRAM_START = 0x060    ; SRAM from AVR manual
+
 
 
