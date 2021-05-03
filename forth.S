@@ -278,41 +278,41 @@ TXTO:
 ;
 HEADER "TOKEN", "TOKEN"
 	NOOP
-	pspull isp_low, ips_high
+	pspull ips_low, ips_high
 	pspull wrk_low, wrk_high
 1:	; skip while equal
 	srload wrk_high
 	cp wrk_high, wrk_high
 	brbs BIT_ZERO, 2f
-	cp wkr_low, wrk_high
+	cp wrk_low, wrk_high
 	breq 1b
 	; keep address
-2:	sbiw isp_low, 1
-	pspush isp_low, isp_high
-	pspush isp_low, isp_high
+2:	sbiw ips_low, 1
+	pspush ips_low, ips_high
+	pspush ips_low, ips_high
 3:	; skip wile not equal
 	srload wrk_high
 	cp wrk_high, wrk_high
 	brbs BIT_ZERO, 4f
-	cp wkr_low, wrk_high
+	cp wrk_low, wrk_high
 	brne 3b
 4:	; keep length
 	pspull wrk_low, wrk_high
-	sub isp_low, wrk_low
-	sbc isp_high, wrk_high
-	pspush isp_low, isp_high
+	sub ips_low, wrk_low
+	sbc ips_high, wrk_high
+	pspush ips_low, ips_high
 	POON
 	
 
 ;----------------------------------------------------------------------
 ;
 ; ok accept ( -- u ) 
-;	read chars to tib until CR or size
+;	read chars into tib until CR or size=0
 ;
 HEADER "accept", "accept"
     NOOP
-	ldi	isp_low, lo8(TIB)
-	ldi isp_high, hi8(TIB)
+	ldi	ips_low, lo8(TIB)
+	ldi ips_high, hi8(TIB)
 	ldi	wrk_high, SIZE_TIB
 	clr _work_	 ; clear length
 
@@ -335,10 +335,10 @@ HEADER "accept", "accept"
 	cp wrk_low,  8 ; BS
 	brne 5f
 	; process BS
-	cp _work, _work
-	brbs BIT_ZERO, 2b
+	cp _work_, _work_
+	brbs BIT_ZERO, 3b
 	dec _work_
-	sbiw isp_low, 1
+	sbiw ips_low, 1
 	rjmp 3b	
 5:	; is valid char
 	cpi	wrk_low, 32
@@ -350,7 +350,7 @@ HEADER "accept", "accept"
 	brge 6f
 	cpi wrk_low, 123
 	brge 6f
-	sbi wrk_low, 32
+	subi wrk_low, 32
 6:	; save char to buffer
 	inc _work_
 	srsave wrk_low
@@ -358,11 +358,11 @@ HEADER "accept", "accept"
 2:	; push counter
 	; always add \0 terminator
 	clr wrk_low
-	srsave wrklow
+	srsave wrk_low
 	; update TOIN
-	sti TOIN+1, _wrk_low
-	mov wrk_low, _work
-	sti TOIN, _wrk_low
+	sts (TOIN+1), _wrk_low
+	mov wrk_low, _work_
+	sts (TOIN+0), _wrk_low
 	pspush wrk_low, wrk_high
     POON
 
@@ -375,50 +375,5 @@ HEADER "millis", "MILLIS"
     pspush tmr_low, tmr_high
     POON
 
-;----------------------------------------------------------------------
-;
-;  ccomma is only used in header of a word
-;
-HEADER "c,", "CCOMMA"
-	.word HERE, CAT, TO, HERE, CAT, ONEPLUS, HERE, TO, _LAST
-
-;----------------------------------------------------------------------
-;
-; ok comma :)
-;
-HEADER ",", "COMMA"
-	.word HERE, AT, TO, HERE, AT, TWOPLUS, HERE, TO, _LAST
-
-;----------------------------------------------------------------------
-;
-; ok allot :)
-;
-HEADER "ALLOT", "ALLOT"
-	.word HERE, AT, PLUS, HERE, TO, _LAST 
-
-;----------------------------------------------------------------------
-;
-; ok colon :)
-;
-HEADER ":", "COLON"
-	.word PARSE, 
-	.word LAST, COMMA, 
-	.word HERE, TO,    
-_COLON0:
-	.word AT, ZBRANCH, _COLON1,
-	.word DUP, TWOPLUS, CAT,  
-	.word DUP, F_HIDDEN, AND, ZBRANCH, _COLON2,
-	.word DROP, BRANCH, _COLON0,
-_COLON2:
-	.word 	
-
-;----------------------------------------------------------------------
-;
-; ok semmi-colon :)
-;
-HEADER ";", "SEMMI"
-	.word LAST, TWOPLUS, DUP, CAT, F_HIDDEN, XOR, SWAP, CTO, 
-	.word F_INTERP, STATE, TO,
-	.word HERE, DOLIT, _LAST, COMMA, _LAST
 
 

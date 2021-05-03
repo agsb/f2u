@@ -152,7 +152,7 @@ BOOT:
 TIMER0_SET:
 ; enable pre-escaler
     in r16, 0x33
-    ori r16, (1 << CS01) | (1 << CS00)
+    ori r16, (1 << 1) | (1 << 0)
     out 0x33, r16
 ; offset counter, so it counts 125 clocks inside the interrup routines
 	ldi r16, 141
@@ -161,7 +161,7 @@ TIMER0_SET:
     out 0x32, r16
 ; enable counter
     in r16, 0x39
-    ori r16, (1 << TOIE0) 
+    ori r16, (1 << 0) 
     out 0x39, r16
 
 ;----------------------------------------------------------------------
@@ -171,8 +171,8 @@ TIMER0_SET:
 ;
 WATCHDOG_SET:
 	in r16, 0x21
-    ori r16, (1 << WDCE) | (1 << WDE)
-    ori r16, (1 << WDP2) | (1 << WDP1) | (1 << WDP0)
+    ori r16, (1 << 4) | (1 << 3)
+    ori r16, (1 << 2) | (1 << 1) | (1 << 0)
     out 0x21, r16
 
 ;----------------------------------------------------------------------

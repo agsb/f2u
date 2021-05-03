@@ -175,8 +175,10 @@ hd_\label:
 ;----------------------------------------------------------------------
 ;	sizes
 ;
-	TIB_SIZE = 80
-	PAD_SIZE = 80
+; "Column 72 means Continue"
+	TIB_SIZE = 73
+	PAD_SIZE = 73
+; stack 20 words deep
 	RSP_SIZE = 40
 	PSP_SIZE = 40
 
