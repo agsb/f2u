@@ -161,8 +161,7 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     twig dicionary is CPU independent;
     all twig words have only a payload at last references;
     all leaf words have a payload as, starts with NOP and ends with a jump;
-    all internal words defined between parentheses;
-    only need code for 0branch (?branch) because all references are branchs; 
+    all internal words defined between parentheses; 
     the memory model is not unified, separate address for flash and for sdram;
     ??? minus one reference execution per each compound word  at cost of a test if NULL
 
