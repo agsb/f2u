@@ -14,10 +14,10 @@ HERE:	.word 0
 STATE:	.word 0
 LAST:	.word 0
 BASE:	.word 0
-RP0:	.space 40, 0
-SP0:	.space 40, 0 
-PAD:	.space 80, 0
-TIB: 	.space 80, 0
+RSP:	.space RSP_SIZE, 0
+PSP:	.space PSP_SIZE, 0 
+PAD:	.space PAD_SIZE, 0
+TIB: 	.space TIB_SIZE, 0
 
 .section data 
 .org 0x0100
@@ -30,4 +30,5 @@ freesram:
 .section text
 .org 0x0100
 #include "head.S"
+
 

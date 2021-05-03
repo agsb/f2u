@@ -167,85 +167,85 @@ _ZEROEND:
 ;----------------------------------------------------------------------
 ;ok ( w1 w2 -- w2 AND w1 )
 HEADER "NAND", "NAND"
-        NOOP
-        pspull wrk_low, wrk_high
-        pspull tos_low, tos_high
-        and wrk_high, tos_high
-        and wrk_low, tos_low
-        com wrk_high
-        com wrk_low
-        pspush wrk_low, wrk_high
-        POON
+	NOOP
+	pspull wrk_low, wrk_high
+	pspull tos_low, tos_high
+	and wrk_high, tos_high
+	and wrk_low, tos_low
+	com wrk_high
+	com wrk_low
+	pspush wrk_low, wrk_high
+	POON
 
 ;----------------------------------------------------------------------
 ;ok ( w1 w2 -- w2 AND w1 )
 HEADER "+", "PLUS"
-        NOOP
-        pspull wrk_low, wrk_high
-        pspull tos_low, tos_high
-        add wrk_low, tos_low
-        adc wrk_high, tos_high
-        pspush wrk_low, wrk_high
-        POON
+	NOOP
+	pspull wrk_low, wrk_high
+	pspull tos_low, tos_high
+	add wrk_low, tos_low
+	adc wrk_high, tos_high
+	pspush wrk_low, wrk_high
+	POON
 
 ;----------------------------------------------------------------------
 ;----------------------------------------------------------------------
 ;ok 
 HEADER "TIB", "TIBVAR"
-        NOOP
-        ldi wrk_low, lo8(TIB)
-        ldi wrk_high, hi8( TIB)
-        pspush wrk_low, wrk_high
-        POON
+	NOOP
+	ldi wrk_low, lo8(TIB)
+	ldi wrk_high, hi8( TIB)
+	pspush wrk_low, wrk_high
+	POON
 
 ;----------------------------------------------------------------------
 ;ok 
 HEADER "STATE", "STATEVAR"
-        NOOP
-        ldi wrk_low, lo8(STATE)
-        ldi wrk_high, hi8(STATE)
-        pspush wrk_low, wrk_high
-        POON
+	NOOP
+	ldi wrk_low, lo8(STATE)
+	ldi wrk_high, hi8(STATE)
+	pspush wrk_low, wrk_high
+	POON
 
 ;----------------------------------------------------------------------
 ;ok 
 HEADER ">IN", "TOINVAR"
-        NOOP
-        ldi wrk_low, lo8(TIN)
-        ldi wrk_high, hi8(TIN)
-        pspush wrk_low, wrk_high
-        POON
+	NOOP
+	ldi wrk_low, lo8(TIN)
+	ldi wrk_high, hi8(TIN)
+	pspush wrk_low, wrk_high
+	POON
 
 ;----------------------------------------------------------------------
 ;ok 
 HEADER "HERE", "HEREVAR"
-        NOOP
-        ldi wrk_low, lo8(HERE)
-        ldi wrk_high, hi8(HERE)
-        pspush wrk_low, wrk_high
-        POON
+	NOOP
+	ldi wrk_low, lo8(HERE)
+	ldi wrk_high, hi8(HERE)
+	pspush wrk_low, wrk_high
+	POON
 
 ;----------------------------------------------------------------------
 ;ok 
 HEADER "LAST", "LASTVAR"
-        NOOP
-        ldi wrk_low, lo8(LAST)
-        ldi wrk_high, hi8(LAST)
-        pspush wrk_low, wrk_high
-        POON
+	NOOP
+	ldi wrk_low, lo8(LAST)
+	ldi wrk_high, hi8(LAST)
+	pspush wrk_low, wrk_high
+	POON
 
 ;----------------------------------------------------------------------
 ;ok 
 HEADER "BASE", "BASEVAR"
-        NOOP
-        ldi wrk_low, lo8(BASE)
-        ldi wrk_high, hi8(BASE)
-        pspush wrk_low, wrk_high
-        POON
+	NOOP
+	ldi wrk_low, lo8(BASE)
+	ldi wrk_high, hi8(BASE)
+	pspush wrk_low, wrk_high
+	POON
 
 ;----------------------------------------------------------------------
 ;
-; beware it blocks, test if can receive a char
+; beware, it blocks! test if can receive a char
 ;
 HEADER "key", "KEY"
 RXAT:
@@ -259,7 +259,7 @@ RXAT:
 
 ;----------------------------------------------------------------------
 ;
-; beware it blocks, test if can send a char 
+; beware, it blocks! test if can send a char 
 ;
 HEADER "emit", "EMIT"
 TXTO:
@@ -268,6 +268,102 @@ TXTO:
     rjmp TXTO
     pspull wrk_low, wrk_high
     out 0xc, wrk_low
+    POON
+
+;----------------------------------------------------------------------
+;
+; ok ( a1 c --- a2 u ) 
+;	search start at a1 for next word delimited by c or \0
+;	returns start a2 and u lenght
+;
+HEADER "TOKEN", "TOKEN"
+	NOOP
+	pspull isp_low, ips_high
+	pspull wrk_low, wrk_high
+1:	; skip while equal
+	srload wrk_high
+	cp wrk_high, wrk_high
+	brbs BIT_ZERO, 2f
+	cp wkr_low, wrk_high
+	breq 1b
+	; keep address
+2:	sbiw isp_low, 1
+	pspush isp_low, isp_high
+	pspush isp_low, isp_high
+3:	; skip wile not equal
+	srload wrk_high
+	cp wrk_high, wrk_high
+	brbs BIT_ZERO, 4f
+	cp wkr_low, wrk_high
+	brne 3b
+4:	; keep length
+	pspull wrk_low, wrk_high
+	sub isp_low, wrk_low
+	sbc isp_high, wrk_high
+	pspush isp_low, isp_high
+	POON
+	
+
+;----------------------------------------------------------------------
+;
+; ok accept ( -- u ) 
+;	read chars to tib until CR or size
+;
+HEADER "accept", "accept"
+    NOOP
+	ldi	isp_low, lo8(TIB)
+	ldi isp_high, hi8(TIB)
+	ldi	wrk_high, SIZE_TIB
+	clr _work_	 ; clear length
+
+1:	; decrease counter	
+	dec wrk_high
+	brbs BIT_ZERO, 2f
+3:	; waits a char
+    sbis 0xb, 7
+    rjmp 3b
+    in wrk_low, 0xc
+	; verify CR
+	cp wrk_low, 13 ; CR
+	breq 2f
+	; verify ESC 
+	cp wrk_low, 27 ; ESC
+	brne 4f
+	; process ESC
+	rjmp 3b
+4:	; verify BS
+	cp wrk_low,  8 ; BS
+	brne 5f
+	; process BS
+	cp _work, _work
+	brbs BIT_ZERO, 2b
+	dec _work_
+	sbiw isp_low, 1
+	rjmp 3b	
+5:	; is valid char
+	cpi	wrk_low, 32
+	brlo 3b
+	cpi wrk_low, 127
+	brge 3b
+	; to uppercase
+	cpi wrk_low, 61
+	brge 6f
+	cpi wrk_low, 123
+	brge 6f
+	sbi wrk_low, 32
+6:	; save char to buffer
+	inc _work_
+	srsave wrk_low
+	rjmp 1b
+2:	; push counter
+	; always add \0 terminator
+	clr wrk_low
+	srsave wrklow
+	; update TOIN
+	sti TOIN+1, _wrk_low
+	mov wrk_low, _work
+	sti TOIN, _wrk_low
+	pspush wrk_low, wrk_high
     POON
 
 ;----------------------------------------------------------------------
@@ -281,17 +377,48 @@ HEADER "millis", "MILLIS"
 
 ;----------------------------------------------------------------------
 ;
+;  ccomma is only used in header of a word
+;
+HEADER "c,", "CCOMMA"
+	.word HERE, CAT, TO, HERE, CAT, ONEPLUS, HERE, TO, _LAST
+
+;----------------------------------------------------------------------
+;
+; ok comma :)
+;
+HEADER ",", "COMMA"
+	.word HERE, AT, TO, HERE, AT, TWOPLUS, HERE, TO, _LAST
+
+;----------------------------------------------------------------------
+;
+; ok allot :)
+;
+HEADER "ALLOT", "ALLOT"
+	.word HERE, AT, PLUS, HERE, TO, _LAST 
+
+;----------------------------------------------------------------------
+;
 ; ok colon :)
 ;
 HEADER ":", "COLON"
-    NOOP
-    POON
+	.word PARSE, 
+	.word LAST, COMMA, 
+	.word HERE, TO,    
+_COLON0:
+	.word AT, ZBRANCH, _COLON1,
+	.word DUP, TWOPLUS, CAT,  
+	.word DUP, F_HIDDEN, AND, ZBRANCH, _COLON2,
+	.word DROP, BRANCH, _COLON0,
+_COLON2:
+	.word 	
 
 ;----------------------------------------------------------------------
 ;
 ; ok semmi-colon :)
 ;
 HEADER ";", "SEMMI"
-    NOOP
-    POON
+	.word LAST, TWOPLUS, DUP, CAT, F_HIDDEN, XOR, SWAP, CTO, 
+	.word F_INTERP, STATE, TO,
+	.word HERE, DOLIT, _LAST, COMMA, _LAST
+
 

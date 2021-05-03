@@ -171,6 +171,9 @@ _BRANCH_END:
 ;ok ( branch next reference )
 HEADER "BRANCH", "BRANCH"
 	NOOP
+	rspull isp_low, isp_high
+	pmload wrk_low, wrk_high
+	rspush wrk_low, wrk_high
 	POON
 
 ;----------------------------------------------------------------------
