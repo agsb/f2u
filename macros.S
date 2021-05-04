@@ -89,11 +89,14 @@
 .macro HEADER name label
 hd_\label:
 	.p2align 1,0x00
-7:	.word _link_
+7:	
+	.word _link_
 	.set _link_, 7b
 	.byte 9f - 8f
-8: 	.ascii "\name"
-9: 	.p2align 1,0x20
+8: 	
+	.ascii "\name"
+9: 	
+	.p2align 1,0x20
 \label:
 .endm
 
@@ -153,21 +156,44 @@ hd_\label:
 .endm
 
 ;----------------------------------------------------------------------
-;	load from memory increments pointer
+; unused
+;	load from memory, increments pointer
 .macro mmload byte
-1:   ; all dictionary above $0460 in flash
-     movw wrk_low, ips_low
-     subi wrk_low, $60
-     sbic wrk_high, $04
-     brge 3f
-2:  ; read from sram
-     srload wrk_low
-     srload wrk_high
-     rjmp 4f
-3:  ; read from flash
-     pmload wrk_low
-     pmload wrk_high
-4:
+     ; all dictionary above $0460 in flash
+100: 
+	movw wrk_low, ips_low
+    subi wrk_low, $60
+    sbic wrk_high, $04
+    brge 104f
+	; read from sram
+102: 
+	ld \byte, Z+
+    rjmp 106f
+  	; read from flash
+104: 
+	lpm \byte, Z+
+106:
+.endm
+ 
+;----------------------------------------------------------------------
+; unused
+;	save into memory, increments pointer
+.macro mmsave byte
+     ; all dictionary above $0460 in flash
+100: 
+	movw wrk_low, ips_low
+    subi wrk_low, $60
+    sbic wrk_high, $04
+    brge 104f
+	; save into sram
+102: 
+	st Z+, \byte
+    rjmp 106f
+  	; save into flash
+104:
+	.error "trying write into flash" 
+	nop ; spm is complex, dont works in bytes
+106:
 .endm
  
 ;----------------------------------------------------------------------
@@ -222,7 +248,7 @@ hd_\label:
 ;---------------------------------------------------------------------
 ; default base
 ;
-    BASE_DEFAULT = 16
+    BASE_DEFAULT = 10
 
 ;---------------------------------------------------------------------
 ; default cell size
@@ -242,9 +268,6 @@ hd_\label:
     __SP_H__ = 0x3e
     __SP_L__ = 0x3d
 
-;----------------------------------------------------------------------;
-; assign stacks address for atmega8
-;
     SRAM_END =   0x45F    ; SRAM from AVR manual
     SRAM_START = 0x060    ; SRAM from AVR manual
 

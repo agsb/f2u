@@ -85,27 +85,27 @@ HEADER "_LAST", "_LAST"
     NOOP
 
 ; pull ip from rsp
-_EXIT:             
+_exit:             
     rspull ips_low, ips_high
 
 ; load w with contents of cell at ip, only works in program memory (flash)  
-_NEXT:            
+_next:            
     lpm wrk_low, Z+
     lpm wrk_high, Z+
 
 ; if zero then is a exec 
     cp wrk_low, wrk_high
-    brbs BIT_ZERO, _EXEC
+    brbs BIT_ZERO, _exec
 
 ; else is a reference
-_ENTER:            
+_enter:            
     rspush ips_low, ips_high
 
 ; push ip into rsp
     movw ips_low, wrk_low
-    rjmp _NEXT
+    rjmp _next
 
-_EXEC:
+_exec:
     ijmp
 
 ;----------------------------------------------------------------------
@@ -154,12 +154,12 @@ HEADER "0=", "ZEROEQU"
     NOOP
     pspull wrk_low, wrk_high
     cp wrk_high, wrk_low
-    brbc BIT_ZERO, _FFALSE
-_FTRUE:
+    brbc BIT_ZERO, _ffalse
+_ftrue:
     ser wrk_low
     ser wrk_high
     rjmp _ZEROEND
-_FFALSE:
+_ffalse:
     clr wrk_low
     clr wrk_high
 _ZEROEND:
@@ -250,10 +250,11 @@ HEADER "BASE", "BASEVAR"
 ; beware, it blocks! test if can receive a char
 ;
 HEADER "key", "KEY"
-RXAT:
     NOOP
-    sbis 0xb, 7
-    rjmp RXAT
+1:  
+	sbis 0xb, 7
+	nop
+    rjmp 1b
     in wrk_low, 0xc
     clr wrk_high
     pspush wrk_low, wrk_high
@@ -264,10 +265,11 @@ RXAT:
 ; beware, it blocks! test if can send a char 
 ;
 HEADER "emit", "EMIT"
-TXTO:
     NOOP
-    sbis 0xb, 5
-    rjmp TXTO
+1:  
+	sbis 0xb, 5
+	nop
+    rjmp 1b
     pspull wrk_low, wrk_high
     out 0xc, wrk_low
     POON
@@ -341,136 +343,144 @@ HEADER  "WARM", "WARM"
 ;
 ;----------------------------------------------------------------------
 ;
-; ok ( a1 c --- a2 u ) 
-;    search start at a1 for next word delimited by c or \0
-;    returns start a2 and u lenght
+; ok ( --- a2 u ) 
+;    search TIB start at TOIN for next word delimited by 32 or \0
+;    returns start of word and u lenght
+;    refills TIB when necessary. beware no round-robin
 ;
 HEADER "token", "token"
     NOOP
-    pspull ips_low, ips_high
-    pspull wrk_low, wrk_high
-    ; skip while equal
-    srload wrk_high
-	; if \0 end of buffer
-1:  cp wrk_high, wrk_high
-    brbs BIT_ZERO, 2f
-	; if same
-    cp wrk_low, wrk_high
-    breq 1b
-    ; keep address
-2:  sbiw ips_low, 1
-    pspush ips_low, ips_high
-    pspush ips_low, ips_high
-    ; skip wile not equal
-3:  srload wrk_high
-    cp wrk_high, wrk_high
-    brbs BIT_ZERO, 4f
-    cp wrk_low, wrk_high
-    brne 3b
-    ; keep length
-4:  pspull wrk_low, wrk_high
-    sub ips_low, wrk_low
-    sbc ips_high, wrk_high
-    pspush ips_low, ips_high
-    POON
+	; start at 
+1:	
+	ldi ips_low, lo8(TOIN)
+	ldi ips_high, hi8(TOIN)
+	
 
-;----------------------------------------------------------------------
-;
+    ; getch()
+2:  
+	srload wrk_high
+
+	; if \0 
+    cpi wrk_high, 0
+    breq 10f
+
+	; if same
+    cpi wrk_high, 32
+    breq 2b
+
+	; start of a word
+	rjmp 3f 
+
 ; ok accept ( -- u )  NO ECHOES !!!
-;    read chars into tib until CR or size=0
-;    
-HEADER "accept", "accept"
-    NOOP
-    ldi ips_low, lo8(TIB)
+	; refill TIB
+10: 
+	ldi ips_low, lo8(TIB)
     ldi ips_high, hi8(TIB)
     ldi wrk_high, TIB_SIZE
     ; always add \0 terminator
-    sts TIB+TIB_SIZE, _zero_
+    sts (TIB+TIB_SIZE-1), _zero_
     clr _work_     ; clear length
-
     clr tos_low ; clear comments \
     clr tos_high ; clear comments ()
 
     ; decrease counter    
-1:  dec wrk_high
-    brbs BIT_ZERO, 2f
+11: 
+	dec wrk_high
+    brbs BIT_ZERO, 21f
 
     ; waits a char
-3:  sbis 0xb, 7
-    rjmp 3b
+12: 
+	sbis 0xb, 7
+	nop
+    rjmp 12b
     in wrk_low, 0xc
 
     ; verify CR
-    cp wrk_low, 13 ; CR
-    breq 2f
+    cpi wrk_low, 13 ; CR
+    breq 21f
+
+    ; verify LF
+    cpi wrk_low, 10 ; CR
+    breq 21f
 
     ; verify ESC 
-    cp wrk_low, 27 ; ESC
-    brne 4f
+    cpi wrk_low, 27 ; ESC
+    brne 14f
 
-    ; process ESC
-    rjmp 3b
+    ; process ESC void still
+    rjmp 12b
 
     ; verify BS
-4:  cp wrk_low,  8 ; BS
-    brne 5f
+14: 
+	cpi wrk_low,  8 ; BS
+    brne 15f
 
     ; process BS
-    cp _work_, _work_
-    brbs BIT_ZERO, 3b
+    ; was a char ?
+	cp _work_, _work_
+    breq 12b
+
+	; back one
     dec _work_
     sbiw ips_low, 1
-    rjmp 3b    
+    rjmp 12b    
 
     ; is valid char 7-bit ASCII
-    ; no controls
-5:  cpi    wrk_low, 32
-    brlo 3b
-    ; no graphics
+    ; no more controls
+15: 
+	cpi wrk_low, 32
+    brlo 12b
+    ; no 8bits
     cpi wrk_low, 128
-    brge 3b
+    brge 12b
 
     ; is a ( ?
-7:  cpi wrk_low, 40
-    brne 8f
+16: 
+	cpi wrk_low, 40
+    brne 17f
     inc tos_high
-    rjmp 3b
+    rjmp 12b
 
     ; is a ) ?
-8:  cpi wrk_low, 41
-    brne 9f
+17: 
+	cpi wrk_low, 41
+    brne 18f
     dec tos_high
-    rjmp 3b
+    rjmp 12b
 
     ; is a \ ?
-9:  cpi wrk_low, 92 
-    brne 10f
+18: 
+	cpi wrk_low, 92 
+    brne 19f
     dec tos_low
-    rjmp 3b
+    rjmp 12b
 
    ; skip comments
-10: tst tos_low
-    brne 3b
+19: 
+	tst tos_low
+    brne 12b
     tst tos_high
-    brne 3b
+    brne 12b
 
 .ifdef UPPERCASE    
     ; to uppercase
     cpi wrk_low, 61
-    brge 6f
+    brge 20f
     cpi wrk_low, 123
-    brge 6f
+    brge 20f
     subi wrk_low, 32
 .endif
 
     ; save char to buffer
-6:  inc _work_
+20: 
+	inc _work_
     srsave wrk_low
-    rjmp 1b
+    rjmp 11b
   
     ; push counter
     ; always add a space and a \0 terminator
-2:  ldi wrk_low, 32
+21: 
+	ldi wrk_low, 32
     srsave wrk_low
     clr wrk_low
     srsave wrk_low
@@ -479,7 +489,28 @@ HEADER "accept", "accept"
     sts (TOIN+1), wrk_low
     mov wrk_low, _work_
     sts (TOIN+0), wrk_low
-    pspush wrk_low, wrk_high
+	rjmp 1b
+
+    ; keep address
+2:  
+	sbiw ips_low, 1
+    pspush ips_low, ips_high
+    pspush ips_low, ips_high
+
+    ; skip wile not equal
+3:  
+	srload wrk_high
+    cpi wrk_high, 0
+    breq 4f
+    cpi wrk_low, 32
+    brne 3b
+
+    ; keep length
+4:  
+	pspull wrk_low, wrk_high
+    sub ips_low, wrk_low
+    sbc ips_high, wrk_high
+    pspush ips_low, ips_high
     POON
 
 ;----------------------------------------------------------------------
@@ -501,7 +532,8 @@ HEADER "find", "find"
     rspush ips_low, ips_high
 
     ; load next link 
-1:  rspull ips_low, ips_high
+1:  
+	rspull ips_low, ips_high
     pmload wrk_low, wrk_high
 
     ; if null ends
@@ -528,7 +560,8 @@ HEADER "find", "find"
     movw psp_low, nds_low
     
     ; load chars
-3:  ld wrk_low, Z+
+3:  
+	ld wrk_low, Z+
     ld wrk_high, X+
     cp wrk_low, wrk_high
     brne 1b
@@ -537,7 +570,8 @@ HEADER "find", "find"
 
     ; found
     ; drop link for next name
-4:  rspull wrk_low, wrk_high
+4:  
+	rspull wrk_low, wrk_high
     ; restore psp
     rspull psp_low, psp_high
     ; must check oddies
@@ -554,7 +588,8 @@ HEADER "find", "find"
 
     ; not found
     ; restore psp
-10: rspull psp_low, psp_high
+10: 
+	rspull psp_low, psp_high
     ; restore a1
     movw wrk_low, nds_low
     pspush wrk_low, wrk_high
@@ -562,9 +597,11 @@ HEADER "find", "find"
     clr wrk_low
     clr wrk_low
     ; save results
-99: pspush wrk_low, wrk_high
+99: 
+	pspush wrk_low, wrk_high
     POON
 
+/*
 ;----------------------------------------------------------------------
 ;	ok ( a1 f -- ) 
 ;
@@ -590,7 +627,6 @@ HEADER  "evaluate", "evaluate"
 2:	rspush wrk_low, wrk_high
 	POON 
 
-/*
 : execute >R ;
 : compile comma ;
 : interpret

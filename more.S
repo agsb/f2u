@@ -135,7 +135,8 @@ HEADER "?DUP", "ZDUP"
 	cp wrk_low, wrk_high
 	brbs BIT_ZERO, 1f
 	pspush wrk_low, wrk_high
-1:	pspush wrk_low, wrk_high
+1:	
+	pspush wrk_low, wrk_high
 	POON 
 
 ;----------------------------------------------------------------------
@@ -149,7 +150,8 @@ HEADER "?BRANCH", "QBRANCH"
 	rspull wrk_low, wrk_high
 	adiw wrk_low, CELL_SIZE
 	rspush wrk_low, wrk_high
-1:	POON
+1:	
+	POON
 
 ;----------------------------------------------------------------------
 ;ok ( branch next reference )
@@ -388,7 +390,8 @@ HEADER "0>", "ZEROGT"
     sbiw wrk_low, 1
     brge 1f
     rjmp FTRUE
-1:  rjmp FFALSE
+1:  
+	rjmp FFALSE
 
 ;----------------------------------------------------------------------
 ;  ok 0<
@@ -398,7 +401,8 @@ HEADER "0<", "ZEROLT"
     sbiw wrk_low, 1
     brge 1f
     rjmp FFALSE
-1:  rjmp FTRUE
+1:  
+	rjmp FTRUE
 
 ;----------------------------------------------------------------------
 ; ok INV
@@ -458,7 +462,8 @@ HEADER "COMPARE", "COMPARE"
 
     ; no offset
 
-1:  cp  tos_low, tos_high
+1:  
+	cp  tos_low, tos_high
 	brbs BIT_ZERO, 2f
 
 	cp  nds_low, nds_high
@@ -478,7 +483,8 @@ HEADER "COMPARE", "COMPARE"
     ; again
 	rjmp 1b
 
-2:  cp tos_low, nds_low
+2:  
+	cp tos_low, nds_low
 	brbc BIT_ZERO,3f
 
 	cp tos_high, nds_high
@@ -488,10 +494,12 @@ HEADER "COMPARE", "COMPARE"
 	clr wrk_high
 	rjmp 4f
 
-3:  ser wrk_low
+3:  
+	ser wrk_low
 	ser wrk_high
 
-4:  rspull psp_low, psp_high
+4:  
+	rspull psp_low, psp_high
 	pspush wrk_low, wrk_high	
 	POON
 
@@ -523,8 +531,9 @@ HEADER "CMOVE", "MOVE"
 
     ; no offset
 
-  ; move a byte
-1:  ld _work_, X+
+  	; move a byte
+1:  
+	ld _work_, X+
     st Z+, _work_
     
     ; decrease counter
@@ -534,7 +543,8 @@ HEADER "CMOVE", "MOVE"
 	brbc BIT_ZERO, 1b
 
     ; pull psp
-2:	rspull psp_low, psp_high
+2:	
+	rspull psp_low, psp_high
 	POON
 
 ;----------------------------------------------------------------------
@@ -570,7 +580,8 @@ HEADER "CMOVE>", "CMOVEGT"
 	adc psp_high, wrk_high
 
     ; move a byte
-1:  ld _work_, -X
+1:  
+	ld _work_, -X
     st -Z, _work_
     
     ; decrease counter
@@ -578,7 +589,8 @@ HEADER "CMOVE>", "CMOVEGT"
 	brbc BIT_ZERO, 1b
 
 	; pull psp
-2:	rspull psp_low, psp_high
+2:	
+	rspull psp_low, psp_high
 	POON
 
 ;----------------------------------------------------------------------
@@ -694,6 +706,3 @@ HEADER "+!", "PLUSTO"
 	srsave wrk_high
 	POON
 
-
-;----------------------------------------------------------------------
-;----------------------------------------------------------------------
