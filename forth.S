@@ -274,229 +274,6 @@ TXTO:
 
 ;----------------------------------------------------------------------
 ;
-; ok ( a1 c --- a2 u ) 
-;    search start at a1 for next word delimited by c or \0
-;    returns start a2 and u lenght
-;
-HEADER "token", "token"
-    NOOP
-    pspull ips_low, ips_high
-    pspull wrk_low, wrk_high
-1:  ; skip while equal
-    srload wrk_high
-    cp wrk_high, wrk_high
-    brbs BIT_ZERO, 2f
-    cp wrk_low, wrk_high
-    breq 1b
-    ; keep address
-2:  sbiw ips_low, 1
-    pspush ips_low, ips_high
-    pspush ips_low, ips_high
-3:  ; skip wile not equal
-    srload wrk_high
-    cp wrk_high, wrk_high
-    brbs BIT_ZERO, 4f
-    cp wrk_low, wrk_high
-    brne 3b
-4:  ; keep length
-    pspull wrk_low, wrk_high
-    sub ips_low, wrk_low
-    sbc ips_high, wrk_high
-    pspush ips_low, ips_high
-    POON
-
-;----------------------------------------------------------------------
-;
-; ok accept ( -- u )  NO ECHOES !!!
-;    read chars into tib until CR or size=0
-;    
-HEADER "accept", "accept"
-    NOOP
-    ldi ips_low, lo8(TIB)
-    ldi ips_high, hi8(TIB)
-    ldi wrk_high, TIB_SIZE
-    ; always add \0 terminator
-    sts TIB+TIB_SIZE, _zero_
-    clr _work_     ; clear length
-
-    clr tos_low ; clear comments \
-    clr tos_high ; clear comments ()
-
-1:  ; decrease counter    
-    dec wrk_high
-    brbs BIT_ZERO, 2f
-
-3:  ; waits a char
-    sbis 0xb, 7
-    rjmp 3b
-    in wrk_low, 0xc
-
-    ; verify CR
-    cp wrk_low, 13 ; CR
-    breq 2f
-
-    ; verify ESC 
-    cp wrk_low, 27 ; ESC
-    brne 4f
-
-    ; process ESC
-    rjmp 3b
-
-4:  ; verify BS
-    cp wrk_low,  8 ; BS
-    brne 5f
-
-    ; process BS
-    cp _work_, _work_
-    brbs BIT_ZERO, 3b
-    dec _work_
-    sbiw ips_low, 1
-    rjmp 3b    
-
-5:  ; is valid char 7-bit ASCII
-    ; no controls
-    cpi    wrk_low, 32
-    brlo 3b
-    ; no graphics
-    cpi wrk_low, 128
-    brge 3b
-
-7:  ; is a ( ?
-    cpi wrk_low, 40
-    brne 8f
-    inc tos_high
-    rjmp 3b
-
-8:  ; is a ) ?
-    cpi wrk_low, 41
-    brne 9f
-    dec tos_high
-    rjmp 3b
-
-9:  ; is a \ ?
-    cpi wrk_low, 92 
-    brne 10f
-    dec tos_low
-    rjmp 3b
-
-10: ; skip comments
-    tst tos_low
-    brne 3b
-    tst tos_high
-    brne 3b
-
-.ifdef UPPERCASE    
-    ; to uppercase
-    cpi wrk_low, 61
-    brge 6f
-    cpi wrk_low, 123
-    brge 6f
-    subi wrk_low, 32
-.endif
-
-6:  ; save char to buffer
-    inc _work_
-    srsave wrk_low
-    rjmp 1b
-
-2:  ; push counter
-    ; always add a space and a \0 terminator
-    ldi wrk_low, 32
-    srsave wrk_low
-    clr wrk_low
-    srsave wrk_low
-
-    ; update TOIN
-    sts (TOIN+1), wrk_low
-    mov wrk_low, _work_
-    sts (TOIN+0), wrk_low
-    pspush wrk_low, wrk_high
-    POON
-
-;----------------------------------------------------------------------
-;
-; ok find a word in a vocabulary
-;    ( a u -- a | 0 )
-; counted strings are 254 chars maximum
-; names are 15 or 32 maximum
-;
-HEADER "find", "find"
-    NOOP
-    pspull tos_low, tos_high
-    pspull nds_low, nds_high
-    ; save stack
-    rspush psp_low, psp_high
-    ; prepare loop    
-    ldi    ips_low, lo8(LAST)
-    ldi ips_high, hi8(LAST)
-    rspush ips_low, ips_high
-
-1:    ; load next link 
-    rspull ips_low, ips_high
-    pmload wrk_low, wrk_high
-
-    ; if null ends
-    cp wrk_low, wrk_high
-    brbs BIT_ZERO, 10f
-
-    ; save next link
-    rspush wrk_low, wrk_high
-
-    ; load size
-    ld tos_high, Z+
-
-    ; must ummask
-    ; ( a1 u1 --- f )
-    mov _work_, tos_high
-    andi tos_high, F_UNMASK
-    
-    ; ping-pong
-    ; verify sizes
-    cp tos_high, tos_low
-    brne 1b
-
-    ; points to a1
-    movw psp_low, nds_low
-    
-3:    ; load chars
-    ld wrk_low, Z+
-    ld wrk_high, X+
-    cp wrk_low, wrk_high
-    brne 1b
-    dec tos_high
-    brbc BIT_ZERO, 3b
-
-4:    ; found
-    ; drop link for next name
-    rspull wrk_low, wrk_high
-    ; restore psp
-    rspull psp_low, psp_high
-    ; must check oddies
-    sbrc  _work_, 0
-    ; bypass pad byte
-    adiw ips_low, 1
-    pspush ips_low, ips_high
-    ; return with flags
-    clr wrk_high
-    mov wrk_low, _work_
-    andi wrk_low, F_TOMASK
-    ori  wrk_low, F_FOUND
-    rjmp 99f
-
-10: ; not found
-    ; restore psp
-    rspull psp_low, psp_high
-    ; restore a1
-    movw wrk_low, nds_low
-    pspush wrk_low, wrk_high
-    clr wrk_low
-    clr wrk_low
-99: ; save results
-    pspush wrk_low, wrk_high
-    POON
-    
-;----------------------------------------------------------------------
-;
 ; ok push timer counter
 ;
 HEADER "millis", "MILLIS"
@@ -557,6 +334,236 @@ HEADER  "WARM", "WARM"
 
 
 ;----------------------------------------------------------------------
+;
+; ok ( a1 c --- a2 u ) 
+;    
+;   
+;
+;----------------------------------------------------------------------
+;
+; ok ( a1 c --- a2 u ) 
+;    search start at a1 for next word delimited by c or \0
+;    returns start a2 and u lenght
+;
+HEADER "token", "token"
+    NOOP
+    pspull ips_low, ips_high
+    pspull wrk_low, wrk_high
+    ; skip while equal
+    srload wrk_high
+	; if \0 end of buffer
+1:  cp wrk_high, wrk_high
+    brbs BIT_ZERO, 2f
+	; if same
+    cp wrk_low, wrk_high
+    breq 1b
+    ; keep address
+2:  sbiw ips_low, 1
+    pspush ips_low, ips_high
+    pspush ips_low, ips_high
+    ; skip wile not equal
+3:  srload wrk_high
+    cp wrk_high, wrk_high
+    brbs BIT_ZERO, 4f
+    cp wrk_low, wrk_high
+    brne 3b
+    ; keep length
+4:  pspull wrk_low, wrk_high
+    sub ips_low, wrk_low
+    sbc ips_high, wrk_high
+    pspush ips_low, ips_high
+    POON
+
+;----------------------------------------------------------------------
+;
+; ok accept ( -- u )  NO ECHOES !!!
+;    read chars into tib until CR or size=0
+;    
+HEADER "accept", "accept"
+    NOOP
+    ldi ips_low, lo8(TIB)
+    ldi ips_high, hi8(TIB)
+    ldi wrk_high, TIB_SIZE
+    ; always add \0 terminator
+    sts TIB+TIB_SIZE, _zero_
+    clr _work_     ; clear length
+
+    clr tos_low ; clear comments \
+    clr tos_high ; clear comments ()
+
+    ; decrease counter    
+1:  dec wrk_high
+    brbs BIT_ZERO, 2f
+
+    ; waits a char
+3:  sbis 0xb, 7
+    rjmp 3b
+    in wrk_low, 0xc
+
+    ; verify CR
+    cp wrk_low, 13 ; CR
+    breq 2f
+
+    ; verify ESC 
+    cp wrk_low, 27 ; ESC
+    brne 4f
+
+    ; process ESC
+    rjmp 3b
+
+    ; verify BS
+4:  cp wrk_low,  8 ; BS
+    brne 5f
+
+    ; process BS
+    cp _work_, _work_
+    brbs BIT_ZERO, 3b
+    dec _work_
+    sbiw ips_low, 1
+    rjmp 3b    
+
+    ; is valid char 7-bit ASCII
+    ; no controls
+5:  cpi    wrk_low, 32
+    brlo 3b
+    ; no graphics
+    cpi wrk_low, 128
+    brge 3b
+
+    ; is a ( ?
+7:  cpi wrk_low, 40
+    brne 8f
+    inc tos_high
+    rjmp 3b
+
+    ; is a ) ?
+8:  cpi wrk_low, 41
+    brne 9f
+    dec tos_high
+    rjmp 3b
+
+    ; is a \ ?
+9:  cpi wrk_low, 92 
+    brne 10f
+    dec tos_low
+    rjmp 3b
+
+   ; skip comments
+10: tst tos_low
+    brne 3b
+    tst tos_high
+    brne 3b
+
+.ifdef UPPERCASE    
+    ; to uppercase
+    cpi wrk_low, 61
+    brge 6f
+    cpi wrk_low, 123
+    brge 6f
+    subi wrk_low, 32
+.endif
+
+    ; save char to buffer
+6:  inc _work_
+    srsave wrk_low
+    rjmp 1b
+  
+    ; push counter
+    ; always add a space and a \0 terminator
+2:  ldi wrk_low, 32
+    srsave wrk_low
+    clr wrk_low
+    srsave wrk_low
+
+    ; update TOIN
+    sts (TOIN+1), wrk_low
+    mov wrk_low, _work_
+    sts (TOIN+0), wrk_low
+    pspush wrk_low, wrk_high
+    POON
+
+;----------------------------------------------------------------------
+;
+; ok find a word in a vocabulary
+;    ( a u -- a | 0 )
+; counted strings are 254 chars maximum
+; names are 15 or 32 maximum
+;
+HEADER "find", "find"
+    NOOP
+    pspull tos_low, tos_high
+    pspull nds_low, nds_high
+    ; save stack
+    rspush psp_low, psp_high
+    ; prepare loop    
+    ldi    ips_low, lo8(LAST)
+    ldi ips_high, hi8(LAST)
+    rspush ips_low, ips_high
+
+    ; load next link 
+1:  rspull ips_low, ips_high
+    pmload wrk_low, wrk_high
+
+    ; if null ends
+    cp wrk_low, wrk_high
+    brbs BIT_ZERO, 10f
+
+    ; save next link
+    rspush wrk_low, wrk_high
+
+    ; load size
+    ld tos_high, Z+
+
+    ; must ummask
+    ; ( a1 u1 --- f )
+    mov _work_, tos_high
+    andi tos_high, F_UNMASK
+    
+    ; ping-pong
+    ; verify sizes
+    cp tos_high, tos_low
+    brne 1b
+
+    ; points to a1
+    movw psp_low, nds_low
+    
+    ; load chars
+3:  ld wrk_low, Z+
+    ld wrk_high, X+
+    cp wrk_low, wrk_high
+    brne 1b
+    dec tos_high
+    brbc BIT_ZERO, 3b
+
+    ; found
+    ; drop link for next name
+4:  rspull wrk_low, wrk_high
+    ; restore psp
+    rspull psp_low, psp_high
+    ; must check oddies
+    sbrc  _work_, 0
+    ; bypass pad byte
+    adiw ips_low, 1
+    pspush ips_low, ips_high
+    ; return with flags
+    clr wrk_high
+    mov wrk_low, _work_
+    andi wrk_low, F_TOMASK
+    ori  wrk_low, F_FOUND
+    rjmp 99f
+
+    ; not found
+    ; restore psp
+10: rspull psp_low, psp_high
+    ; restore a1
+    movw wrk_low, nds_low
+    pspush wrk_low, wrk_high
+	; set flag false
+    clr wrk_low
+    clr wrk_low
+    ; save results
+99: pspush wrk_low, wrk_high
+    POON
 
 ;----------------------------------------------------------------------
 ;	ok ( a1 f -- ) 
@@ -579,8 +586,8 @@ HEADER  "evaluate", "evaluate"
 	brne 2f
 	; compile
 	srsave 
-2:	; execute
-	rspush wrk_low, wrk_high
+	; execute
+2:	rspush wrk_low, wrk_high
 	POON 
 
 /*
