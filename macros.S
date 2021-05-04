@@ -216,6 +216,9 @@ hd_\label:
     F_UNMASK = 0x0F
 .endif
 
+	F_COMPILE = 1
+	F_INTERPE = 0
+
 ;---------------------------------------------------------------------
 ; default base
 ;
