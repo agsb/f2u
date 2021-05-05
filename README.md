@@ -228,7 +228,7 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
 # Notes
 
   1. primitives (Leaf) routine does not do any call. Compound (Twig) routines do.
-  2. index routines counts downwards until 0, ever, exact as [ for ( n ; n != 0 ; n-- ) ]
+  2. index routines counts downwards until 0, ever, exact as C: for (; n != 0 ; n--) { ~~~ }
   3. no bounds check, none.
   4. compare bytes: COMPARE return FALSE or TRUE, only;
   5. move bytes: CMOVE upwards, CMOVE> downwards;
