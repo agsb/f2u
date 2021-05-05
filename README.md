@@ -25,6 +25,8 @@ I want a forth for a Atmega8, but there is no need for speed, because I want a m
 
 PS Atmega8 is a MCU with harvard architeture, 8k program flash memory, 1k static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, but (R16 to R31) could be used as 16 bits.
 
+look at Notes.md
+
 # References
 
 1. In eforth for Cortex M4,  http://forth.org/OffeteStore/1013_eForthAndZen.pdf
