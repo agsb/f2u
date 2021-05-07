@@ -34,7 +34,7 @@ Codes and Parameters
     the dictionary order does not matter, but is more easy for future ports that all primitives precede all compounds;
     then to port for other MCU or CPU, just rewrote the engine and primitives, change the references of primitives at dictionary and done.
     
-    boot+bios+forth+more where 
+      boot+bios+forth+more where 
       boot, setup at boot or reset; 
       bios, routines for input and output devices, 
       forth, code for inner and primitives, 
@@ -43,3 +43,4 @@ Codes and Parameters
     
 in https://github.com/cesarblum/sectorforth revival of https://groups.google.com/g/comp.lang.forth/c/NS2icrCj1jQ
 
+in https://guides.github.com/features/mastering-markdown/
