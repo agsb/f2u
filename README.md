@@ -121,18 +121,18 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     ;
     ; WARNING: this inner still only works for program memory (flash) 
     ; 
-    _LAST:
+    EXIT:
       ; does nothing and mark as primitive
      nop
       
     _EXIT:
       ; pull isp from rsp
-     rsp_pull isp_low, isp_high
+     rspull wrk_low, wrk_high
 
     _NEXT:
       ; load wrk with contents of cell at isp and auto increments isp
-     lpm wrk_low, Z+
-     lpm wrk_high, Z+
+     movw isp_low, wrk_low
+     pmload wrk_low, wrl_high
      
       ; if zero then is a primitive, go exec it
      cp wrk_low, wrk_high
@@ -141,13 +141,16 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     _ENTER
       ; else 
       ; push isp into rsp
-     rsp_push isp_low, isp_high
-      
+     adiw wrk_low, 2
+     rspush wrk_low, wrk_high
+     sbiw wrk_low, 2
       ; is a compound reference, go next it
-     movw isp_low, wrk_low
-     rjmp _NEXT brbc 1, 
+     rjmp _NEXT 
     
     _EXEC
+     movw isp_low, wrk_low
+     asr isp_high
+     ror isp_low
       ; jump to
      ijmp
     
