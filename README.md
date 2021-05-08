@@ -160,6 +160,18 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
 
     twig ==>  ptr, ..., ptr, (_LAST)
     
+ doLit:
+  rspull wl, wh
+  movw zl, wl
+  adiw wl, 2
+  rspush wl, wh
+  asr zh
+  ror zl
+  pmload wl, wh
+  pspush wl, wh
+  rjmp _EXIT
+  
+    
 ; considerations
     
     efficient code;
