@@ -74,7 +74,7 @@
 .section .text
 ;.org 0x100
 ; maps pseudo memory address, all access behind is sram
-;.org SRAM_END+1
+.org SRAM_END+1
 .global forth
 forth:
 ;----------------------------------------------------------------------
@@ -86,12 +86,16 @@ HEADER "_LAST", "_LAST"
 
 ; pull ip from rsp
 _exit:             
-    rspull ips_low, ips_high
+    rspull wrk_low, wrk_high
 
 ; load w with contents of cell at ip, only works in program memory (flash)  
 _next:            
-    lpm wrk_low, Z+
-    lpm wrk_high, Z+
+	movw ips_low, wrk_low
+    pmload wrk_low, wrk_high
+
+; point next
+	movw ips_low, wrk_low
+	adiw ips_low, 2
 
 ; if zero then is a exec 
     cp wrk_low, wrk_high
@@ -100,12 +104,12 @@ _next:
 ; else is a reference
 _enter:            
     rspush ips_low, ips_high
-
-; push ip into rsp
-    movw ips_low, wrk_low
-    rjmp _next
+	rjmp _next
 
 _exec:
+	; convert to words
+	asr ips_high
+	ror ips_low
     ijmp
 
 ;----------------------------------------------------------------------
@@ -284,7 +288,7 @@ HEADER "millis", "MILLIS"
     POON
 
 ;----------------------------------------------------------------------
-; init instruction pointer and etc
+; does reset
 ;
 HEADER "BYE", "BYE"
     NOOP
@@ -300,16 +304,16 @@ HEADER "COLD", "COLD"
     cli
 
 ; clear scratchs
-    clr r0
-    clr r1
+    clr _work_
+    clr _zero_
 
 ; clear timer0 counter
-    clr r2
-    clr r3
+    clr tmr_low
+    clr tmr_high
 
 ; define timer0 offset
-    ldi r16, 141
-    mov r4, r16
+    ldi wrk_low, 141
+    mov offs_low, wrk_low
 
 ; enable interrupts
     sei
@@ -334,13 +338,19 @@ HEADER  "WARM", "WARM"
     NOOP
     POON
 
-
 ;----------------------------------------------------------------------
 ;
-; ok ( a1 c --- a2 u ) 
-;    
-;   
-;
+; ok ( --- a2 u ) 
+HEADER "dolit", "dolit"
+    NOOP
+	rspull wrk_low, wrk_high
+	movw ips_low, wrk_low	
+	adiw wrk_low, 2
+	rspush wrk_low, wrk_high
+	pmload wrk_low, wrk_high
+	pspush wrk_low, wrk_high
+	POON
+
 ;----------------------------------------------------------------------
 ;
 ; ok ( --- a2 u ) 
@@ -516,7 +526,7 @@ HEADER "token", "token"
 ;----------------------------------------------------------------------
 ;
 ; ok find a word in a vocabulary
-;    ( a u -- a | 0 )
+;    ( a u -- a f | 0 )
 ; counted strings are 254 chars maximum
 ; names are 15 or 32 maximum
 ;
@@ -527,7 +537,7 @@ HEADER "find", "find"
     ; save stack
     rspush psp_low, psp_high
     ; prepare loop    
-    ldi    ips_low, lo8(LAST)
+    ldi ips_low, lo8(LAST)
     ldi ips_high, hi8(LAST)
     rspush ips_low, ips_high
 
@@ -544,7 +554,7 @@ HEADER "find", "find"
     rspush wrk_low, wrk_high
 
     ; load size
-    ld tos_high, Z+
+    pmload tos_low, tos_high
 
     ; must ummask
     ; ( a1 u1 --- f )
@@ -560,6 +570,9 @@ HEADER "find", "find"
     movw psp_low, nds_low
     
     ; load chars
+;
+; can not be doing like this !!! not in sram !!! and lpm gets address in strange way
+;	ZZZZ
 3:  
 	ld wrk_low, Z+
     ld wrk_high, X+
@@ -625,6 +638,7 @@ HEADER  "evaluate", "evaluate"
 	srsave 
 	; execute
 2:	rspush wrk_low, wrk_high
+3:
 	POON 
 
 : execute >R ;

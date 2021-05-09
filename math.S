@@ -1,11 +1,87 @@
+;----------------------------------------------------------------------
+;
+; 	great DJB hash, adapted for 16bits
+;
+; hash = (hash << 5) + str[i]
+; for ascii chars in sram, in bytes not cells
+; ( a u -- h ) djb hash
+.equ djbHASH, 5381
+HEADER "HASH", "HASH"
+	NOOP
+	ldi nds_low, lo8(djbHASH)
+	ldi nds_high, hi8(djbHASH)
+	pspull wrk_low, wrk_high
+	pspull ips_low, ips_high
+	; get a char
+1:	srload tos_low
+	add nds_low, tos_low
+	adc nds_high, _zero_
+	lsl nds_low
+	rol nds_high
+	lsl nds_low
+	rol nds_high
+	lsl nds_low
+	rol nds_high
+	lsl nds_low
+	rol nds_high
+	lsl nds_low
+	rol nds_high
+    ; decrease counter
+	sbiw wrk_low, 1
+	brge 1b
+2:  pspush nds_low, nds_high
+	POON
+
+;----------------------------------------------------------------------
+;
+;	 ©2000-2021 by Gerhard Schmidt,
+; 	 http://www.avr-asm-tutorial.net/avr_en/apps/random_tn13/random_calc_tn13.html
+;
+;    seed ~ 0x02A8
+;
+;	 also good seeds
+;
+;    B167 4A3C 9879 B61E 7B26 
+;    A858 1F88 50D5 419D 5537
+;    0224 0527 5EB6 1E6D BCDC
+;    92FF C206 0ECD 9361 2823
+;    BE0B B303 6462 0E4C 3D24
+;
+HEADER "RAND", "RND"
+	NOOP
+;    load seed
+    lds wrk_low, RAND
+    lds wrk_high, RAND
+;    run magics
+    eor wrk_low, wrk_high
+    swap wrk_low
+    add wrk_high, wrk_low
+;    save seed
+	pspush wrk_low, wrk_high
+_seed:
+    sts RAND, wrk_low
+    sts RAND + 1, wrk_high
+    POON
+
+;----------------------------------------------------------------------
+;
+; sets seed for rand
+;
+HEADER "SEED", "SEED"
+	NOOP
+	pspull wrk_low, wrk_high
+	rjmp _seed
+    
+;----------------------------------------------------------------------
 ;
 ; 7FFF FFFF FFFF FFFF = 9.223.372.036.854.775.807
 ;----------------------------------------------------------------------
 ;
-;	from AVR-200 ; "mpy16u" "- 16x16 Bit Unsigned Multiplication
+; adapted from AVR-200 
+; "mpy16u" "- 16x16 Bit Unsigned Multiplication
 ;
 ; ok UM*
-HEADER "UM*" "UMUL"
+HEADER "UM*", "UMUL"
 	NOOP
 ;
 ;    move operands
@@ -46,10 +122,11 @@ m16result:
 
 ;----------------------------------------------------------------------
 ;
-;    "div16u" "- 16/16 Bit Unsigned Division
+; 	adapted from AVR-200 
+;   "div16u" "- 16/16 Bit Unsigned Division
 ;
 ; ok UM/MOD
-HEADER "UM/MOD" "UMBYMOD"
+HEADER "UM/MOD", "UMBYMOD"
 	NOOP
 ;
 ;    move operands
@@ -90,9 +167,10 @@ d16ures:
 
 ;----------------------------------------------------------------------
 ;
-;* "mpy16s" "- 16x16 Bit Signed Multiplication
+; 	adapted from AVR-200 
+; 	"mpy16s" "- 16x16 Bit Signed Multiplication
 ; ok *
-HEADER "*" "SMUL"
+HEADER "*", "SMUL"
 	NOOP
 ;
 ;***** Code
@@ -122,7 +200,7 @@ m16s_2:
     ror  wrk_low
     ror  nds_high
     ror  nds_low
-    dec  _work_s    		;decrement counter
+    dec  _work_	    		;decrement counter
     brne m16s_1				;if not done, loop more
 
 m16sres:
@@ -130,17 +208,14 @@ m16sres:
 
 ;----------------------------------------------------------------------
 ;
-;    "div16s" "- 16/16 Bit Signed Division
+; 	adapted from AVR-200 
+;   "div16s" "- 16/16 Bit Signed Division
 ;
 ; ok /
-HEADER "/" "SDIV"
+HEADER "/", "SDIV"
 	NOOP
 ;
 ;***** Subroutine Register Variables
-;
-
-#define    d16s    r21
-
 ;
 ;    move operands
 ;
@@ -212,121 +287,56 @@ d16s_6:
     rjmp    d16s_3
 
 ;----------------------------------------------------------------------
-
-;----------------------------------------------------------------------
-;*************************************************************************
-;*     *
-;*      Convert unsigned 16 bit to 5 digit ASCII    *
-;*     *
-;*    Author: Peter Dannegger     *
-;*     *
-;*************************************************************************
-; https://www.avrfreaks.net/forum/smallest-and-fastest-binary-bcd-conversion?page=all
+; 
+;   by Peter Dannegger 
+; 	https://www.avrfreaks.net/forum/smallest-and-fastest-binary-bcd-conversion?page=all
 ;
+; input 16 bit value 0 ... 65535
+; output  5 digits (ASCII)
 ;
-;input: R17, R16 = 16 bit value 0 ... 65535
-;output: R20, R19, R18, R17, R16 = 5 digits (ASCII)
-;cycle: 20 ... 170
-;
-HEADER 
-bin16_ascii:
-
-    ldi    r20, -1 + '0'
-_bcd1:  inc    r20
-    subi    r16, lo8(10000)    
-    sbci    r17, hi8(10000)
-    brcc    _bcd1
-
-    ldi    r19, 10 + '0'
-_bcd2:  dec    r19
-    subi    r16, lo8(-1000)  
-    sbci    r17, hi8(-1000)
-    brcs    _bcd2
-
-    ldi    r18, -1 + '0'
-_bcd3:  inc    r18
-    subi    r16, lo8(100)   
-    sbci    r17, hi8(100)
-    brcc    _bcd3
-
-    ldi    r17, 10 + '0'
-_bcd4:  dec    r17
-    subi    r16, -10     
-    brcs    _bcd4
-
-    subi    r16, -'0'
-    ret
-
-;----------------------------------------------------------------------
-;
-; great DJB hash, adapted for 16bits
-;
-; hash = (hash << 5) + str[i]
-; for ascii chars in sram, in bytes not cells
-; ( a u -- h ) djb hash
-.equ djbHASH, 5381
-HEADER "HASH", "HASH"
+HEADER "utoa", "utoa" 
 	NOOP
-	ldi nds_low, lo8(djbHASH)
-	ldi nds_high, hi8(djbHASH)
+
+	ldi ips_low, lo8(PAD)
+	ldi ips_high, hi8(PAD)
+	movw nds_low, ips_low
 	pspull wrk_low, wrk_high
-	pspull ips_low, ips_high
-	; get a char
-1:	srload tos_low
-	add nds_low, tos_low
-	adc nds_high, _zero_
-	lsl nds_low
-	rol nds_high
-	lsl nds_low
-	rol nds_high
-	lsl nds_low
-	rol nds_high
-	lsl nds_low
-	rol nds_high
-	lsl nds_low
-	rol nds_high
-    ; decrease counter
-	sbiw wrk_low, 1
-	brge 1b
-2:  pspush nds_low, nds_high
+	
+itoa:
+
+    ldi tos_low, -1 + '0'
+1:  inc tos_low
+    subi wrk_low, lo8(10000)    
+    sbci wrk_high, hi8(10000)
+    brcc 1b
+	st	Z+, wrk_low
+
+    ldi tos_low, 10 + '0'
+2:  dec tos_low
+    subi wrk_low, lo8(-1000)  
+    sbci wrk_high, hi8(-1000)
+    brcs 2b
+	st Z+, wrk_low
+
+    ldi tos_low, -1 + '0'
+3:  inc tos_low
+    subi wrk_low, lo8(100)   
+    sbci wrk_high, hi8(100)
+    brcc 3b
+	st Z+, wrk_low
+
+    ldi wrk_high, 10 + '0'
+4:  dec wrk_high
+    subi wrk_low, -10     
+    brcs 4b
+
+    subi wrk_low, -'0'
+	st Z+, wrk_low
+
+; append \0
+	clr wrk_low
+	st Z+, wrk_low
+
+	pspush nds_low, nds_high
 	POON
 
-;----------------------------------------------------------------------
-;
-; http://www.avr-asm-tutorial.net/avr_en/apps/random_tn13/random_calc_tn13.html
-;
-;    seed ~ 0x02A8
-;
-;	 also good seeds
-;
-;    B167 4A3C 9879 B61E 7B26 
-;    A858 1F88 50D5 419D 5537
-;    0224 0527 5EB6 1E6D BCDC
-;    92FF C206 0ECD 9361 2823
-;    BE0B B303 6462 0E4C 3D24
-;
-HEADER "RAND", "RND"
-	NOOP
-;    load seed
-    lds wrk_low, RAND
-    lds wrk_high, RAND
-;    run magics
-    eor wrk_low, wrk_high
-    swap wrk_low
-    add wrk_high, wrk_low
-;    save seed
-	pspush wrk_low, wrk_high
-_seed:
-    sts RAND, wrk_low
-    sts RAND + 1, wrk_high
-    POON
-
-;----------------------------------------------------------------------
-;
-; sets seed for rand
-;
-HEADER "SEED", "SEED"
-	NOOP
-	pspull wrk_low, wrk_high
-	rjmp _seed
-    

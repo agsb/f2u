@@ -15,7 +15,7 @@
 
 ; counter for timer0
 #define tmr_low r2
-#define tmr_high r2
+#define tmr_high r3
 
 ; offset for timer0
 #define offs_low r4
@@ -74,21 +74,21 @@
 .endm
 
 .macro POON
-	rjmp _EXIT
+	rjmp _exit
 .endm
 
 ;----------------------------------------------------------------------
 ;
 ; start reverse linked list
 ;
-.set _link_ , 0x0
+.set _link_, 0x0
 ;----------------------------------------------------------------------
 ;
 ; header of leaf word in dictionary
 ;
-.macro HEADER name label
+.macro HEADER name, label
 hd_\label:
-	.p2align 1,0x00
+	.p2align 1, 0x00
 7:	
 	.word _link_
 	.set _link_, 7b
@@ -96,7 +96,7 @@ hd_\label:
 8: 	
 	.ascii "\name"
 9: 	
-	.p2align 1,0x20
+	.p2align 1, 0x20
 \label:
 .endm
 
@@ -110,109 +110,77 @@ hd_\label:
 ;
 ;----------------------------------------------------------------------
 ;	push into return stack, increments pointer
-.macro rspush low , high
-    st Y+ , \low
-    st Y+ , \high
+.macro rspush low, high 
+    st Y+, \low
+    st Y+, \high
 .endm
 
 ;----------------------------------------------------------------------
 ;	pull from return stack, decrements pointer
-.macro rspull low , high
-    ld \high , -Y
-    ld \low  , -Y
+.macro rspull low, high
+    ld \high, -Y
+    ld \low, -Y
 .endm
 
 ;----------------------------------------------------------------------
 ;	push into data stack, increments pointer
-.macro pspush low , high
-    st X+ , \low
-    st X+ , \high
+.macro pspush low, high
+    st X+, \low
+    st X+, \high
 .endm
 
 ;----------------------------------------------------------------------
 ;	pull from data stack, decrements pointer
-.macro pspull low , high
-    ld \high , -X
-    ld \low  , -X
+.macro pspull low, high
+    ld \high, -X
+    ld \low, -X
 .endm
 
 ;----------------------------------------------------------------------
-;	load from program memory (flash), increments pointer
-.macro pmload low , high
-    lpm \low  , Z+
-    lpm \high , Z+
+;	load from program memory (flash)
+;   
+.macro pmload low, high
+	lsl \low
+	rol \high
+	lpm \low, Z+
+	lpm \high, Z+
 .endm
 
 ;----------------------------------------------------------------------
 ;	load from static memory (sram), increments pointer
+;
 .macro srload byte
-    ld \byte  , Z+
+    ld \byte, Z+
 .endm
 
 ;----------------------------------------------------------------------
 ;	save to static memory (sram), increments pointer
+;
 .macro srsave byte
     st Z+, \byte 
 .endm
 
-;----------------------------------------------------------------------
-; unused
-;	load from memory, increments pointer
-.macro mmload byte
-     ; all dictionary above $0460 in flash
-100: 
-	movw wrk_low, ips_low
-    subi wrk_low, $60
-    sbic wrk_high, $04
-    brge 104f
-	; read from sram
-102: 
-	ld \byte, Z+
-    rjmp 106f
-  	; read from flash
-104: 
-	lpm \byte, Z+
-106:
-.endm
- 
-;----------------------------------------------------------------------
-; unused
-;	save into memory, increments pointer
-.macro mmsave byte
-     ; all dictionary above $0460 in flash
-100: 
-	movw wrk_low, ips_low
-    subi wrk_low, $60
-    sbic wrk_high, $04
-    brge 104f
-	; save into sram
-102: 
-	st Z+, \byte
-    rjmp 106f
-  	; save into flash
-104:
-	.error "trying write into flash" 
-	nop ; spm is complex, dont works in bytes
-106:
-.endm
+; all dictionary above $0460 in flash
  
 ;----------------------------------------------------------------------
 ; also io@
-.macro peek byte , address
+;
+.macro peek address, register
     .if (\address < $40)
-    in \byte , \address
+    in \register, \address
     .else
-    lds \byte , \address
+    lds \register, \address
     .endif
 .endm
 
 ;----------------------------------------------------------------------
 ; also io!
-.macro poke byte , address
+;
+.macro poke address, register
     .if (\address < $40)
-    out \address, \byte
+    out \address, \register
     .else
-    sts \address, \byte
+    sts \address, \register
     .endif
 .endm
 

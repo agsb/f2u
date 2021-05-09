@@ -30,5 +30,16 @@ TIB: 	.space TIB_SIZE, 0
 
 #include "more.S"
 
+#include "math.S"
+
 .equ free_flash, .
+
+/*
+1 	1st 	first
+2 	2nd 	second
+3 	3rd 	third
+4 	4th 	fourth
+*/
+
+
 
