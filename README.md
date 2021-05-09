@@ -25,6 +25,8 @@ I want a forth for a Atmega8, but there is no need for speed, because I want a m
 
 PS Atmega8 is a MCU with harvard architeture, 8k program flash memory, 1k static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, but (R16 to R31) could be used as 16 bits.
 
+look at Notes.md
+
 # References
 
 1. In eforth for Cortex M4,  http://forth.org/OffeteStore/1013_eForthAndZen.pdf
@@ -119,18 +121,18 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     ;
     ; WARNING: this inner still only works for program memory (flash) 
     ; 
-    _LAST:
+    EXIT:
       ; does nothing and mark as primitive
      nop
       
     _EXIT:
       ; pull isp from rsp
-     rsp_pull isp_low, isp_high
+     rspull wrk_low, wrk_high
 
     _NEXT:
       ; load wrk with contents of cell at isp and auto increments isp
-     lpm wrk_low, Z+
-     lpm wrk_high, Z+
+     movw isp_low, wrk_low
+     pmload wrk_low, wrl_high
      
       ; if zero then is a primitive, go exec it
      cp wrk_low, wrk_high
@@ -139,13 +141,16 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     _ENTER
       ; else 
       ; push isp into rsp
-     rsp_push isp_low, isp_high
-      
+     adiw wrk_low, 2
+     rspush wrk_low, wrk_high
+     sbiw wrk_low, 2
       ; is a compound reference, go next it
-     movw isp_low, wrk_low
-     rjmp _NEXT brbc 1, 
+     rjmp _NEXT 
     
     _EXEC
+     movw isp_low, wrk_low
+     asr isp_high
+     ror isp_low
       ; jump to
      ijmp
     
@@ -154,6 +159,18 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     leaf ==>  (0x00), code ... code, (rjmp _EXIT)
 
     twig ==>  ptr, ..., ptr, (_LAST)
+    
+ doLit:
+  rspull wl, wh
+  movw zl, wl
+  adiw wl, 2
+  rspush wl, wh
+  asr zh
+  ror zl
+  pmload wl, wh
+  pspush wl, wh
+  rjmp _EXIT
+  
     
 ; considerations
     
@@ -226,7 +243,7 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
 # Notes
 
   1. primitives (Leaf) routine does not do any call. Compound (Twig) routines do.
-  2. index routines counts downwards until 0, ever, exact as [ for ( n ; n != 0 ; n-- ) ]
+  2. index routines counts downwards until 0, ever, exact as C: for (; n != 0 ; n--) { ~~~ }
   3. no bounds check, none.
   4. compare bytes: COMPARE return FALSE or TRUE, only;
   5. move bytes: CMOVE upwards, CMOVE> downwards;
