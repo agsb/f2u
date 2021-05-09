@@ -1,5 +1,18 @@
 Notes about this
 
+
+"In 328eForth, I chose to address flash memory in bytes, so that it is easier to move
+data between flash memory and RAM memory. Although ATmega328P execute
+code in 16 bit cells, when you read and write the flash memory, you actually have to
+use byte addresses in the Z register, and it is natural to use byte addresses to move
+data in or out the flash memory. Therefore, in 328eForth all flash addresses are byte
+addresses. Only when executing a command, its execution address in bytes is
+converted to a cell address. When you retrieve an address from flash memory or
+from the return stack, you have to convert it from a cell address to a byte address
+before operating on it." Dr. C. H. Ting, 
+ForthArduino_1.pdf, http://forth.org/OffeteStore/2159_328eforth.zip
+
+
 1. AVR Atmegas have a harvard architeture them flash program memory (flash) and static ram (sram) memory have different spaces. To access anything at flash must use lpm instruction, which only do words address, because all instructions are 16bits words. A atmega8 with 8k flash have really 4k words and access must do shifts to transform indirect references;
 2. How to keep chars (1 byte) in dictionary at flash for use of c! and c@ and c, ? Don't do, keep all in words, low byte is char and clear high byte. How to keep chars (1 byte) in static memory ? as bytes :)
 4. Times for POP/PUSH with SP as same of LD/ST with Z, Y, X registers, so I decide use Y as return stack and X as parameter stack, leaving Z for access flash and sram.
