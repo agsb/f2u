@@ -83,56 +83,89 @@ TIM0_OVF:
 ;    enable interrups
     sei
     reti
-/*
+
 ;----------------------------------------------------------------------
-;792486AA–AVR–02/2013ATmega8(L)Note:1.   See “About Code Examples” on page 8
+;792486AA–AVR–02/2013 ATmega8(L)Note:1.   See “About Code Examples” on page 8
 ;
 ; from atmeg8 datasheet
 ;
+#define EEARH	0x1F
+#define EEARL	0x1E
+#define EEDR 	0x1D
+#define EECR	0x1C
 #define EEWE    1
 #define EEMWE   2
 #define EERE    0
 
+;----------------------------------------------------------------------
+; EEPROM_write: ( u w -- )
+; address is one of 0 to 511 ( 128 pages of 4 bytes )
+;
+HEADER "weep", "weep"
+	NOOP
+	pspull wrk_low, wrk_high
+	pspull tos_low, tos_high
+	clr _work_
+	inc _work_
+	inc _work_
 EEPROM_write:
-; zzz from avr manual just copy
+; Wait for completion of previous write
+1:
+    sbic EECR, EEWE
+    rjmp 1b
+; Set up address in address register
+    out EEARH, wrk_high
+    out EEARL, wrk_low
+; Write data to data register
+    out EEDR, tos_low
 ; disable interrupts
     cli
-EEPROM_write_wait:
-; Wait for completion of previous write
-    sbic EECR, EEWE
-    rjmp EEPROM_write_wait    
-; Set up address (r18:r17) in address register
-    out EEARH, r18
-    out EEARL, r17
-; Write data (r16) to data register
-    out EEDR, r16
 ; Write logical one to EEMWE
     sbi EECR, EEMWE
 ; Start eeprom write by setting EEWE
     sbi EECR, EEWE
 ; enable interrupts
     sei
-    ret
+; repeat for high byte
+	dec _work_
+	brbs 1, 2f
+	adiw wrk_low, 1
+	cp tos_low, tos_high
+	rjmp 1b
+2:
+    POON
 
+;----------------------------------------------------------------------
+; EEPROM_read: ( w -- u )
+; address is one of 0 to 511 ( 128 pages of 4 bytes )
+;
+HEADER "reep", "reep"
+	NOOP
+	pspull wrk_low, wrk_high
+	clr _work_
+	inc _work_
+	inc _work_
 EEPROM_read:
-; zzz from avr manual just copy
-; disable interrupts
-    cli
-EEPROM_read_wait:
 ; Wait for completion of previous write
-    sbic EECR, EEWE
-    rjmp EEPROM_read_wait
-; Set up address (r18:r17) in address register
-    out EEARH, r18
-    out EEARL, r17
+1:  
+	sbic EECR, EEWE
+    rjmp 1b
+; Set up address in address register
+    out EEARH, wrk_high
+    out EEARL, wrk_low
 ; Start eeprom read by writing EERE
     sbi EECR, EERE
 ; Read data from data register
-    in r16, EEDR
-; enable interrupts
-    sei
-    ret
-*/
+    in tos_high, EEDR
+; repeat for high byte
+	dec _work_
+	brbs 1, 2f
+	adiw wrk_low, 1
+	mov tos_low, tos_high
+	rjmp 1b
+2:
+	pspush tos_low, tos_high
+    POON
 
 ;----------------------------------------------------------------------
 BOOT:

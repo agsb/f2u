@@ -47,11 +47,11 @@ HEADER "HASH", "HASH"
 ;    92FF C206 0ECD 9361 2823
 ;    BE0B B303 6462 0E4C 3D24
 ;
-HEADER "RAND", "RND"
+HEADER "RANDOM", "RANDOM"
 	NOOP
 ;    load seed
-    lds wrk_low, RAND
-    lds wrk_high, RAND
+    lds wrk_low, SEED
+    lds wrk_high, SEED
 ;    run magics
     eor wrk_low, wrk_high
     swap wrk_low
@@ -59,15 +59,15 @@ HEADER "RAND", "RND"
 ;    save seed
 	pspush wrk_low, wrk_high
 _seed:
-    sts RAND, wrk_low
-    sts RAND + 1, wrk_high
+    sts SEED, wrk_low
+    sts SEED + 1, wrk_high
     POON
 
 ;----------------------------------------------------------------------
 ;
 ; sets seed for rand
 ;
-HEADER "SEED", "SEED"
+HEADER "RAND", "RAND"
 	NOOP
 	pspull wrk_low, wrk_high
 	rjmp _seed

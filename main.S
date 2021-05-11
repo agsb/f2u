@@ -12,16 +12,24 @@
 sram:
 
 NULL:	.word 0
-TOIN:	.word 0
+SEED:	.word 0
+
 HERE:	.word 0
-STATE:	.word 0
 LAST:	.word 0
+
+TOIN:	.word 0
+TOPS:	.word 0
+
 BASE:	.word 0
-RAND:	.word 0
+STATE:	.word 0
+
 RSP:	.space RSP_SIZE, 0
 PSP:	.space PSP_SIZE, 0 
 PAD:	.space PAD_SIZE, 0
 TIB: 	.space TIB_SIZE, 0
+BUF0:	.space FSH_SIZE, 0
+BUF1:	.space FSH_SIZE, 0
+
 .equ free_sram, .
 
 #include "bios.S"

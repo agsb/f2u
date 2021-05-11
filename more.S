@@ -194,6 +194,17 @@ HEADER "=", "EQUAL"
 	rjmp FTRUE+2
 
 ;----------------------------------------------------------------------
+; ok ( w1 w2 -- 0 | -1)
+HEADER "<>", "NOTEQUAL"
+	NOOP
+	pspull wrk_low, wrk_high
+	pspull tos_low, tos_high
+	cp wrk_low, tos_low
+	cpc wrk_high, tos_high
+	breq FFALSE+2
+	rjmp FTRUE+2
+
+;----------------------------------------------------------------------
 ; nok ( w1 w2 -- 0 | -1 )
 HEADER "<", "LTHAN"
 	NOOP
@@ -705,4 +716,30 @@ HEADER "+!", "PLUSTO"
 	srsave wrk_low
 	srsave wrk_high
 	POON
+
+;----------------------------------------------------------------------
+;
+; ok 
+;
+HEADER "(here!)", "hereto"
+	.word HERE, AT, E_here, weep, _LAST
+
+HEADER "(here@)", "hereat"
+	.word E_here, reep, HERE, TO, _LAST
+
+HEADER "(last!)", "lastto"
+	.word LAST, AT, E_last, weep, _LAST
+
+HEADER "(last@)", "lastat"
+	.word E_last, reep, LAST, TO, _LAST
+
+HEADER "(seed!)", "seedto"
+	.word SEED, AT, E_seed, weep, _LAST
+
+HEADER "(seed@)", "seedat"
+	.word E_seed, reep, SEED, TO, _LAST
+
+
+
+
 

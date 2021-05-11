@@ -86,30 +86,36 @@ HEADER "_LAST", "_LAST"
 
 ; pull ip from rsp
 _exit:             
-    rspull wrk_low, wrk_high
+    rspull tos_low, tos_high
 
 ; load w with contents of cell at ip, only works in program memory (flash)  
 _next:            
-	movw ips_low, wrk_low
-    pmload wrk_low, wrk_high
+    movw wrk_low, tos_low
+    adiw wrk_low, 2
 
-; point next
-	movw ips_low, wrk_low
-	adiw ips_low, 2
+    movw ips_low, tos_low
+    pmload tos_low, tos_high
 
 ; if zero then is a exec 
-    cp wrk_low, wrk_high
+    cp tos_low, tos_high
     brbs BIT_ZERO, _exec
+
+; point next
 
 ; else is a reference
 _enter:            
-    rspush ips_low, ips_high
-	rjmp _next
+    rspush wrk_low, wrk_high
+    rjmp _next
 
 _exec:
-	; convert to words
-	asr ips_high
-	ror ips_low
+    ; convert to words
+    movw ips_low, wrk_low
+.ifdef iTRAMPOLIM
+    pmload tos_low, tos_high
+	movw ips_low, tos_low
+.endif
+    asr ips_high
+    ror ips_low
     ijmp
 
 ;----------------------------------------------------------------------
@@ -206,19 +212,19 @@ HEADER "TIB", "TIBVAR"
 
 ;----------------------------------------------------------------------
 ;ok 
-HEADER "STATE", "STATEVAR"
+HEADER ">IN", "TOINVAR"
     NOOP
-    ldi wrk_low, lo8(STATE)
-    ldi wrk_high, hi8(STATE)
+    ldi wrk_low, lo8(TOIN)
+    ldi wrk_high, hi8(TOIN)
     pspush wrk_low, wrk_high
     POON
 
 ;----------------------------------------------------------------------
 ;ok 
-HEADER ">IN", "TOINVAR"
+HEADER "SEED", "SEEDVAR"
     NOOP
-    ldi wrk_low, lo8(TOIN)
-    ldi wrk_high, hi8(TOIN)
+    ldi wrk_low, lo8(SEED)
+    ldi wrk_high, hi8(SEED)
     pspush wrk_low, wrk_high
     POON
 
@@ -250,14 +256,23 @@ HEADER "BASE", "BASEVAR"
     POON
 
 ;----------------------------------------------------------------------
+;ok 
+HEADER "STATE", "STATEVAR"
+    NOOP
+    ldi wrk_low, lo8(STATE)
+    ldi wrk_high, hi8(STATE)
+    pspush wrk_low, wrk_high
+    POON
+
+;----------------------------------------------------------------------
 ;
 ; beware, it blocks! test if can receive a char
 ;
 HEADER "key", "KEY"
     NOOP
 1:  
-	sbis 0xb, 7
-	nop
+    sbis 0xb, 7
+    nop
     rjmp 1b
     in wrk_low, 0xc
     clr wrk_high
@@ -271,8 +286,8 @@ HEADER "key", "KEY"
 HEADER "emit", "EMIT"
     NOOP
 1:  
-	sbis 0xb, 5
-	nop
+    sbis 0xb, 5
+    nop
     rjmp 1b
     pspull wrk_low, wrk_high
     out 0xc, wrk_low
@@ -343,13 +358,13 @@ HEADER  "WARM", "WARM"
 ; ok ( --- a2 u ) 
 HEADER "dolit", "dolit"
     NOOP
-	rspull wrk_low, wrk_high
-	movw ips_low, wrk_low	
-	adiw wrk_low, 2
-	rspush wrk_low, wrk_high
-	pmload wrk_low, wrk_high
-	pspush wrk_low, wrk_high
-	POON
+    rspull wrk_low, wrk_high
+    movw ips_low, wrk_low	
+    adiw wrk_low, 2
+    rspush wrk_low, wrk_high
+    pmload wrk_low, wrk_high
+    pspush wrk_low, wrk_high
+    POON
 
 ;----------------------------------------------------------------------
 ;
@@ -360,31 +375,31 @@ HEADER "dolit", "dolit"
 ;
 HEADER "token", "token"
     NOOP
-	; start at 
-1:	
-	ldi ips_low, lo8(TOIN)
-	ldi ips_high, hi8(TOIN)
-	
+    ; start at 
+1:    
+    ldi ips_low, lo8(TOIN)
+    ldi ips_high, hi8(TOIN)
+    
 
     ; getch()
 2:  
-	srload wrk_high
+    srload wrk_high
 
-	; if \0 
+    ; if \0 
     cpi wrk_high, 0
     breq 10f
 
-	; if same
+    ; if same
     cpi wrk_high, 32
     breq 2b
 
-	; start of a word
-	rjmp 3f 
+    ; start of a word
+    rjmp 3f 
 
 ; ok accept ( -- u )  NO ECHOES !!!
-	; refill TIB
+    ; refill TIB
 10: 
-	ldi ips_low, lo8(TIB)
+    ldi ips_low, lo8(TIB)
     ldi ips_high, hi8(TIB)
     ldi wrk_high, TIB_SIZE
     ; always add \0 terminator
@@ -395,13 +410,13 @@ HEADER "token", "token"
 
     ; decrease counter    
 11: 
-	dec wrk_high
+    dec wrk_high
     brbs BIT_ZERO, 21f
 
     ; waits a char
 12: 
-	sbis 0xb, 7
-	nop
+    sbis 0xb, 7
+    nop
     rjmp 12b
     in wrk_low, 0xc
 
@@ -422,15 +437,15 @@ HEADER "token", "token"
 
     ; verify BS
 14: 
-	cpi wrk_low,  8 ; BS
+    cpi wrk_low,  8 ; BS
     brne 15f
 
     ; process BS
     ; was a char ?
-	cp _work_, _work_
+    cp _work_, _work_
     breq 12b
 
-	; back one
+    ; back one
     dec _work_
     sbiw ips_low, 1
     rjmp 12b    
@@ -438,7 +453,7 @@ HEADER "token", "token"
     ; is valid char 7-bit ASCII
     ; no more controls
 15: 
-	cpi wrk_low, 32
+    cpi wrk_low, 32
     brlo 12b
     ; no 8bits
     cpi wrk_low, 128
@@ -446,28 +461,28 @@ HEADER "token", "token"
 
     ; is a ( ?
 16: 
-	cpi wrk_low, 40
+    cpi wrk_low, 40
     brne 17f
     inc tos_high
     rjmp 12b
 
     ; is a ) ?
 17: 
-	cpi wrk_low, 41
+    cpi wrk_low, 41
     brne 18f
     dec tos_high
     rjmp 12b
 
     ; is a \ ?
 18: 
-	cpi wrk_low, 92 
+    cpi wrk_low, 92 
     brne 19f
     dec tos_low
     rjmp 12b
 
    ; skip comments
 19: 
-	tst tos_low
+    tst tos_low
     brne 12b
     tst tos_high
     brne 12b
@@ -483,14 +498,14 @@ HEADER "token", "token"
 
     ; save char to buffer
 20: 
-	inc _work_
+    inc _work_
     srsave wrk_low
     rjmp 11b
   
     ; push counter
     ; always add a space and a \0 terminator
 21: 
-	ldi wrk_low, 32
+    ldi wrk_low, 32
     srsave wrk_low
     clr wrk_low
     srsave wrk_low
@@ -499,17 +514,17 @@ HEADER "token", "token"
     sts (TOIN+1), wrk_low
     mov wrk_low, _work_
     sts (TOIN+0), wrk_low
-	rjmp 1b
+    rjmp 1b
 
     ; keep address
 2:  
-	sbiw ips_low, 1
+    sbiw ips_low, 1
     pspush ips_low, ips_high
     pspush ips_low, ips_high
 
     ; skip wile not equal
 3:  
-	srload wrk_high
+    srload wrk_high
     cpi wrk_high, 0
     breq 4f
     cpi wrk_low, 32
@@ -517,7 +532,7 @@ HEADER "token", "token"
 
     ; keep length
 4:  
-	pspull wrk_low, wrk_high
+    pspull wrk_low, wrk_high
     sub ips_low, wrk_low
     sbc ips_high, wrk_high
     pspush ips_low, ips_high
@@ -543,7 +558,7 @@ HEADER "find", "find"
 
     ; load next link 
 1:  
-	rspull ips_low, ips_high
+    rspull ips_low, ips_high
     pmload wrk_low, wrk_high
 
     ; if null ends
@@ -572,9 +587,9 @@ HEADER "find", "find"
     ; load chars
 ;
 ; can not be doing like this !!! not in sram !!! and lpm gets address in strange way
-;	ZZZZ
+;    ZZZZ
 3:  
-	ld wrk_low, Z+
+    ld wrk_low, Z+
     ld wrk_high, X+
     cp wrk_low, wrk_high
     brne 1b
@@ -584,7 +599,7 @@ HEADER "find", "find"
     ; found
     ; drop link for next name
 4:  
-	rspull wrk_low, wrk_high
+    rspull wrk_low, wrk_high
     ; restore psp
     rspull psp_low, psp_high
     ; must check oddies
@@ -602,62 +617,62 @@ HEADER "find", "find"
     ; not found
     ; restore psp
 10: 
-	rspull psp_low, psp_high
+    rspull psp_low, psp_high
     ; restore a1
     movw wrk_low, nds_low
     pspush wrk_low, wrk_high
-	; set flag false
+    ; set flag false
     clr wrk_low
     clr wrk_low
     ; save results
 99: 
-	pspush wrk_low, wrk_high
+    pspush wrk_low, wrk_high
     POON
 
 /*
 ;----------------------------------------------------------------------
-;	ok ( a1 f -- ) 
+;    ok ( a1 f -- ) 
 ;
-;	s flag
-;	if state = 1 and flag = 0, does compile
-;	else does execute
+;    s flag
+;    if state = 1 and flag = 0, does compile
+;    else does execute
 ;
 HEADER  "evaluate", "evaluate"
-	NOOP
-	; load state
+    NOOP
+    ; load state
     ldi ips_low, lo8(STATE)
     ldi ips_high, hi8(STATE)
-	pmload tos_low, tos_high
-	; load flags
-	pspull wrk_low, wrk_high
-	andi wrk_low, F_IMMEDIATE
-	or wrk_low, tos_low 
-	dec wrk_low
-	brne 2f
-	; compile
-	srsave 
-	; execute
-2:	rspush wrk_low, wrk_high
+    pmload tos_low, tos_high
+    ; load flags
+    pspull wrk_low, wrk_high
+    andi wrk_low, F_IMMEDIATE
+    or wrk_low, tos_low 
+    dec wrk_low
+    brne 2f
+    ; compile
+    srsave 
+    ; execute
+2:    rspush wrk_low, wrk_high
 3:
-	POON 
+    POON 
 
 : execute >R ;
 : compile comma ;
 : interpret
-	begin accept
-		begin token
-		while 
-			name? if eval	if execute
-									else compile  
-									then
-			else number?  if state	if compile
-				  					else execute
-									then
-						  else abort	
-						  then
-			then
-		repeat
-	again
+    begin accept
+    	begin token
+    	while 
+    		name? if eval	if execute
+    								else compile  
+    								then
+    		else number?  if state	if compile
+    			  					else execute
+    								then
+    					  else abort	
+    					  then
+    		then
+    	repeat
+    again
  ;
 
-*/			
+*/    		

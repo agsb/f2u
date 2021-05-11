@@ -36,12 +36,12 @@
 #define psp_high r27
 
 ; second value parameter stack
-#define nds_low r20
-#define nds_high r21
+#define tos_low r20
+#define tos_high r21
 
 ; fist value parameter stack
-#define tos_low r22
-#define tos_high r23
+#define nds_low r22
+#define nds_high r23
 
 ; work register
 #define wrk_low r24
@@ -160,7 +160,7 @@ hd_\label:
     st Z+, \byte 
 .endm
 
-; all dictionary above $0460 in flash
+; all dictionary above $0460 in flash ??
  
 ;----------------------------------------------------------------------
 ; also io@
@@ -184,16 +184,43 @@ hd_\label:
     .endif
 .endm
 
+;---------------------------------------------------------------------
+; from avr manual
+;
+    __SREG__ = 0x3f
+    __SP_H__ = 0x3e
+    __SP_L__ = 0x3d
+
+    SRAM_START = 0x060    ; SRAM from AVR manual
+    SRAM_END =   0x45F    ; SRAM from AVR manual
+	FLASH_START = 0x000		; flash start
+	FLASH_END	= 0XCFF		; flash end
+	EEPROM_START = 0x000	; Eeprom start
+	EEPROM_END	= 0x200		; eeprom end
+
 ;----------------------------------------------------------------------
 ;	sizes
 ;
-; "Column 72 means Continue"
-	TIB_SIZE = 73
-	PAD_SIZE = 73
-; stack 20 words deep
-	RSP_SIZE = 40
-	PSP_SIZE = 40
+; "Column 72 means Continue",
+;  71 free for use, 72 always \0
+	TIB_SIZE = 72
+	PAD_SIZE = 72
+; stack 18 words deep
+	RSP_SIZE = 36
+	PSP_SIZE = 36
+; flash page size for Atmega8
+	FSH_SIZE = 64
 
+;----------------------------------------------------------------------
+;	eeprom used
+;
+	eeprom = EEPROM_START
+
+	E_turnkey = eeprom + 0
+	E_seed = eeprom + 2
+	E_here = eeprom + 4
+	E_last = eeprom + 6
+	
 ;----------------------------------------------------------------------
 ; 	flags 
 ;
