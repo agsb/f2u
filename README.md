@@ -17,13 +17,15 @@ For now:
   
   Then sectorforth (https://github.com/cesarblum/sectorforth) comes to simplifly all, and I restart again.
   
-  01/05/2021  Still no operational
+  The optiboot v8.0 could do program flash memory, as do_spm, so will use it as boot loader.
+  
+  12/05/2021  Still no operational
   
 # Introduction
 
 I want a forth for a Atmega8, but there is no need for speed, because I want a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a MPU family and a outer interpreter and compound words independent of any specific CPU family, like a imutable list with rellocable references.
 
-PS Atmega8 is a MCU with harvard architeture, 8k program flash memory, 1k static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, but (R16 to R31) could be used as 16 bits.
+PS. Atmega8 is a MCU with harvard architeture, 8k program flash memory, 1k static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, but (R16 to R31) could be used as 16 bits.
 
 look at Notes.md
 
@@ -53,9 +55,10 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     all dicionary is CPU dependent;
     all compond words have a payload per reference;
     the memory model is unified, flash and sdrom are continuous address;
-    BL accepts +/- 32 Mb offset, then dictionary must be less than 32 MB.
+    BL accepts +/- 32 Mb offset, then dictionary must be less than 32 MB, 
+      (4 bytes per word then 8M, 2 words per reference then 4M)  
     
-    Uses many memory than a Atmega8 have, also no unified memory model.
+    Uses many memory than a Atmega8 have, also no unified memory model, but lots of SRAM.
     
 2. In amforth for AVR family, http://amforth.sourceforge.net/,  
 
@@ -189,24 +192,26 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
       All references are done using of indirect LD and ST with Z, Y, X;  
       All primitive words finish with a rjmp _EXIT, so the (inner + primitives) must be less than +2k words;
       
-      address pointer is Z (r31:r30) for lpm (flash), lds (sram), sts (sram) instructions;
+      address pointer is Z (r31:r30) for lpm/spm (flash), lds (sram), sts (sram) instructions;
+      
       first stack pointer is Y (r29:r28) for forth return stack;
       second stack pointer is X (r27:r26) for forth data stack;
-      working pair register is W (r25:r24) for forth working register;
+      
+      working register is W (r25:r24) for forth working register;
       
       temporary register T (r23:r22)
       temporary register N (r21:r20)
-      register r0 as generic scratch 
-      register r1 as always zero
       
       for convenience
-      registers r2 to r5 used in interrupts
-      registers r2:r3 used by counter of timer interrup, (borrow from flashforth)
-      register r4, constant offset for timer0 
-      register r5, preserve sreg
+        register r0:r1 as generic scratch 
+        used in interrupts:
+        registers r2:r3 used by counter of timer interrup, (borrow from flashforth)
+        register r4, constant offset for timer0 
+        register r5, preserve sreg
+      
       registers r6::r19 free
      
-      flash memory from $000 to $FFF ($0000 to $1FFF bytes)
+      flash memory from $000 to $FFF ($0000 to $1FFF bytes), words NRWW ($C00 to $FFF) and RWW( $000 to $BFF)
       sram memory from  $0C0 to $45F (1024 bytes)
       
 # Specifics
