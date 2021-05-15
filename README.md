@@ -31,8 +31,7 @@ look at Notes.md
 
 # References
 
-1. In eforth for Cortex M4,  http://forth.org/OffeteStore/1013_eForthAndZen.pdf
-https://code.google.com/archive/p/subtle-stack/downloads, to use in a ESP32, Dr. C.H.Ting uses a optimal approach for forth engine, with cpu family specific instructions (ISA) *inline into dictionary*.
+1. In eforth for Cortex M4,  http://forth.org/OffeteStore/1013_eForthAndZen.pdf, to use in a ESP32, Dr. C.H.Ting uses a optimal approach for forth engine, with cpu family specific instructions (ISA) *inline into dictionary*.
 
 _in my opinion best and ideal solution per cpu_ (at cost of size and portability)
 
@@ -94,9 +93,9 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
 
 ; the dicionary, inside PFA 
   
-    leaf ==>  (Self), code ... code, (rjmp DO_NEXT)
+    leaf ==>  (rjmp code), code ... , (rjmp DO_NEXT)
     
-    twig ==>  (DO_COLON), ptr ... ptr, (DO_EXIT)
+    twig ==>  (code of DO_COLON), ptr ... ptr, (DO_EXIT)
 
 ; considerations
     
@@ -123,16 +122,41 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
 
     ;
     ; WARNING: this inner still only works for program memory (flash) 
-    ; 
-    EXIT:
+    ;
+    
+    isp_low = r30
+    isp_high = 31
+    wrk_low = r24
+    wrk_high = r25
+    
+    .macro rspush
+    st Y+, @0
+    st Y+, @1
+    .endm
+    
+    .macro rspull
+    ld @1, -Y
+    ld @0, -y
+    .endm
+    
+    .macro pmload
+    lsl z30
+    rol z31
+    lpm @0, Z+
+    lpm @1, Z+
+    ror z31
+    ror z30
+    .endm
+    
+    _void:
       ; does nothing and mark as primitive
      nop
       
-    _EXIT:
+    _exit:
       ; pull isp from rsp
      rspull wrk_low, wrk_high
 
-    _NEXT:
+    _next:
       ; load wrk with contents of cell at isp and auto increments isp
      movw isp_low, wrk_low
      pmload wrk_low, wrl_high
@@ -141,50 +165,46 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
      cp wrk_low, wrk_high
      brbs 1, _EXEC
      
-    _ENTER
+    _enter:
       ; else 
       ; push isp into rsp
-     adiw wrk_low, 2
-     rspush wrk_low, wrk_high
-     sbiw wrk_low, 2
+     rspush isp_low, isp_high
       ; is a compound reference, go next it
      rjmp _NEXT 
     
-    _EXEC
+    _exec:
      movw isp_low, wrk_low
-     asr isp_high
-     ror isp_low
-      ; jump to
      ijmp
     
-; the dicionary, PFAs are 
-  
-    leaf ==>  (0x00), code ... code, (rjmp _EXIT)
-
-    twig ==>  ptr, ..., ptr, (_LAST)
     
- doLit:
-  rspull wl, wh
-  movw zl, wl
-  adiw wl, 2
-  rspush wl, wh
-  asr zh
-  ror zl
-  pmload wl, wh
-  pspush wl, wh
-  rjmp _EXIT
+; the dicionary, PFAs are (LINK+NAME+REFERENCES)
   
+    ;------------- independent
     
+    twig ==>  ref, ..., leaf, ... , ref, (_void)
+    
+    leaf ==>  0x00, (ptr)
+    
+    ;--------------dependent
+    ; table trampolim
+    (rjmp ref), (rjmp ref) ....
+    ; inner interpreter
+    (_void) (0x00), _exit, _next, _enter, _exec  
+    ; code for primitives
+    (ptr) code ... code (rjmp _exit)
+     
 ; considerations
     
     efficient code;
-    twig dicionary is CPU independent;
+    twig and leaf are dicionary is CPU independent;
+    leaf does references of trampolim table
     all twig words have only a payload at last references;
     all leaf words have a payload as, starts with NOP and ends with a jump;
     all internal words defined between parentheses; 
     the memory model is not unified, separate address for flash and for sdram;
     ??? minus one reference execution per each compound word  at cost of a test if NULL
-
+    ??? if all dependent bellow a limit address, no need 0x00 mark too, just compare to exec (if bellow) or enter (if above) .
+    ??? all mature forths does inline or code at start of parameters 
 ; details
 
       No use of SP intructions (pop, push, call, ret), leaving those for external extensions and libraries;
