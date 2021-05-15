@@ -1,3 +1,58 @@
+/*
+;----------------------------------------------------------------------
+;	https://www.avrfreaks.net/forum/dis-asm-dirty-math-tricks-adventures-division-ten?page=all
+;   8bit / 10 ~~~
+;	DIV10: MULI A, 26 ; response in R1
+;-----------------------------------;
+; RETRO (SYNTHETIC) DIVISION BY 10  ;
+; ANSWER IN R1, R0=REM, A:PRESERVED ;
+;-----------------------------------;
+DIV10:  PUSH B
+        LDI  B,26   ;MUL BY 26
+        MUL  A,B    ;R1=A/10
+        PUSH R1     ;BRUTE-FORCE CALC OF REMAINDER      
+        LDI  B,10   ;CALC REM
+        MUL  R1,B   ;R0=10xR1(QUOT)
+        POP  R1     ;RESTORE QUOT
+        SUB  R0,A   ;SUBTRACT REMx10
+NODJST: NEG  R0     ;MAKE POSITIVE
+         BRPL NONEG ;STILL NEG?
+        ADD  R0,B   ;OOPS MAKE 
+        DEC  R1     ;ADJUSTMENTS
+NONEG:   RET
+
+;----------------------------------------
+; 8-bit division by 10 routine.
+;
+; the input number must be in register "input"
+; value/10 is in register "result"
+; register temp1 and R1:R0 are clobbered
+div10:
+	ldi temp1, 205
+	mul temp1, input
+	lsr R1
+	lsr R1
+	lsr R1
+	mov result, R1
+	ret
+;----------------------------------------
+; 8-bit division by 10 routine.
+;
+; Input: R0 = dividend.
+; Output: R1 = result = dividend/10.
+;
+; Registers R0 and R16 are clobbered.
+; 5 words/10 clocks including RET.
+; 
+div10:
+	ldi	r16,205
+	mul	r0,r16
+	ldi	r16,32
+	mul	r1,r16
+	ret 
+;----------------------------------------
+*/
+
 ;----------------------------------------------------------------------
 ;
 ; 	great DJB hash, adapted for 16bits

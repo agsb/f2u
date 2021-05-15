@@ -95,7 +95,7 @@ CFLAGS = -g$(DEBUG)
 CFLAGS += -O$(OPT)
 CFLAGS += $(CDEFS) $(CINCS)
 #
-#CFLAGS += -fverbose-asm
+CFLAGS += -fverbose-asm
 #CFLAGS += -funsigned-char
 #CFLAGS += -funsigned-bitfields
 #CFLAGS += -fpack-struct
@@ -106,6 +106,7 @@ CFLAGS += -Wa,-adhlns=$(<:.c=.lst)
 CFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
 CFLAGS += $(CSTANDARD)
 CFLAGS += -nostartfiles
+CFLAGS += -nostdlib -nostartfiles
 #CFLAGS += -x assembler-with-cpp 
 #CFLAGS += --strip-debug
 

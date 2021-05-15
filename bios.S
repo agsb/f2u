@@ -85,6 +85,32 @@ TIM0_OVF:
     reti
 
 ;----------------------------------------------------------------------
+/*
+
+;	OSCAL calibration
+; disable interrupts
+	cli
+; load default
+	in r0, 0x66
+;  prepare loop
+	eor r3
+1:
+;  try a value
+	out 0x66, r3
+; wait for mesure
+	delay(10000); 
+; next value
+	dec r3
+	brbc 1b	
+; restore default
+	out 0x66, r0
+
+optiboot, 143 is a sample better from atmel 2555 note 
+is 168 for atmega8 theorical for 25oC at 5V
+must be less for 40oC
+ CFLAGS += '-DMAX_TIME_COUNT=F_CPU>>4' '-DOSC_CAL=142' '-DNUM_LED_FLASHES=2' -DBAUD_RATE=38400
+*/
+;----------------------------------------------------------------------
 ;792486AA–AVR–02/2013 ATmega8(L)Note:1.   See “About Code Examples” on page 8
 ;
 ; from atmeg8 datasheet

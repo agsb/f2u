@@ -59,7 +59,7 @@
 ;
 ; any leaf must start with NOOP and ends with POON
 ;
-; zzz size must be mask or 0xE0
+; the size byte must be masked by  or 0xE0
 ;
 ; instruction pointer r31:r30 as Z 
 ; return stack pointer r29:r28 as Y
@@ -77,6 +77,49 @@
 .org SRAM_END+1
 .global forth
 forth:
+;;----------------------------------------------------------------------
+;; inner interpreter, must have another name no LAST
+;;
+;HEADER "_LAST", "_LAST"
+;; does nothing and mark instructions code
+;    NOOP
+;
+;; pull ip from rsp
+;_exit:             
+;    rspull tos_low, tos_high
+;
+;; load w with contents of cell at ip, only works in program memory (flash)  
+;_next:            
+;    movw wrk_low, tos_low
+;    adiw wrk_low, 2
+;
+;    movw ips_low, tos_low
+;    pmload tos_low, tos_high
+;
+;; if zero then is a exec 
+;    cp tos_low, tos_high
+;    brbs BIT_ZERO, _exec
+;
+;; point next
+;
+;; else is a reference
+;_enter:            
+;    rspush wrk_low, wrk_high
+;    rjmp _next
+;
+;_exec:
+;    ; convert to words
+;    movw ips_low, wrk_low
+;
+;.ifdef iTRAMPOLIM
+;    pmload tos_low, tos_high
+;	movw ips_low, tos_low
+;.endif
+;
+;    asr ips_high
+;    ror ips_low
+;    ijmp
+;
 ;----------------------------------------------------------------------
 ; inner interpreter, must have another name no LAST
 ;
@@ -86,42 +129,42 @@ HEADER "_LAST", "_LAST"
 
 ; pull ip from rsp
 _exit:             
-    rspull tos_low, tos_high
+    rspull wos_low, wos_high
 
 ; load w with contents of cell at ip, only works in program memory (flash)  
 _next:            
-    movw wrk_low, tos_low
-    adiw wrk_low, 2
-
-    movw ips_low, tos_low
-    pmload tos_low, tos_high
+    movw ips_low, wrk_low
+    pmload wrk_low, wrk_high
 
 ; if zero then is a exec 
-    cp tos_low, tos_high
+    cp wrk_low, wrk_high
     brbs BIT_ZERO, _exec
 
 ; point next
 
 ; else is a reference
 _enter:            
-    rspush wrk_low, wrk_high
+    rspush ips_low, ips_high
     rjmp _next
 
 _exec:
     ; convert to words
     movw ips_low, wrk_low
+
 .ifdef iTRAMPOLIM
-    pmload tos_low, tos_high
-	movw ips_low, tos_low
+    pmload wrk_low, wrk_high
+	movw ips_low, wrk_low
 .endif
-    asr ips_high
-    ror ips_low
+
     ijmp
 
 ;----------------------------------------------------------------------
 ; 
 ; using a classic, tos, (1st, 2nd, 3rd, 4th, ...)
 ;
+;----------------------------------------------------------------------
+;**********************************************************************
+;	init of minimal words
 ;----------------------------------------------------------------------
 ; ok @ at ( a -- w )
 HEADER "@", "AT"
@@ -202,6 +245,9 @@ HEADER "+", "PLUS"
     POON
 
 ;----------------------------------------------------------------------
+;	end of minimal words
+;**********************************************************************
+;----------------------------------------------------------------------
 ;ok 
 HEADER "TIB", "TIBVAR"
     NOOP
@@ -271,10 +317,9 @@ HEADER "STATE", "STATEVAR"
 HEADER "key", "KEY"
     NOOP
 1:  
-    sbis 0xb, 7
-    nop
+    sbis 0x0b, 7
     rjmp 1b
-    in wrk_low, 0xc
+    in wrk_low, 0x0c
     clr wrk_high
     pspush wrk_low, wrk_high
     POON
@@ -285,12 +330,11 @@ HEADER "key", "KEY"
 ;
 HEADER "emit", "EMIT"
     NOOP
-1:  
-    sbis 0xb, 5
-    nop
-    rjmp 1b
     pspull wrk_low, wrk_high
-    out 0xc, wrk_low
+1:  
+    sbis 0x0b, 5
+    rjmp 1b
+    out 0x0c, wrk_low
     POON
 
 ;----------------------------------------------------------------------
@@ -375,14 +419,14 @@ HEADER "dolit", "dolit"
 ;
 HEADER "token", "token"
     NOOP
-    ; start at 
 1:    
+    ; start at 
     ldi ips_low, lo8(TOIN)
     ldi ips_high, hi8(TOIN)
-    
 
-    ; getch()
 2:  
+	; skips while equal delimiter (space)
+    ; getch()
     srload wrk_high
 
     ; if \0 
@@ -396,52 +440,56 @@ HEADER "token", "token"
     ; start of a word
     rjmp 3f 
 
-; ok accept ( -- u )  NO ECHOES !!!
-    ; refill TIB
+; ok refill TIB ( -- u )  NO ECHOES !!!
 10: 
     ldi ips_low, lo8(TIB)
     ldi ips_high, hi8(TIB)
     ldi wrk_high, TIB_SIZE
+
     ; always add \0 terminator
     sts (TIB+TIB_SIZE-1), _zero_
     clr _work_     ; clear length
     clr tos_low ; clear comments \
     clr tos_high ; clear comments ()
 
-    ; decrease counter    
 11: 
+    ; decrease counter    
     dec wrk_high
     brbs BIT_ZERO, 21f
 
-    ; waits a char
 12: 
+    ; waits a ASCII char
     sbis 0xb, 7
     nop
     rjmp 12b
     in wrk_low, 0xc
 
+13: 
+    ; no 8bits
+    cpi wrk_low, 128
+    brge 12b
+
+	; is not a control 
+    cpi wrk_low, 32
+    brge 14f
+
+31:
     ; verify CR
     cpi wrk_low, 13 ; CR
     breq 21f
 
+32:
     ; verify LF
     cpi wrk_low, 10 ; CR
     breq 21f
 
-    ; verify ESC 
-    cpi wrk_low, 27 ; ESC
-    brne 14f
-
-    ; process ESC void still
-    rjmp 12b
-
+33: 
     ; verify BS
-14: 
     cpi wrk_low,  8 ; BS
-    brne 15f
+    brne 34f
 
     ; process BS
-    ; was a char ?
+    ; had any char ?
     cp _work_, _work_
     breq 12b
 
@@ -450,38 +498,55 @@ HEADER "token", "token"
     sbiw ips_low, 1
     rjmp 12b    
 
-    ; is valid char 7-bit ASCII
-    ; no more controls
-15: 
-    cpi wrk_low, 32
-    brlo 12b
-    ; no 8bits
-    cpi wrk_low, 128
-    brge 12b
+34:
+    ; verify ESC 
+    cpi wrk_low, 27 ; ESC
+    brne 35f
+    ; process ESC void still
+    rjmp 12b
 
+35:
+    ; verify XON 
+    cpi wrk_low, 17 ; ESC
+    brne 36f
+    ; process XON void still
+    rjmp 12b
+
+36:
+    ; verify XOFF 
+    cpi wrk_low, 19 ; ESC
+    brne 37f
+    ; process XOFF void still
+    rjmp 12b
+
+37:
+    ; no more controls
+	rjmp 12b
+
+; verify comments
+14: 
     ; is a ( ?
-16: 
     cpi wrk_low, 40
-    brne 17f
+    brne 15f
     inc tos_high
     rjmp 12b
 
+15: 
     ; is a ) ?
-17: 
     cpi wrk_low, 41
-    brne 18f
+    brne 16f
     dec tos_high
     rjmp 12b
 
+16: 
     ; is a \ ?
-18: 
     cpi wrk_low, 92 
     brne 19f
     dec tos_low
     rjmp 12b
 
-   ; skip comments
 19: 
+   ; skip comments
     tst tos_low
     brne 12b
     tst tos_high
@@ -496,42 +561,42 @@ HEADER "token", "token"
     subi wrk_low, 32
 .endif
 
-    ; save char to buffer
 20: 
+    ; save char to buffer
     inc _work_
     srsave wrk_low
     rjmp 11b
   
+21: 
     ; push counter
     ; always add a space and a \0 terminator
-21: 
     ldi wrk_low, 32
     srsave wrk_low
     clr wrk_low
     srsave wrk_low
 
-    ; update TOIN
+    ; update zero to TOIN
     sts (TOIN+1), wrk_low
     mov wrk_low, _work_
     sts (TOIN+0), wrk_low
     rjmp 1b
 
-    ; keep address
 2:  
+    ; keep address
     sbiw ips_low, 1
     pspush ips_low, ips_high
     pspush ips_low, ips_high
 
-    ; skip wile not equal
 3:  
+    ; skip wile not equal
     srload wrk_high
     cpi wrk_high, 0
     breq 4f
     cpi wrk_low, 32
     brne 3b
 
-    ; keep length
 4:  
+    ; keep length
     pspull wrk_low, wrk_high
     sub ips_low, wrk_low
     sbc ips_high, wrk_high
@@ -545,7 +610,7 @@ HEADER "token", "token"
 ; counted strings are 254 chars maximum
 ; names are 15 or 32 maximum
 ;
-HEADER "find", "find"
+HEADER "(find)", "find"
     NOOP
     pspull tos_low, tos_high
     pspull nds_low, nds_high

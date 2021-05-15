@@ -138,12 +138,15 @@ hd_\label:
 
 ;----------------------------------------------------------------------
 ;	load from program memory (flash)
-;   
+;	input address in bytes, output address in bytes   
+;	only works with TWO lpm !!!
 .macro pmload low, high
 	lsl \low
 	rol \high
 	lpm \low, Z+
 	lpm \high, Z+
+	ror \high
+	ror \low
 .endm
 
 ;----------------------------------------------------------------------
@@ -220,6 +223,10 @@ hd_\label:
 	E_seed = eeprom + 2
 	E_here = eeprom + 4
 	E_last = eeprom + 6
+	E_tosr = eeprom + 8 
+	E_tofh = eeprom + 10
+	E_toee = eeprom + 12
+
 	
 ;----------------------------------------------------------------------
 ; 	flags 

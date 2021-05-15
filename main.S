@@ -18,7 +18,10 @@ HERE:	.word 0
 LAST:	.word 0
 
 TOIN:	.word 0
-TOPS:	.word 0
+TOUM:	.word 0
+
+TOEE:	.word 0
+TOFH:	.word 0
 
 BASE:	.word 0
 STATE:	.word 0
