@@ -56,7 +56,7 @@
 
 ;----------------------------------------------------------------------
 ;
-;	adapted from amforth-6.9
+;    adapted from amforth-6.9
 ;
 ;.macro STRINGS string
 ;    .word DOSLIT
@@ -70,11 +70,11 @@
 ; all leaf must start with NOOP and end with POON
 ;
 .macro NOOP
-	nop
+    nop
 .endm
 
 .macro POON
-	rjmp _exit
+    rjmp _exit
 .endm
 
 ;----------------------------------------------------------------------
@@ -88,76 +88,76 @@
 ;
 .macro HEADER name, label
 hd_\label:
-	.p2align 1, 0x00
-7:	
-	.word _link_
-	.set _link_, 7b
-	.byte 9f - 8f
-8: 	
-	.ascii "\name"
-9: 	
-	.p2align 1, 0x20
+    .p2align 1, 0x00
+7:    
+    .word _link_
+    .set _link_, 7b
+    .byte 9f - 8f
+8:     
+    .ascii "\name"
+9:     
+    .p2align 1, 0x20
 \label:
 .endm
 
 ;----------------------------------------------------------------------
 ; little endian !!! AVR
 ;
-;	A	Z (r31:r30) is used as generic address pointer
-;	R	Y (r29:r28) is used as return stack pointer	
-;	S	X (r27:r26) is used as data/parameter stack pointer
-;	W	W (r25:r24) is used as generic work register
+;    A    Z (r31:r30) is used as generic address pointer
+;    R    Y (r29:r28) is used as return stack pointer    
+;    S    X (r27:r26) is used as data/parameter stack pointer
+;    W    W (r25:r24) is used as generic work register
 ;
 ;----------------------------------------------------------------------
-;	push into return stack, increments pointer
+;    push into return stack, increments pointer
 .macro rspush low, high 
     st Y+, \low
     st Y+, \high
 .endm
 
 ;----------------------------------------------------------------------
-;	pull from return stack, decrements pointer
+;    pull from return stack, decrements pointer
 .macro rspull low, high
     ld \high, -Y
     ld \low, -Y
 .endm
 
 ;----------------------------------------------------------------------
-;	push into data stack, increments pointer
+;    push into data stack, increments pointer
 .macro pspush low, high
     st X+, \low
     st X+, \high
 .endm
 
 ;----------------------------------------------------------------------
-;	pull from data stack, decrements pointer
+;    pull from data stack, decrements pointer
 .macro pspull low, high
     ld \high, -X
     ld \low, -X
 .endm
 
 ;----------------------------------------------------------------------
-;	load from program memory (flash)
-;	input address in bytes, output address in bytes   
-;	only works with TWO lpm !!!
+;    load from program memory (flash)
+;    input address in bytes, output address in bytes   
+;    only works with TWO lpm !!!
 .macro pmload low, high
-	lsl \low
-	rol \high
-	lpm \low, Z+
-	lpm \high, Z+
-	ror \high
-	ror \low
+    lsl \low
+    rol \high
+    lpm \low, Z+
+    lpm \high, Z+
+    ror \high
+    ror \low
 .endm
 
 ;----------------------------------------------------------------------
-;	load from static memory (sram), increments pointer
+;    load from static memory (sram), increments pointer
 ;
 .macro srload byte
     ld \byte, Z+
 .endm
 
 ;----------------------------------------------------------------------
-;	save to static memory (sram), increments pointer
+;    save to static memory (sram), increments pointer
 ;
 .macro srsave byte
     st Z+, \byte 
@@ -196,56 +196,58 @@ hd_\label:
 
     SRAM_START = 0x060    ; SRAM from AVR manual
     SRAM_END =   0x45F    ; SRAM from AVR manual
-	FLASH_START = 0x000		; flash start
-	FLASH_END	= 0XCFF		; flash end
-	EEPROM_START = 0x000	; Eeprom start
-	EEPROM_END	= 0x200		; eeprom end
+    FLASH_START = 0x000        ; flash start
+    FLASH_END    = 0XCFF        ; flash end
+    EEPROM_START = 0x000    ; Eeprom start
+    EEPROM_END    = 0x200        ; eeprom end
+
+    SPM_PAGESIZE = 64    ; bytes
 
 ;----------------------------------------------------------------------
-;	sizes
+;    sizes
 ;
 ; "Column 72 means Continue",
 ;  71 free for use, 72 always \0
-	TIB_SIZE = 72
-	PAD_SIZE = 72
+    TIB_SIZE = 72
+    PAD_SIZE = 72
 ; stack 18 words deep
-	RSP_SIZE = 36
-	PSP_SIZE = 36
+    RSP_SIZE = 36
+    PSP_SIZE = 36
 ; flash page size for Atmega8
-	FSH_SIZE = 64
+    FSH_SIZE = 64
 
 ;----------------------------------------------------------------------
-;	eeprom used
+;    eeprom used
 ;
-	eeprom = EEPROM_START
+    eeprom = EEPROM_START
 
-	E_turnkey = eeprom + 0
-	E_seed = eeprom + 2
-	E_here = eeprom + 4
-	E_last = eeprom + 6
-	E_tosr = eeprom + 8 
-	E_tofh = eeprom + 10
-	E_toee = eeprom + 12
+    E_turnkey = eeprom + 0
+    E_seed = eeprom + 2
+    E_here = eeprom + 4
+    E_last = eeprom + 6
+    E_tosr = eeprom + 8 
+    E_tofh = eeprom + 10
+    E_toee = eeprom + 12
 
-	
+    
 ;----------------------------------------------------------------------
-; 	flags 
+;     flags 
 ;
     F_IMMEDIATE = 0x80
     F_COMPILE = 0x40
     F_HIDDEN = 0x20
-	F_TOMASK = 0xE0
-	F_UNMASK = 0x1F
-	F_FOUND = 0x01
+    F_TOMASK = 0xE0
+    F_UNMASK = 0x1F
+    F_FOUND = 0x01
 
 .ifdef SMALL_NAMES
-	F_EXTRA	= 0x10
+    F_EXTRA = 0x10
     F_TOMASK = 0xF0
     F_UNMASK = 0x0F
 .endif
 
-	F_COMPILE = 1
-	F_INTERPE = 0
+    F_COMPILE = 1
+    F_INTERPE = 0
 
 ;---------------------------------------------------------------------
 ; default base
@@ -273,5 +275,5 @@ hd_\label:
     SRAM_END =   0x45F    ; SRAM from AVR manual
     SRAM_START = 0x060    ; SRAM from AVR manual
 
-
+	SPM_PAGESIZE = 64		; in bytes
 

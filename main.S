@@ -9,6 +9,8 @@
 
 .section data
 .org 0x0060
+SPM_BUFF: .space (SPM_PAGESIZE)
+
 sram:
 
 NULL:	.word 0
@@ -30,8 +32,6 @@ RSP:	.space RSP_SIZE, 0
 PSP:	.space PSP_SIZE, 0 
 PAD:	.space PAD_SIZE, 0
 TIB: 	.space TIB_SIZE, 0
-BUF0:	.space FSH_SIZE, 0
-BUF1:	.space FSH_SIZE, 0
 
 .equ free_sram, .
 
@@ -42,6 +42,8 @@ BUF1:	.space FSH_SIZE, 0
 #include "more.S"
 
 #include "math.S"
+
+#include "do_spm.S"
 
 .equ free_flash, .
 

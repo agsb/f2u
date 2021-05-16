@@ -72,9 +72,9 @@
 ;
 ;----------------------------------------------------------------------
 .section .text
-;.org 0x100
+.org 0x100
 ; maps pseudo memory address, all access behind is sram
-.org SRAM_END+1
+;.org SRAM_END+1
 .global forth
 forth:
 ;;----------------------------------------------------------------------
@@ -129,7 +129,7 @@ HEADER "_LAST", "_LAST"
 
 ; pull ip from rsp
 _exit:             
-    rspull wos_low, wos_high
+    rspull wrk_low, wrk_high
 
 ; load w with contents of cell at ip, only works in program memory (flash)  
 _next:            
