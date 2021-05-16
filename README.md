@@ -23,7 +23,9 @@ For now:
   
 # Introduction
 
-I want a forth for a Atmega8, but there is no need for speed, because I want a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a MPU family and a outer interpreter and compound words independent of any specific CPU family, like a imutable list with rellocable references.
+Forth have two types of words, those called natives, ad primitive ad leaf, which are coded in specific CPU or MCU instructions, and those called forths, ad compound ad twig, which are sequences of references to words.
+
+I want a forth for a Atmega8, but there is no need for speed, because I want a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a MCU family and a outer interpreter and compound words independent of any specific CPU family, like a imutable list with rellocable references without any code inline.
 
 PS. Atmega8 is a MCU with harvard architeture, 8k program flash memory, 1k static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, but (R16 to R31) could be used as 16 bits.
 
