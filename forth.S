@@ -400,7 +400,7 @@ HEADER  "WARM", "WARM"
 ;----------------------------------------------------------------------
 ;
 ; ok ( --- a2 u ) 
-HEADER "dolit", "dolit"
+HEADER "(literal)", "literal"
     NOOP
     rspull wrk_low, wrk_high
     movw ips_low, wrk_low	
@@ -413,11 +413,56 @@ HEADER "dolit", "dolit"
 ;----------------------------------------------------------------------
 ;
 ; ok ( --- a2 u ) 
+HEADER "(comma)", "comma"
+	NOOP
+; move to spm_buff
+	mov ips_low, pbuff
+	cpi ips_low, SPM_BUFF
+	breq 10f
+	; cpy to sram buffer
+	crl ips_high ; top of sram !
+
+	pspull wrk_low, wrk_high
+	st Z+, wrk_low,
+	st Z+, wrk_high,
+	; update pointer
+	mov pbuff, ips_low
+	cpi ips_low, (SPM_BUFF+SPM_PAGESIZE)
+	brlt 10f
+	
+	; buffer full
+	rspush psp_low, psp_high
+
+	ldi isp_low, lo8(HERE)
+	ldi isp_high, hi8(HERE)
+	ldi psp_low, lo8(SPM_BUFF)
+	ldi psp_ligh, hi8(SPM_BUFF)
+	
+	erase_page:
+	ldi isp_low, lo8(HERE)
+	ldi isp_high, hi8(HERE)
+	clr tos_low
+	clr tos_high
+    ldi nds_low, 0X03
+    rjmp exec_spm
+
+	fill_page:
+    ldi nds_low, 0X01
+    rjmp exec_spm
+
+	write_page:
+    ldi nds_low, 0X05
+    rjmp exec_spm
+
+	
+;----------------------------------------------------------------------
+;
+; ok ( --- a2 u ) 
 ;    search TIB start at TOIN for next word delimited by 32 or \0
 ;    returns start of word and u lenght
 ;    refills TIB when necessary. beware no round-robin
 ;
-HEADER "token", "token"
+HEADER "(parse)", "parse"
     NOOP
 1:    
     ; start at 
@@ -426,21 +471,18 @@ HEADER "token", "token"
 
 2:  
 	; skips while equal delimiter (space)
-    ; getch()
     srload wrk_high
-
-    ; if \0 
+    ; if \0  
     cpi wrk_high, 0
     breq 10f
-
-    ; if same
     cpi wrk_high, 32
     breq 2b
 
     ; start of a word
     rjmp 3f 
-
-; ok refill TIB ( -- u )  NO ECHOES !!!
+;
+; ok its refill TIB ( -- u )  NO ECHOES !!!
+;
 10: 
     ldi ips_low, lo8(TIB)
     ldi ips_high, hi8(TIB)
@@ -588,8 +630,9 @@ HEADER "token", "token"
     pspush ips_low, ips_high
 
 3:  
-    ; skip wile not equal
+	; skips while not equal delimiter (space)
     srload wrk_high
+	; if \0
     cpi wrk_high, 0
     breq 4f
     cpi wrk_low, 32
@@ -612,66 +655,87 @@ HEADER "token", "token"
 ;
 HEADER "(find)", "find"
     NOOP
+	; get count in low
     pspull tos_low, tos_high
+	; get address
     pspull nds_low, nds_high
     ; save stack
     rspush psp_low, psp_high
-    ; prepare loop    
+    
+	; prepare loop    
     ldi ips_low, lo8(LAST)
     ldi ips_high, hi8(LAST)
+	
+	; push for first loop
     rspush ips_low, ips_high
 
-    ; load next link 
-1:  
+1: 
+    ; load link 
     rspull ips_low, ips_high
+
+	; load contents
     pmload wrk_low, wrk_high
 
     ; if null ends
     cp wrk_low, wrk_high
     brbs BIT_ZERO, 10f
 
-    ; save next link
+    ; save link
     rspush wrk_low, wrk_high
 
-    ; load size
-    pmload tos_low, tos_high
+    ; load size and first char
+    pmload wrk_low, wrk_high
 
     ; must ummask
     ; ( a1 u1 --- f )
-    mov _work_, tos_high
-    andi tos_high, F_UNMASK
+    mov _work_, wrk_low
+    andi wrk_low, F_UNMASK
     
     ; ping-pong
     ; verify sizes
-    cp tos_high, tos_low
+    cp wrk_low, tos_low
     brne 1b
 
     ; points to a1
     movw psp_low, nds_low
     
+	; save count
+	mov _zero_, tos_low
+    
     ; load chars
 ;
-; can not be doing like this !!! not in sram !!! and lpm gets address in strange way
-;    ZZZZ
+; 	verify first char
 3:  
-    ld wrk_low, Z+
-    ld wrk_high, X+
+	ld wrk_low, X+
     cp wrk_low, wrk_high
     brne 1b
-    dec tos_high
-    brbc BIT_ZERO, 3b
+	dec _zero_
+	breq 4f 
+8:	
+	pmload wrk_low, wrk_high
+	ld tmp0, X+
+	ld tmp1, x+
+	cp wrk_low, tmp0
+	brne 1b
+	dec _zero_
+	breq 4f
+	cp wrk_high, tmp1
+	brne 1b
+	dec _zero_
+	breq 4f
+	rjmp 8b
 
+4:  
     ; found
     ; drop link for next name
-4:  
     rspull wrk_low, wrk_high
+
     ; restore psp
     rspull psp_low, psp_high
-    ; must check oddies
-    sbrc  _work_, 0
-    ; bypass pad byte
-    adiw ips_low, 1
+
+	; push CFA
     pspush ips_low, ips_high
+
     ; return with flags
     clr wrk_high
     mov wrk_low, _work_
@@ -679,14 +743,16 @@ HEADER "(find)", "find"
     ori  wrk_low, F_FOUND
     rjmp 99f
 
+10: 
     ; not found
     ; restore psp
-10: 
     rspull psp_low, psp_high
-    ; restore a1
+    
+	; restore a1
     movw wrk_low, nds_low
     pspush wrk_low, wrk_high
-    ; set flag false
+    
+	; set flag false
     clr wrk_low
     clr wrk_low
     ; save results
@@ -694,7 +760,7 @@ HEADER "(find)", "find"
     pspush wrk_low, wrk_high
     POON
 
-/*
+
 ;----------------------------------------------------------------------
 ;    ok ( a1 f -- ) 
 ;
@@ -705,22 +771,33 @@ HEADER "(find)", "find"
 HEADER  "evaluate", "evaluate"
     NOOP
     ; load state
-    ldi ips_low, lo8(STATE)
-    ldi ips_high, hi8(STATE)
-    pmload tos_low, tos_high
+    ldi _work_, lo8(STATE)
+    ldi _zero_, hi8(STATE)
+
     ; load flags
     pspull wrk_low, wrk_high
+
+	; in dictionary
+	cp wrk_low, wrk_high
+	brne 10f
+8:
+	; not in dictionary
+	
+10
+	; if not IMMEDIATE and COMPILE 
     andi wrk_low, F_IMMEDIATE
-    or wrk_low, tos_low 
+	or   wrk_low, _work_
     dec wrk_low
     brne 2f
     ; compile
     srsave 
+2:
     ; execute
-2:    rspush wrk_low, wrk_high
+    rspush wrk_low, wrk_high
 3:
     POON 
 
+/*
 : execute >R ;
 : compile comma ;
 : interpret

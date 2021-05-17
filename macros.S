@@ -9,8 +9,6 @@
 
 ; generic use
 #define _work_ r0
-
-; always zero
 #define _zero_ r1
 
 ; counter for timer0
@@ -23,6 +21,9 @@
 ; sreg reserved
 #define sreg_low r5
 
+; flash buffer ptr
+#define pbuff	r6
+
 ; Z instruction pointer for access sram and flash high memory
 #define ips_low r30
 #define ips_high r31
@@ -34,6 +35,10 @@
 ; X parameter stack pointer for access sram
 #define psp_low r26
 #define psp_high r27
+
+; temporary 
+#define tmp_low r19
+#define tmp_high r18
 
 ; second value parameter stack
 #define tos_low r20
