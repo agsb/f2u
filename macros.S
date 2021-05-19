@@ -114,32 +114,34 @@ hd_\label:
 ;    S    X (r27:r26) is used as data/parameter stack pointer
 ;    W    W (r25:r24) is used as generic work register
 ;
+;	all stacks grows downwards.
+;
 ;----------------------------------------------------------------------
-;    push into return stack, increments pointer
+;    push into return stack, 
 .macro rspush low, high 
-    st Y+, \low
-    st Y+, \high
+    st -Y, \low
+    st -Y, \high
 .endm
 
 ;----------------------------------------------------------------------
-;    pull from return stack, decrements pointer
+;    pull from return stack, 
 .macro rspull low, high
-    ld \high, -Y
-    ld \low, -Y
+    ld \high, Y+
+    ld \low, Y+
 .endm
 
 ;----------------------------------------------------------------------
-;    push into data stack, increments pointer
+;    push into data stack, 
 .macro pspush low, high
-    st X+, \low
-    st X+, \high
+    st -X, \low
+    st -X, \high
 .endm
 
 ;----------------------------------------------------------------------
-;    pull from data stack, decrements pointer
+;    pull from data stack, 
 .macro pspull low, high
-    ld \high, -X
-    ld \low, -X
+    ld \high, X+
+    ld \low, X+
 .endm
 
 ;----------------------------------------------------------------------
@@ -147,12 +149,12 @@ hd_\label:
 ;    input address in bytes, output address in bytes   
 ;    only works with TWO lpm !!!
 .macro pmload low, high
-    lsl \low
-    rol \high
+    lsl ips_low
+    rol ips_high
     lpm \low, Z+
     lpm \high, Z+
-    ror \high
-    ror \low
+    ror ips_high
+    ror ips_low
 .endm
 
 ;----------------------------------------------------------------------
@@ -169,8 +171,6 @@ hd_\label:
     st Z+, \byte 
 .endm
 
-; all dictionary above $0460 in flash ??
- 
 ;----------------------------------------------------------------------
 ; also io@
 ;
@@ -193,34 +193,14 @@ hd_\label:
     .endif
 .endm
 
-;---------------------------------------------------------------------
-; from avr manual
-;
-    __SREG__ = 0x3f
-    __SP_H__ = 0x3e
-    __SP_L__ = 0x3d
-
-    SRAM_START = 0x060    ; SRAM from AVR manual
-    SRAM_END =   0x45F    ; SRAM from AVR manual
-    FLASH_START = 0x000        ; flash start
-    FLASH_END    = 0XCFF        ; flash end
-    EEPROM_START = 0x000    ; Eeprom start
-    EEPROM_END    = 0x200        ; eeprom end
-
-    SPM_PAGESIZE = 64    ; bytes
-
 ;----------------------------------------------------------------------
 ;    sizes
 ;
-; "Column 72 means Continue",
-;  71 free for use, 72 always \0
+; "Column 72 means Continue", 72 always \0
     TIB_SIZE = 72
-    PAD_SIZE = 72
+
 ; stack 18 words deep
-    RSP_SIZE = 36
-    PSP_SIZE = 36
-; flash page size for Atmega8
-    FSH_SIZE = 64
+    STACK_SIZE = 36
 
 ;----------------------------------------------------------------------
 ;    eeprom used
@@ -239,27 +219,24 @@ hd_\label:
 ;----------------------------------------------------------------------
 ;     flags 
 ;
-    F_IMMEDI = 0x80
+; IMMEDIATE, COMPILE, HIDEN, TOGGLE
+;
+    F_IMMEDIATE = 0x80
     F_SMUDGE = 0x40
     F_HIDDEN = 0x20
+    F_TOGGLE = 0x10
 	
-    F_TOMASK = 0xE0
-    F_UNMASK = 0x1F
-    F_FOUND = 0x01
-
-.ifdef SMALL_NAMES
-    F_EXTRA = 0x10
     F_TOMASK = 0xF0
     F_UNMASK = 0x0F
-.endif
+    F_FOUND =  0x01
 
     F_COMPILE = 1
-    F_INTERPE = 0
+    F_EXECUTE = 0
 
 ;---------------------------------------------------------------------
 ; default base
 ;
-    BASE_DEFAULT = 10
+    BASE_DEFAULT = 16
 
 ;---------------------------------------------------------------------
 ; default cell size
@@ -267,10 +244,22 @@ hd_\label:
     CELL_SIZE = 2
 
 ;---------------------------------------------------------------------
-;    status register ZERO bit
+;    status register 
 
-    BIT_CARRY = 0
-    BIT_ZERO = 1
+	NO_ERROR	= 0
+	INVALID_MEMORY = -9
+	WRITE_TO_READ_ONLY = -20
+
+;---------------------------------------------------------------------
+; Flow Control
+ XON_   =   0x11
+ XOFF_  =   0x13
+
+ CR_    =   0x0d
+ LF_    =   0x0a
+ BS_    =   0x08
+ TAB_   =   0x09
+ ESC_   =   0x1B
 
 ;---------------------------------------------------------------------
 ; from avr manual
@@ -279,8 +268,21 @@ hd_\label:
     __SP_H__ = 0x3e
     __SP_L__ = 0x3d
 
+    BIT_CARRY = 0
+    BIT_ZERO = 1
+
     SRAM_END =   0x45F    ; SRAM from AVR manual
     SRAM_START = 0x060    ; SRAM from AVR manual
 
+	FLASH_RWW = 0x0000
+	FLASH_NRWW = 0x1800 
+
+	FLASH_STOP = FLASH_NRWW
+
 	SPM_PAGESIZE = 64		; in bytes
+
+	pagesize = (SPM_PAGESIZE - 1)
+	pagemask = (~pagesize)
+	
+	RAMEND = SRAM_END
 

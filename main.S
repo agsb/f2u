@@ -9,41 +9,35 @@
 
 .section data
 .org 0x0060
-SPM_BUFF: .space (SPM_PAGESIZE)
-
-sram:
-
+VOID:	.word 0
 NULL:	.word 0
-SEED:	.word 0
-
-HERE:	.word 0
-LAST:	.word 0
-
-TOIN:	.word 0
-TOUM:	.word 0
-
-TOEE:	.word 0
-TOFH:	.word 0
-
-BASE:	.word 0
-STATE:	.word 0
-
-RSP:	.space RSP_SIZE, 0
-PSP:	.space PSP_SIZE, 0 
-PAD:	.space PAD_SIZE, 0
-TIB: 	.space TIB_SIZE, 0
+.equ	LINE, .
 
 .equ free_sram, .
+.equ	VSP, TIB - 18
+.equ	SEED, TIB - 16
+.equ	THIS, TIB - 14	; pointer to next in line
+.equ	TOIN, TIB - 12	; pointer to next in tib
+.equ	KEEP, TIB - 10	; keep real here till update line
+.equ	HERE, TIB - 8	; pointer to next in flash
+.equ	LAST, TIB - 6	; last linked word
+.equ	BASE, TIB - 4
+.equ	STATE, TIB - 2
+.equ	TIB, END - TIB_SIZE
+.equ	END, PSP - STACK_SIZE 
+.equ	PSP, RSP - STACK_SIZE
+.equ	RSP, SPZ - STACK_SIZE
+.equ	SPZ, RAMEND		
 
 #include "bios.S"
 
 #include "forth.S"
 
-#include "more.S"
+;#include "more.S"
 
-#include "math.S"
+;#include "math.S"
 
-#include "do_spm.S"
+;#include "do_spm.S"
 
 .equ free_flash, .
 

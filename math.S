@@ -51,8 +51,29 @@ div10:
 	mul	r1,r16
 	ret 
 ;----------------------------------------
-*/
 
+;******************************************************************************;
+* DESCRIPTION;* Signed multiply of two 16-bit numbers with 32-bit result.
+;* USAGE;* r19:r18:r17:r16 = r23:r22 * r21:r20
+;******************************************************************************
+muls16x16_32: 
+	clr r2 
+	muls r23, r21 ; (signed)ah * (signed)bh 
+	movw r18, r0 
+	mul r22, r20 ; al * bl 
+	movw r16, r0 
+	mulsu r23, r20 ; (signed)ah * bl 
+	sbc r19, r2 
+	add r17, r0 
+	adc r18, r1 
+	adc r19, r2 
+	mulsu r21, r22 ; (signed)bh * al 
+	sbc r19, r2 
+	add r17, r0 
+	adc r18, r1 
+	adc r19, r2 
+	ret
+*/
 ;----------------------------------------------------------------------
 ;
 ; 	great DJB hash, adapted for 16bits

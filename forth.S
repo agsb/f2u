@@ -33,6 +33,10 @@
 
 ;----------------------------------------------------------------------
 
+19/05/2021
+
+	Rewrite for plain use of sram as buffer for flash
+
 02/05/2021
 
     Rewrite again using sectorforth as minimal design
@@ -156,6 +160,11 @@ _exec:
 	movw ips_low, wrk_low
 .endif
 
+; zzz left or right ????
+
+	lsl ips_low
+	rol ips_high
+
     ijmp
 
 ;----------------------------------------------------------------------
@@ -252,7 +261,7 @@ HEADER "+", "PLUS"
 HEADER "TIB", "TIBVAR"
     NOOP
     ldi wrk_low, lo8(TIB)
-    ldi wrk_high, hi8( TIB)
+    ldi wrk_high, hi8(TIB)
     pspush wrk_low, wrk_high
     POON
 
@@ -395,6 +404,8 @@ HEADER "COLD", "COLD"
 ; fake
 HEADER  "WARM", "WARM"
     NOOP
+	; verify error code
+	; resets etc
     POON
 
 ;----------------------------------------------------------------------
@@ -409,97 +420,6 @@ HEADER "(literal)", "literal"
     pmload wrk_low, wrk_high
     pspush wrk_low, wrk_high
     POON
-
-;----------------------------------------------------------------------
-;
-; ok ( --- a2 u ) 
-HEADER "(comma)", "comma"
-	NOOP
-zzz
-; move to spm_buff
-	clr ips_high ; top of sram !
-	mov ips_low, buffer
-	; copy from psp to sram buffer
-	pspull wrk_low, wrk_high
-	st Z+, wrk_low
-	st Z+, wrk_high
-	; update pointer
-	cpi ips_low, (SPM_BUFF+SPM_PAGESIZE)
-	; buffer full
-	brge flush
-	; else
-	mov buffer, ips_low 
-
-	lds wrk_low, HERE+0
-	lds wrk_high, HERE+1
-	adiw wrk_low, 2
-	sts HERE+0, wrk_low
-	sts HERE+1, wrk_high
-	POON
-
-	
-;----------------------------------------------------------------------
-;
-; ok flush sram buffer to flash, using optiboot do_spm
-;	 spm instruction uses r31:r30 for address and r1:r0 for data
-;	do_spm uses r25:r24 for address, R21:r20 for data, r22 for code operation erase/fill/write
-;	destroys r24 :(
-;
-HEADER "(flush)", "flush"
-	NOOP
-
-	; buffer full
-
-erase_page: ; must be in bytes, only 
-	ldi wrk_low, lo8(HERE)
-	ldi wrk_high, hi8(HERE)
-	clr tos_low
-	clr tos_high
-    ldi nds_low, 0X03
-    rcall do_spm
-
-/*
-.if SPM_PAGESIZE > 256
-.error can't use a spm page greather than 256
-.fi
-*/
-
-/* from amforth and avr tutorials */
-.equ pagemask = ~ (PAGESIZE -1)
-
-fill_page:
-	; save psp
-	rspush psp_low, psp_high
-	ldi psp_low, lo8(SPM_BUFF)
-	ldi psp_ligh, hi8(SPM_BUFF)
-	clr wrk_low
-	clr wrk_high
-    ldi nds_low, 0X01
-	ldi nds_high, SPM_PAGESIZE
-8:
-	ld tos_low, X+		 
-	ld tos_high, X+		 
-    rcall do_spm
-	inc wrk_low
-	inc wrk_low
-	dec nds_high
-	dec nds_high
-	brne 8b
-	; load psp
-	rspush psp_low, psp_high
-
-	write_page:
-	ldi wrk_low, lo8(HERE)
-	ldi wrk_high, hi8(HERE)
-	clr tos_low
-	clr tos_high
-    ldi nds_low, 0X05
-    rcall do_spm
-10:
-	clr buffer
-
-	POON
-	
 ;----------------------------------------------------------------------
 ;
 ; ok ( --- a2 u ) 
@@ -758,13 +678,13 @@ HEADER "(find)", "find"
 	breq 4f 
 8:	
 	pmload wrk_low, wrk_high
-	ld tmp0, X+
-	ld tmp1, x+
-	cp wrk_low, tmp0
+	ld tmp_low, X+
+	ld tmp_high, x+
+	cp wrk_low, tmp_low
 	brne 1b
 	dec _zero_
 	breq 4f
-	cp wrk_high, tmp1
+	cp wrk_high, tmp_high
 	brne 1b
 	dec _zero_
 	breq 4f
@@ -816,8 +736,9 @@ HEADER "(find)", "find"
 HEADER  "evaluate", "evaluate"
     NOOP
     ; load state
-    ldi _work_, lo8(STATE)
-    ldi _zero_, hi8(STATE)
+    ;ldi _work_, lo8(STATE)
+    ;ldi _zero_, hi8(STATE)
+	; zzz
 
     ; load flags
     pspull wrk_low, wrk_high
@@ -828,19 +749,172 @@ HEADER  "evaluate", "evaluate"
 8:
 	; not in dictionary
 	
-10
+10:
 	; if not IMMEDIATE and COMPILE 
     andi wrk_low, F_IMMEDIATE
 	or   wrk_low, _work_
     dec wrk_low
     brne 2f
     ; compile
-    srsave 
+	; zzzz
+    ; srsave 
 2:
     ; execute
     rspush wrk_low, wrk_high
 3:
     POON 
+
+;----------------------------------------------------------------------
+;
+; ok ( --- a2 u ) 
+HEADER "(comma)", "comma"
+	NOOP
+	
+	; copy from psp to sram buffer
+	lds ips_low, THIS+0
+	lds ips_high, THIS+1
+	pspull wrk_low, wrk_high
+	st Z+, wrk_low
+	st Z+, wrk_high
+	; update this 
+	sts THIS+0, ips_low
+	sts THIS+1, ips_high
+	
+	; verify free ram
+	lds wrk_low, VSP+0
+	lds wrk_high, VSP+1
+	cp wrk_high, ips_high
+	brlt 2f
+	cpc wrk_low, ips_low
+	brlt 2f
+
+	; no more free ram	
+	ldi wrk_low, INVALID_MEMORY
+	rjmp WARM
+
+2:
+	; update here
+	lds wrk_low, HERE+0
+	lds wrk_high, HERE+1
+	adiw wrk_low, 2
+	sts HERE+0, wrk_low
+	sts HERE+1, wrk_high
+
+	; verify free flash
+	cpi wrk_high, hi8(FLASH_STOP)
+	brlt 3f
+	cpi wrk_low, lo8(FLASH_STOP)
+	brlt 3f
+
+	; no more free flash
+	ldi wrk_low, WRITE_TO_READ_ONLY
+	rjmp WARM
+
+3:
+	POON
+
+;---------------------------------------------------------------------
+;	
+; ok flash start of line buffer with %page used to HERE, update THIS 
+;
+HEADER "(flash)", "flash"
+	
+	lds	ips_low, HERE+0
+	lds ips_high, HERE+1
+
+	andi ips_low,  lo8(pagemask)
+	andi ips_high, hi8(pagemask)
+
+	rspush psp_low, psp_high
+	ldi psp_low, lo8(LINE)
+	ldi psp_high, hi8(LINE)
+	ldi wrk_low, SPM_PAGESIZE
+
+	lsr ips_low
+	rol ips_high
+2:
+	lpm _work_, Z+
+	st X+, _work_
+	dec wrk_low
+	brne 2b
+
+4:	
+	sts THIS+0, wrk_low
+	sts THIS+1, wrk_high
+
+	rspull psp_low, psp_high
+	POON
+	
+	
+;----------------------------------------------------------------------
+;
+; ok flush sram buffer to flash, using optiboot do_spm
+;	 spm instruction uses r31:r30 for address and r1:r0 for data
+;	do_spm uses r25:r24 for address, R21:r20 for data, r22 for code operation erase/fill/write
+;	destroys r24 :(
+;
+	SPM_BUFF = VOID
+
+HEADER "(flush)", "flush"
+	NOOP
+
+	; buffer full or doing a SEMMI
+
+erase_page: ; must be in bytes, only 
+	ldi wrk_low, lo8(HERE)
+	ldi wrk_high, hi8(HERE)
+	clr tos_low
+	clr tos_high
+    ldi nds_low, 0X03
+    rcall do_spm
+
+/*
+.if SPM_PAGESIZE > 256
+.error can't use a spm page greather than 256
+.fi
+*/
+
+/* from amforth and avr tutorials */
+ 	; pagemask = (~(PAGESIZE -1))
+; zzz
+
+	
+
+fill_page:
+	; save psp
+	rspush psp_low, psp_high
+	ldi psp_low, lo8(VOID)
+	ldi psp_high, hi8(VOID)
+	clr wrk_low
+	clr wrk_high
+    ldi nds_low, 0X01
+	ldi nds_high, SPM_PAGESIZE
+8:
+	ld tos_low, X+		 
+	ld tos_high, X+		 
+    rcall do_spm
+	inc wrk_low
+	inc wrk_low
+	dec nds_high
+	dec nds_high
+	brne 8b
+	; load psp
+	rspush psp_low, psp_high
+
+	write_page:
+	ldi wrk_low, lo8(HERE)
+	ldi wrk_high, hi8(HERE)
+	clr tos_low
+	clr tos_high
+    ldi nds_low, 0X05
+    rcall do_spm
+10:
+	clr buffer
+
+	POON
+	
+do_spm:
+	rjmp do_spm
 
 /*
 : execute >R ;
