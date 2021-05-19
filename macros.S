@@ -22,7 +22,8 @@
 #define sreg_low r5
 
 ; flash buffer ptr
-#define pbuff	r6
+#define buffer	r6
+#define counter	r7
 
 ; Z instruction pointer for access sram and flash high memory
 #define ips_low r30
@@ -238,9 +239,10 @@ hd_\label:
 ;----------------------------------------------------------------------
 ;     flags 
 ;
-    F_IMMEDIATE = 0x80
-    F_COMPILE = 0x40
+    F_IMMEDI = 0x80
+    F_SMUDGE = 0x40
     F_HIDDEN = 0x20
+	
     F_TOMASK = 0xE0
     F_UNMASK = 0x1F
     F_FOUND = 0x01

@@ -415,45 +415,90 @@ HEADER "(literal)", "literal"
 ; ok ( --- a2 u ) 
 HEADER "(comma)", "comma"
 	NOOP
+zzz
 ; move to spm_buff
-	mov ips_low, pbuff
-	cpi ips_low, SPM_BUFF
-	breq 10f
-	; cpy to sram buffer
-	crl ips_high ; top of sram !
-
+	clr ips_high ; top of sram !
+	mov ips_low, buffer
+	; copy from psp to sram buffer
 	pspull wrk_low, wrk_high
-	st Z+, wrk_low,
-	st Z+, wrk_high,
+	st Z+, wrk_low
+	st Z+, wrk_high
 	; update pointer
-	mov pbuff, ips_low
 	cpi ips_low, (SPM_BUFF+SPM_PAGESIZE)
-	brlt 10f
-	
 	; buffer full
-	rspush psp_low, psp_high
+	brge flush
+	; else
+	mov buffer, ips_low 
 
-	ldi isp_low, lo8(HERE)
-	ldi isp_high, hi8(HERE)
-	ldi psp_low, lo8(SPM_BUFF)
-	ldi psp_ligh, hi8(SPM_BUFF)
+	lds wrk_low, HERE+0
+	lds wrk_high, HERE+1
+	adiw wrk_low, 2
+	sts HERE+0, wrk_low
+	sts HERE+1, wrk_high
+	POON
+
 	
-	erase_page:
-	ldi isp_low, lo8(HERE)
-	ldi isp_high, hi8(HERE)
+;----------------------------------------------------------------------
+;
+; ok flush sram buffer to flash, using optiboot do_spm
+;	 spm instruction uses r31:r30 for address and r1:r0 for data
+;	do_spm uses r25:r24 for address, R21:r20 for data, r22 for code operation erase/fill/write
+;	destroys r24 :(
+;
+HEADER "(flush)", "flush"
+	NOOP
+
+	; buffer full
+
+erase_page: ; must be in bytes, only 
+	ldi wrk_low, lo8(HERE)
+	ldi wrk_high, hi8(HERE)
 	clr tos_low
 	clr tos_high
     ldi nds_low, 0X03
-    rjmp exec_spm
+    rcall do_spm
 
-	fill_page:
+/*
+.if SPM_PAGESIZE > 256
+.error can't use a spm page greather than 256
+.fi
+*/
+
+/* from amforth and avr tutorials */
+.equ pagemask = ~ (PAGESIZE -1)
+
+fill_page:
+	; save psp
+	rspush psp_low, psp_high
+	ldi psp_low, lo8(SPM_BUFF)
+	ldi psp_ligh, hi8(SPM_BUFF)
+	clr wrk_low
+	clr wrk_high
     ldi nds_low, 0X01
-    rjmp exec_spm
+	ldi nds_high, SPM_PAGESIZE
+8:
+	ld tos_low, X+		 
+	ld tos_high, X+		 
+    rcall do_spm
+	inc wrk_low
+	inc wrk_low
+	dec nds_high
+	dec nds_high
+	brne 8b
+	; load psp
+	rspush psp_low, psp_high
 
 	write_page:
+	ldi wrk_low, lo8(HERE)
+	ldi wrk_high, hi8(HERE)
+	clr tos_low
+	clr tos_high
     ldi nds_low, 0X05
-    rjmp exec_spm
+    rcall do_spm
+10:
+	clr buffer
 
+	POON
 	
 ;----------------------------------------------------------------------
 ;
