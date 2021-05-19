@@ -822,26 +822,27 @@ HEADER "(flash)", "flash"
 	lds	ips_low, HERE+0
 	lds ips_high, HERE+1
 
+	mov wrk_low, ips_low
+	andi wrk_low, lo8(pagesize) ; must be less than 256, in bytes
+
 	andi ips_low,  lo8(pagemask)
 	andi ips_high, hi8(pagemask)
 
 	rspush psp_low, psp_high
 	ldi psp_low, lo8(LINE)
 	ldi psp_high, hi8(LINE)
-	ldi wrk_low, SPM_PAGESIZE
 
 	lsr ips_low
 	rol ips_high
 2:
 	lpm _work_, Z+
 	st X+, _work_
-	dec wrk_low
+	dec wrk_high
 	brne 2b
 
 4:	
-	sts THIS+0, wrk_low
-	sts THIS+1, wrk_high
-
+	sts THIS+0, psp_low
+	sts THIS+1, psp_high
 	rspull psp_low, psp_high
 	POON
 	
