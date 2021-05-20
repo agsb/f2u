@@ -818,20 +818,29 @@ HEADER "(comma)", "comma"
 ; ok flash start of line buffer with %page used to HERE, update THIS 
 ;
 HEADER "(flash)", "flash"
-	
+
+	; where it is ?	
 	lds	ips_low, HERE+0
 	lds ips_high, HERE+1
 
+	; save fraction
 	mov wrk_low, ips_low
 	andi wrk_low, lo8(pagesize) ; must be less than 256, in bytes
 
+	; save absolute
 	andi ips_low,  lo8(pagemask)
 	andi ips_high, hi8(pagemask)
+	
+	; save page
+	sts KEEP+0, ips_low
+	sts KEEP+1, ips_high
 
+	; prepare loop
 	rspush psp_low, psp_high
 	ldi psp_low, lo8(LINE)
 	ldi psp_high, hi8(LINE)
 
+	; adjust address for lpm
 	lsr ips_low
 	rol ips_high
 2:
@@ -841,6 +850,7 @@ HEADER "(flash)", "flash"
 	brne 2b
 
 4:	
+	; update where
 	sts THIS+0, psp_low
 	sts THIS+1, psp_high
 	rspull psp_low, psp_high
@@ -849,74 +859,93 @@ HEADER "(flash)", "flash"
 	
 ;----------------------------------------------------------------------
 ;
-; ok flush sram buffer to flash, using optiboot do_spm
-;	 spm instruction uses r31:r30 for address and r1:r0 for data
+; ok flush sram buffer to flash, 
+;	spm instruction uses r31:r30 for address and r1:r0 for data
+;
+;	using optiboot do_spm
 ;	do_spm uses r25:r24 for address, R21:r20 for data, r22 for code operation erase/fill/write
 ;	destroys r24 :(
 ;
-	SPM_BUFF = VOID
-
 HEADER "(flush)", "flush"
 	NOOP
 
-	; buffer full or doing a SEMMI
+; buffer full or doing a SEMMI
 
-erase_page: ; must be in bytes, only 
-	ldi wrk_low, lo8(HERE)
-	ldi wrk_high, hi8(HERE)
-	clr tos_low
-	clr tos_high
-    ldi nds_low, 0X03
-    rcall do_spm
-
-/*
-.if SPM_PAGESIZE > 256
-.error can't use a spm page greather than 256
-.fi
-*/
-
-/* from amforth and avr tutorials */
- 	; pagemask = (~(PAGESIZE -1))
-; zzz
-
-	
-
-fill_page:
-	; save psp
-	rspush psp_low, psp_high
-	ldi psp_low, lo8(VOID)
-	ldi psp_high, hi8(VOID)
-	clr wrk_low
-	clr wrk_high
-    ldi nds_low, 0X01
-	ldi nds_high, SPM_PAGESIZE
-8:
-	ld tos_low, X+		 
-	ld tos_high, X+		 
-    rcall do_spm
-	inc wrk_low
-	inc wrk_low
-	dec nds_high
-	dec nds_high
-	brne 8b
-	; load psp
 	rspush psp_low, psp_high
 
-	write_page:
-	ldi wrk_low, lo8(HERE)
-	ldi wrk_high, hi8(HERE)
-	clr tos_low
-	clr tos_high
-    ldi nds_low, 0X05
-    rcall do_spm
+	ldi psp_low, lo8(LINE)
+	ldi psp_high, hi8(LINE)
+
+	lds tos_low, THIS+0
+	lds tos_high, THIS+1
+
+	lds ips_low, KEEP+0
+	lds ips_high, KEEP+1
+
+	andi ips_low,  lo8(pagemask)
+	andi ips_high, hi8(pagemask)
+
+	movw nds_low, ips_low
+
 10:
-	clr buffer
+	;  next page 
+	movw ips_low, nds_low
 
+	; erase page
+	ldi tmp_low, (1<<PGERS) | (1<<SPMEN)
+	rcall do_spm
+
+	; re-enable the RWW section
+	;ldi tmp_low, (1<<PGERS) | (1<<SPMEN)
+    ;rcall do_spm
+
+	; one page loop
+	ldi wrk_low, lo8(SPM_PAGESIZE)
+
+20:
+	; fill page flash buffer
+	ld r0, X+
+	ld r1, X+
+	ldi tmp_low, (1<<SPMEN)
+	rcall do_spm
+	adiw ips_low, 2
+	dec wrk_low
+	dec wrk_low
+	brne 20b
+
+	; save page
+	movw wrk_low, ips_low
+
+30:
+	; same page 
+	movw ips_low, nds_low
+
+	; write page
+	ldi tmp_low, (1<<PGWRT) | (1<<SPMEN)
+	rcall do_spm
+
+	; re-enable the RWW section
+	;ldi tmp_low, (1<<PGERS) | (1<<SPMEN)
+    ;rcall do_spm
+
+	; verify end of 
+	cp psp_high, tos_high
+	cpc psp_low, tos_low
+	brge 50f
+ 
+40:
+	; load next page
+	movw nds_low, wrk_low
+	rjmp 10b
+
+50:
+	; clean house
+	
+	lds wrk_low, KEEP+0
+	lds wrk_high, KEEP+1
+	
 	POON
 	
-do_spm:
-	rjmp do_spm
-
 /*
 : execute >R ;
 : compile comma ;

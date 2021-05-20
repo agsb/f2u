@@ -37,7 +37,7 @@ NULL:	.word 0
 
 ;#include "math.S"
 
-;#include "do_spm.S"
+#include "nrww.S"
 
 .equ free_flash, .
 

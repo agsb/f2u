@@ -6,10 +6,12 @@
 ;
 ; can't use alias 
 ;----------------------------------------------------------------------
-
+;
+; r1:r0 reserved and used in self instructions
+;
 ; generic use
-#define _work_ r0
-#define _zero_ r1
+#define _work_ r6
+#define _zero_ r7
 
 ; counter for timer0
 #define tmr_low r2
@@ -20,10 +22,6 @@
 
 ; sreg reserved
 #define sreg_low r5
-
-; flash buffer ptr
-#define buffer	r6
-#define counter	r7
 
 ; Z instruction pointer for access sram and flash high memory
 #define ips_low r30
@@ -38,8 +36,8 @@
 #define psp_high r27
 
 ; temporary 
-#define tmp_low r19
-#define tmp_high r18
+#define tmp_low r18
+#define tmp_high r19
 
 ; second value parameter stack
 #define tos_low r20
@@ -267,6 +265,18 @@ hd_\label:
     __SREG__ = 0x3f
     __SP_H__ = 0x3e
     __SP_L__ = 0x3d
+
+/* SPMCR */
+#define SPMCR  lo8(0x37)
+#define SPMIE   7
+#define RWWSB   6
+/* bit 5 reserved */
+#define RWWSRE  4
+#define BLBSET  3
+#define PGWRT   2
+#define PGERS   1
+#define SPMEN   0
+
 
     BIT_CARRY = 0
     BIT_ZERO = 1

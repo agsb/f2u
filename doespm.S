@@ -44,8 +44,6 @@ Wrloop:
     subi    looplo, 2 ;use subi for PAGESIZEB<=256
     brne    Wrloop
 
-; never will work, Z must have the page to write NOT the size of page!
-
 ; execute Page Write
     subi    ZL, low(PAGESIZEB) ;restore pointer
     sbci    ZH, high(PAGESIZEB) ;not required for PAGESIZEB<=256
