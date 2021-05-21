@@ -373,8 +373,8 @@ d16s_6:
 HEADER "utoa", "utoa" 
 	NOOP
 
-	ldi ips_low, lo8(PAD)
-	ldi ips_high, hi8(PAD)
+	ldi ips_low, lo8(PIC)
+	ldi ips_high, hi8(PIC)
 	movw nds_low, ips_low
 	pspull wrk_low, wrk_high
 	

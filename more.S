@@ -721,23 +721,35 @@ HEADER "+!", "PLUSTO"
 ;
 ; ok 
 ;
-HEADER "(here!)", "hereto"
-	.word HERE, AT, E_here, weep, _LAST
+HEADER "(here!e)", "hereto"
+	.word HERE, AT, eehere, weep, _LAST
 
-HEADER "(here@)", "hereat"
-	.word E_here, reep, HERE, TO, _LAST
+HEADER "(here@e)", "hereat"
+	.word eehere, reep, HERE, TO, _LAST
 
-HEADER "(last!)", "lastto"
-	.word LAST, AT, E_last, weep, _LAST
+HEADER "(last!e)", "lastto"
+	.word LAST, AT, eelast, weep, _LAST
 
-HEADER "(last@)", "lastat"
-	.word E_last, reep, LAST, TO, _LAST
+HEADER "(last@e)", "lastat"
+	.word eelast, reep, LAST, TO, _LAST
 
-HEADER "(seed!)", "seedto"
-	.word SEED, AT, E_seed, weep, _LAST
+HEADER "(seed!e)", "seedto"
+	.word SEED, AT, eeseed, weep, _LAST
 
-HEADER "(seed@)", "seedat"
-	.word E_seed, reep, SEED, TO, _LAST
+HEADER "(seed@e)", "seedat"
+	.word eeseed, reep, SEED, TO, _LAST
+
+HEADER "(sram!e)", "sramto"
+	.word SRAM, AT, eesram, weep, _LAST
+
+HEADER "(sram@e)", "sramat"
+	.word eesram, reep, SRAM, TO, _LAST
+
+HEADER "(erom!e)", "eromto"
+	.word EROM, AT, eeprom, weep, _LAST
+
+HEADER "(erom@e)", "eromat"
+	.word eeprom, reep, EROM, TO, _LAST
 
 
 

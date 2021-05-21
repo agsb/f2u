@@ -14,7 +14,8 @@ NULL:	.word 0
 .equ	LINE, .
 
 .equ free_sram, .
-.equ	VSP, TIB - 18
+.equ	EROM, TIB - 20
+.equ	SRAM, TIB - 18
 .equ	SEED, TIB - 16
 .equ	THIS, TIB - 14	; pointer to next in line
 .equ	TOIN, TIB - 12	; pointer to next in tib
@@ -23,7 +24,8 @@ NULL:	.word 0
 .equ	LAST, TIB - 6	; last linked word
 .equ	BASE, TIB - 4
 .equ	STATE, TIB - 2
-.equ	TIB, END - TIB_SIZE
+.equ	TIB, PIC - TIB_SIZE
+.equ	PIC, END - PIC_SIZE
 .equ	END, PSP - STACK_SIZE 
 .equ	PSP, RSP - STACK_SIZE
 .equ	RSP, SPZ - STACK_SIZE
@@ -33,13 +35,14 @@ NULL:	.word 0
 
 #include "forth.S"
 
-;#include "more.S"
+#include "more.S"
 
-;#include "math.S"
+#include "math.S"
+
+.equ free_flash, .
 
 #include "nrww.S"
 
-.equ free_flash, .
 
 /*
 1 	1st 	first

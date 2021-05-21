@@ -160,10 +160,10 @@ _exec:
 	movw ips_low, wrk_low
 .endif
 
-; zzz left or right ????
+; zzz left or right ???? byte to address
 
-	lsl ips_low
-	rol ips_high
+	lsr ips_low
+	ror ips_high
 
     ijmp
 
@@ -175,16 +175,6 @@ _exec:
 ;**********************************************************************
 ;	init of minimal words
 ;----------------------------------------------------------------------
-; ok @ at ( a -- w )
-HEADER "@", "AT"
-    NOOP
-    pspull ips_low, ips_high
-    srload wrk_low
-    srload wrk_high
-    pspush wrk_low, wrk_high
-    POON
-
-;----------------------------------------------------------------------
 ; ok ! to (x a -- )
 HEADER "!", "TO"
     NOOP
@@ -195,20 +185,33 @@ HEADER "!", "TO"
     POON
 
 ;----------------------------------------------------------------------
+; ok @ at ( a -- w )
+HEADER "@", "AT"
+    NOOP
+    pspull ips_low, ips_high
+    srload wrk_low
+    srload wrk_high
+_push:
+    pspush wrk_low, wrk_high
+    POON
+
+;----------------------------------------------------------------------
 ; ok ( -- rsp)
 HEADER "RP@", "RPAT"
     NOOP
     movw wrk_low, rsp_low
-    pspush wrk_low, wrk_high
-    POON
+	rjmp _push
+;    pspush wrk_low, wrk_high
+;    POON
 
 ;----------------------------------------------------------------------
 ; ok ( -- psp )
 HEADER "SP@", "SPAT"
     NOOP
     movw wrk_low, psp_low
-    pspush wrk_low, wrk_high
-    POON
+	rjmp _push
+;    pspush wrk_low, wrk_high
+;    POON
 
 ;----------------------------------------------------------------------
 ; ok 0=
@@ -225,8 +228,9 @@ _ffalse:
     clr wrk_low
     clr wrk_high
 _ZEROEND:
-    pspush wrk_low, wrk_high
-    POON
+	rjmp _push
+;    pspush wrk_low, wrk_high
+;    POON
 
 ;----------------------------------------------------------------------
 ;ok ( w1 w2 -- w2 AND w1 )
@@ -238,8 +242,9 @@ HEADER "NAND", "NAND"
     and wrk_low, tos_low
     com wrk_high
     com wrk_low
-    pspush wrk_low, wrk_high
-    POON
+	rjmp _push
+;    pspush wrk_low, wrk_high
+;    POON
 
 ;----------------------------------------------------------------------
 ;ok ( w1 w2 -- w2 AND w1 )
@@ -250,12 +255,24 @@ HEADER "+", "PLUS"
     clc
     add wrk_low, tos_low
     adc wrk_high, tos_high
-    pspush wrk_low, wrk_high
-    POON
+	rjmp _push
+;    pspush wrk_low, wrk_high
+;    POON
+
+;----------------------------------------------------------------------
+;ok ( w1 w2 -- w2 AND w1 )
+HEADER "0", "ZERO"
+	NOOP
+	rjmp _ffalse
+;	clr wrk_low
+;	clr wrk_high
+;    pspush wrk_low, wrk_high
+;    POON
 
 ;----------------------------------------------------------------------
 ;	end of minimal words
 ;**********************************************************************
+
 ;----------------------------------------------------------------------
 ;ok 
 HEADER "TIB", "TIBVAR"
@@ -271,15 +288,6 @@ HEADER ">IN", "TOINVAR"
     NOOP
     ldi wrk_low, lo8(TOIN)
     ldi wrk_high, hi8(TOIN)
-    pspush wrk_low, wrk_high
-    POON
-
-;----------------------------------------------------------------------
-;ok 
-HEADER "SEED", "SEEDVAR"
-    NOOP
-    ldi wrk_low, lo8(SEED)
-    ldi wrk_high, hi8(SEED)
     pspush wrk_low, wrk_high
     POON
 
@@ -339,10 +347,10 @@ HEADER "key", "KEY"
 ;
 HEADER "emit", "EMIT"
     NOOP
-    pspull wrk_low, wrk_high
 1:  
     sbis 0x0b, 5
     rjmp 1b
+    pspull wrk_low, wrk_high
     out 0x0c, wrk_low
     POON
 
@@ -371,10 +379,6 @@ HEADER "COLD", "COLD"
 ; disable interrupts
     cli
 
-; clear scratchs
-    clr _work_
-    clr _zero_
-
 ; clear timer0 counter
     clr tmr_low
     clr tmr_high
@@ -395,6 +399,7 @@ HEADER "COLD", "COLD"
     ldi psp_high, hi8(PSP)
 
 ; preload to WARM
+	; next word
     ldi ips_low, lo8(WARM)
     ldi ips_high, hi8(WARM)
     rspush ips_low, ips_high
@@ -420,12 +425,13 @@ HEADER "(literal)", "literal"
     pmload wrk_low, wrk_high
     pspush wrk_low, wrk_high
     POON
+
 ;----------------------------------------------------------------------
 ;
-; ok ( --- a2 u ) 
+; ok ( --- a u | 0 ) 
 ;    search TIB start at TOIN for next word delimited by 32 or \0
 ;    returns start of word and u lenght
-;    refills TIB when necessary. beware no round-robin
+;	 or zero if no word
 ;
 HEADER "(parse)", "parse"
     NOOP
@@ -433,7 +439,6 @@ HEADER "(parse)", "parse"
     ; start at 
     ldi ips_low, lo8(TOIN)
     ldi ips_high, hi8(TOIN)
-
 2:  
 	; skips while equal delimiter (space)
     srload wrk_high
@@ -442,26 +447,56 @@ HEADER "(parse)", "parse"
     breq 10f
     cpi wrk_high, 32
     breq 2b
+3:  
+    ; keep address
+    sbiw ips_low, 1
+    pspush ips_low, ips_high
+    pspush ips_low, ips_high
+4:  
+	; skips while not equal delimiter (space)
+    srload wrk_high
+	; if \0
+    cpi wrk_high, 0
+    breq 5f
+    cpi wrk_low, 32
+    brne 4b
+5:  
+    ; keep length
+    sbiw ips_low, 1
+    pspull wrk_low, wrk_high
+    sub ips_low, wrk_low
+    sbc ips_high, wrk_high
+	movw wrk_low, ips_low
+	rjmp 20f
+10:
+	; end of buffer
+	clr wrk_low
+	clr wrk_high
+20:
+    pspush wrk_low, wrk_high
+    POON
 
-    ; start of a word
-    rjmp 3f 
+;----------------------------------------------------------------------
 ;
-; ok its refill TIB ( -- u )  NO ECHOES !!!
+; ok ( a u --- u ) 
+;   refills address till u chars read, u < 256
+; 	its refill ( a u -- u )  NO ECHOES !!!
 ;
+HEADER "(refill)", "refill"
+    NOOP
 10: 
-    ldi ips_low, lo8(TIB)
-    ldi ips_high, hi8(TIB)
-    ldi wrk_high, TIB_SIZE
-
-    ; always add \0 terminator
-    sts (TIB+TIB_SIZE-1), _zero_
-    clr _work_     ; clear length
-    clr tos_low ; clear comments \
+	pspull wrk_low, wrk_high
+	pspull ips_low, ips_high
+	 
+    clr tos_low  ; clear comments \
     clr tos_high ; clear comments ()
 
+	clr wrk_high ; counter to 255
+	dec wrk_low  ; save for \0
+
 11: 
-    ; decrease counter    
-    dec wrk_high
+    ; end of     
+    cp wrk_low, wrk_high
     brbs BIT_ZERO, 21f
 
 12: 
@@ -469,87 +504,87 @@ HEADER "(parse)", "parse"
     sbis 0xb, 7
     nop
     rjmp 12b
-    in wrk_low, 0xc
+    in _work_, 0xc
 
 13: 
     ; no 8bits
-    cpi wrk_low, 128
+    cpi _work_, 128
     brge 12b
 
-	; is not a control 
-    cpi wrk_low, 32
+	; not a control 
+    cpi _work_, 31
     brge 14f
 
 31:
     ; verify CR
-    cpi wrk_low, 13 ; CR
+    cpi _work_, 13 ; CR
     breq 21f
 
 32:
     ; verify LF
-    cpi wrk_low, 10 ; CR
+    cpi _work_, 10 ; LF
     breq 21f
 
 33: 
     ; verify BS
-    cpi wrk_low,  8 ; BS
+    cpi _work_,  8 ; BS
     brne 34f
 
     ; process BS
     ; had any char ?
-    cp _work_, _work_
+    cp wrk_high, wrk_high
     breq 12b
 
     ; back one
-    dec _work_
+    dec wrk_high
     sbiw ips_low, 1
     rjmp 12b    
 
 34:
     ; verify ESC 
-    cpi wrk_low, 27 ; ESC
+    cpi _work_, 27 ; ESC
     brne 35f
     ; process ESC void still
     rjmp 12b
 
 35:
     ; verify XON 
-    cpi wrk_low, 17 ; ESC
+    cpi _work_, 17 ; XON
     brne 36f
     ; process XON void still
     rjmp 12b
 
 36:
     ; verify XOFF 
-    cpi wrk_low, 19 ; ESC
+    cpi _work_, 19 ; XOFF
     brne 37f
     ; process XOFF void still
     rjmp 12b
 
 37:
-    ; no more controls
+    ; not allow more controls
 	rjmp 12b
 
 ; verify comments
 14: 
     ; is a ( ?
-    cpi wrk_low, 40
+    cpi _work_, 40
     brne 15f
     inc tos_high
     rjmp 12b
 
 15: 
     ; is a ) ?
-    cpi wrk_low, 41
+    cpi _work_, 41
     brne 16f
     dec tos_high
     rjmp 12b
 
 16: 
     ; is a \ ?
-    cpi wrk_low, 92 
+    cpi _work_, 92 
     brne 19f
-    dec tos_low
+    inc tos_low
     rjmp 12b
 
 19: 
@@ -561,55 +596,34 @@ HEADER "(parse)", "parse"
 
 .ifdef UPPERCASE    
     ; to uppercase
-    cpi wrk_low, 61
+    cpi _work_, 61
     brge 20f
-    cpi wrk_low, 123
+    cpi _work_, 123
     brge 20f
-    subi wrk_low, 32
+    subi _work_, 32
 .endif
 
 20: 
     ; save char to buffer
-    inc _work_
-    srsave wrk_low
+    inc wrk_high
+    srsave _work_
     rjmp 11b
   
 21: 
     ; push counter
     ; always add a space and a \0 terminator
-    ldi wrk_low, 32
-    srsave wrk_low
     clr wrk_low
     srsave wrk_low
 
     ; update zero to TOIN
     sts (TOIN+1), wrk_low
-    mov wrk_low, _work_
     sts (TOIN+0), wrk_low
-    rjmp 1b
 
-2:  
-    ; keep address
-    sbiw ips_low, 1
-    pspush ips_low, ips_high
-    pspush ips_low, ips_high
-
-3:  
-	; skips while not equal delimiter (space)
-    srload wrk_high
-	; if \0
-    cpi wrk_high, 0
-    breq 4f
-    cpi wrk_low, 32
-    brne 3b
-
-4:  
-    ; keep length
-    pspull wrk_low, wrk_high
-    sub ips_low, wrk_low
-    sbc ips_high, wrk_high
-    pspush ips_low, ips_high
-    POON
+	; save counter
+    mov wrk_low, wrk_high
+	clr wrk_high
+	pspush wrk_low, wrk_high
+	POON
 
 ;----------------------------------------------------------------------
 ;
@@ -756,8 +770,6 @@ HEADER  "evaluate", "evaluate"
     dec wrk_low
     brne 2f
     ; compile
-	; zzzz
-    ; srsave 
 2:
     ; execute
     rspush wrk_low, wrk_high
@@ -780,11 +792,12 @@ HEADER "(comma)", "comma"
 	sts THIS+0, ips_low
 	sts THIS+1, ips_high
 	
+; extras for sram and flash
+
 	; verify free ram
-	lds wrk_low, VSP+0
-	lds wrk_high, VSP+1
+	lds wrk_low, SRAM+0
+	lds wrk_high, SRAM+1
 	cp wrk_high, ips_high
-	brlt 2f
 	cpc wrk_low, ips_low
 	brlt 2f
 
@@ -802,7 +815,6 @@ HEADER "(comma)", "comma"
 
 	; verify free flash
 	cpi wrk_high, hi8(FLASH_STOP)
-	brlt 3f
 	cpi wrk_low, lo8(FLASH_STOP)
 	brlt 3f
 
@@ -815,6 +827,7 @@ HEADER "(comma)", "comma"
 
 ;---------------------------------------------------------------------
 ;	
+; must be called from colon
 ; ok flash start of line buffer with %page used to HERE, update THIS 
 ;
 HEADER "(flash)", "flash"
@@ -825,9 +838,9 @@ HEADER "(flash)", "flash"
 
 	; save fraction
 	mov wrk_low, ips_low
-	andi wrk_low, lo8(pagesize) ; must be less than 256, in bytes
+	andi wrk_low, lo8(pagesize) ; pagesize must be less than 256, in bytes
 
-	; save absolute
+	; make absolute
 	andi ips_low,  lo8(pagemask)
 	andi ips_high, hi8(pagemask)
 	
@@ -846,25 +859,27 @@ HEADER "(flash)", "flash"
 2:
 	lpm _work_, Z+
 	st X+, _work_
-	dec wrk_high
+	dec wrk_low
 	brne 2b
 
 4:	
 	; update where
 	sts THIS+0, psp_low
 	sts THIS+1, psp_high
+	; restore data stack
 	rspull psp_low, psp_high
 	POON
 	
-	
 ;----------------------------------------------------------------------
 ;
+; must be called from semi
 ; ok flush sram buffer to flash, 
 ;	spm instruction uses r31:r30 for address and r1:r0 for data
+;   this will use a protect do_spm;
 ;
-;	using optiboot do_spm
-;	do_spm uses r25:r24 for address, R21:r20 for data, r22 for code operation erase/fill/write
-;	destroys r24 :(
+;	not using optiboot do_spm
+;	that do_spm uses r25:r24 for address, R21:r20 for data, r22 for code operation erase/fill/write
+;	and destroys r24 :(
 ;
 HEADER "(flush)", "flush"
 	NOOP
@@ -873,12 +888,15 @@ HEADER "(flush)", "flush"
 
 	rspush psp_low, psp_high
 
+	; from
 	ldi psp_low, lo8(LINE)
 	ldi psp_high, hi8(LINE)
 
+	; how many
 	lds tos_low, THIS+0
 	lds tos_high, THIS+1
 
+	; to page
 	lds ips_low, KEEP+0
 	lds ips_high, KEEP+1
 
@@ -891,19 +909,21 @@ HEADER "(flush)", "flush"
 	;  next page 
 	movw ips_low, nds_low
 
+; zzzz must include code to protect NRWW and core forth
+
 	; erase page
 	ldi tmp_low, (1<<PGERS) | (1<<SPMEN)
 	rcall do_spm
 
 	; re-enable the RWW section
-	;ldi tmp_low, (1<<PGERS) | (1<<SPMEN)
+	;ldi tmp_low, (1<<RWWSRE) | (1<<SPMEN)
     ;rcall do_spm
 
 	; one page loop
 	ldi wrk_low, lo8(SPM_PAGESIZE)
 
 20:
-	; fill page flash buffer
+	; fill page flash from sram buffer
 	ld r0, X+
 	ld r1, X+
 	ldi tmp_low, (1<<SPMEN)
@@ -913,11 +933,11 @@ HEADER "(flush)", "flush"
 	dec wrk_low
 	brne 20b
 
-	; save page
+	; save next page
 	movw wrk_low, ips_low
 
 30:
-	; same page 
+	; load page 
 	movw ips_low, nds_low
 
 	; write page
@@ -925,25 +945,24 @@ HEADER "(flush)", "flush"
 	rcall do_spm
 
 	; re-enable the RWW section
-	;ldi tmp_low, (1<<PGERS) | (1<<SPMEN)
+	;ldi tmp_low, (1<<RWWSRE) | (1<<SPMEN)
     ;rcall do_spm
 
-	; verify end of 
+40:
+	; verify end, if PAGE GE HERE
 	cp psp_high, tos_high
 	cpc psp_low, tos_low
-	brge 50f
+	brge 60f
  
-40:
+50:
 	; load next page
 	movw nds_low, wrk_low
 	rjmp 10b
 
-50:
+60:
+	; no mess with HERE, KEEP, THIS, flash will do.
 	; clean house
-	
-	lds wrk_low, KEEP+0
-	lds wrk_high, KEEP+1
-	
+	rspull psp_low, psp_high
 	POON
 	
 /*

@@ -197,22 +197,23 @@ hd_\label:
 ; "Column 72 means Continue", 72 always \0
     TIB_SIZE = 72
 
-; stack 18 words deep
+; small collate
+	PIC_SIZE = 16
+
+; stacks 18 words deep
     STACK_SIZE = 36
 
 ;----------------------------------------------------------------------
 ;    eeprom used
 ;
-    eeprom = EEPROM_START
-
-    E_turnkey = eeprom + 0
-    E_seed = eeprom + 2
-    E_here = eeprom + 4
-    E_last = eeprom + 6
-    E_tosr = eeprom + 8 
-    E_tofh = eeprom + 10
-    E_toee = eeprom + 12
-
+    eeprom = 0x00
+    eevoid = eeprom + 0
+    eeturn = eeprom + 2
+    eeseed = eeprom + 4
+    eehere = eeprom + 6
+    eelast = eeprom + 8
+    eesram = eeprom + 10 ; as a stack
+    eeprom = eeprom + 12 ; as a stack
     
 ;----------------------------------------------------------------------
 ;     flags 
@@ -267,7 +268,7 @@ hd_\label:
     __SP_L__ = 0x3d
 
 /* SPMCR */
-#define SPMCR  lo8(0x37)
+#define SPMCR  0x37
 #define SPMIE   7
 #define RWWSB   6
 /* bit 5 reserved */
@@ -281,11 +282,13 @@ hd_\label:
     BIT_CARRY = 0
     BIT_ZERO = 1
 
-    SRAM_END =   0x45F    ; SRAM from AVR manual
     SRAM_START = 0x060    ; SRAM from AVR manual
+    SRAM_END =   0x45F    ; SRAM from AVR manual
+	RAMEND = SRAM_END
 
 	FLASH_RWW = 0x0000
 	FLASH_NRWW = 0x1800 
+	FLASH_END = 0x1FFF 
 
 	FLASH_STOP = FLASH_NRWW
 
@@ -294,5 +297,7 @@ hd_\label:
 	pagesize = (SPM_PAGESIZE - 1)
 	pagemask = (~pagesize)
 	
-	RAMEND = SRAM_END
+
+#define EEEND            0x1FF
+#define FLASHEND         0x1FFF
 
