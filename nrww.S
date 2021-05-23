@@ -12,11 +12,11 @@ do_spm:
      sts SPMCR, tmp_low
      spm
 
-spm_wait:
+10:
 ;   wait spm done
     lds tmp_low, SPMCR
     sbrc tmp_low, SPMEN
-    rjmp spm_wait	
+    rjmp 10b
 
 ; if erase or write, force enable RWW section 
 
@@ -30,3 +30,6 @@ spm_wait:
 
 10:
 	ret
+
+.equ free_nrww, .
+

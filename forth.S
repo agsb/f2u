@@ -479,84 +479,97 @@ HEADER "(parse)", "parse"
 ;----------------------------------------------------------------------
 ;
 ; ok ( a u --- u ) 
+;
 ;   refills address till u chars read, u < 256
 ; 	its refill ( a u -- u )  NO ECHOES !!!
 ;
 HEADER "(refill)", "refill"
     NOOP
 10: 
-	pspull wrk_low, wrk_high
+	pspull nds_low, nds_high
 	pspull ips_low, ips_high
-	 
+
+	; keep a spc at start, so every word starts with spc, used later to make a counted string in site
+	ldi tos_low, 32
+	srsave tos_low
+	dec nds_low
+
     clr tos_low  ; clear comments \
     clr tos_high ; clear comments ()
 
-	clr wrk_high ; counter to 255
-	dec wrk_low  ; save for \0
+	clr nds_high ; counter to 255
+	dec nds_low  ; save for \0
 
 11: 
     ; end of     
-    cp wrk_low, wrk_high
+    cp nds_low, nds_high
     brbs BIT_ZERO, 21f
 
 12: 
     ; waits a ASCII char
     sbis 0xb, 7
-    nop
     rjmp 12b
-    in _work_, 0xc
+    in wrk_low, 0xc
 
 13: 
     ; no 8bits
-    cpi _work_, 128
+    cpi wrk_low, 128
     brge 12b
 
 	; not a control 
-    cpi _work_, 31
-    brge 14f
+    cpi wrk_low, 30
+    brge 40f
 
-31:
+30:
     ; verify CR
-    cpi _work_, 13 ; CR
+    cpi wrk_low, 13 ; CR
     breq 21f
 
-32:
     ; verify LF
-    cpi _work_, 10 ; LF
+    cpi wrk_low, 10 ; LF
     breq 21f
 
-33: 
     ; verify BS
-    cpi _work_,  8 ; BS
-    brne 34f
+    cpi wrk_low,  8 ; BS
+    brne 32f
 
     ; process BS
     ; had any char ?
-    cp wrk_high, wrk_high
+    cp nds_high, nds_high
     breq 12b
 
     ; back one
-    dec wrk_high
+    dec nds_high
     sbiw ips_low, 1
     rjmp 12b    
 
+32:
+	cpi wrk_low, 9 ; tab
+	brne 34f
+
+	; magic to 32
+	lsl wrk_low 
+	lsl wrk_low 
+	cbr wrk_low, 2
+	rjmp 40f
+	
 34:
     ; verify ESC 
-    cpi _work_, 27 ; ESC
+    cpi wrk_low, 27 ; ESC
     brne 35f
     ; process ESC void still
     rjmp 12b
 
 35:
     ; verify XON 
-    cpi _work_, 17 ; XON
+    cpi wrk_low, 17 ; XON
     brne 36f
     ; process XON void still
     rjmp 12b
 
 36:
     ; verify XOFF 
-    cpi _work_, 19 ; XOFF
+    cpi wrk_low, 19 ; XOFF
     brne 37f
     ; process XOFF void still
     rjmp 12b
@@ -565,29 +578,37 @@ HEADER "(refill)", "refill"
     ; not allow more controls
 	rjmp 12b
 
+40:	
+	; is a spc ?
+	cpi wrk_low, 32
+	brne 42f
+
+	cp wrk_low, wrk_high
+	breq 12b
+
 ; verify comments
-14: 
+42: 
     ; is a ( ?
-    cpi _work_, 40
-    brne 15f
+    cpi wrk_low, 40
+    brne 44f
     inc tos_high
     rjmp 12b
 
-15: 
+44: 
     ; is a ) ?
-    cpi _work_, 41
-    brne 16f
+    cpi wrk_low, 41
+    brne 46f
     dec tos_high
     rjmp 12b
 
-16: 
+46: 
     ; is a \ ?
-    cpi _work_, 92 
-    brne 19f
+    cpi wrk_low, 92 
+    brne 48f
     inc tos_low
     rjmp 12b
 
-19: 
+48: 
    ; skip comments
     tst tos_low
     brne 12b
@@ -596,17 +617,18 @@ HEADER "(refill)", "refill"
 
 .ifdef UPPERCASE    
     ; to uppercase
-    cpi _work_, 61
+    cpi wrk_low, 61
     brge 20f
-    cpi _work_, 123
+    cpi wrk_low, 123
     brge 20f
-    subi _work_, 32
+    subi wrk_low, 32
 .endif
 
 20: 
     ; save char to buffer
-    inc wrk_high
-    srsave _work_
+    inc nds_high
+    srsave wrk_low
+	mov wrk_high, wrk_low
     rjmp 11b
   
 21: 
@@ -638,19 +660,20 @@ HEADER "(find)", "find"
     pspull tos_low, tos_high
 	; get address
     pspull nds_low, nds_high
+
     ; save stack
     rspush psp_low, psp_high
     
 	; prepare loop    
-    ldi ips_low, lo8(LAST)
-    ldi ips_high, hi8(LAST)
+    lds ips_low, (LAST+0)
+    lds ips_high, (LAST+1)
 	
 	; push for first loop
-    rspush ips_low, ips_high
+    pspush ips_low, ips_high
 
 1: 
     ; load link 
-    rspull ips_low, ips_high
+    pspull ips_low, ips_high
 
 	; load contents
     pmload wrk_low, wrk_high
@@ -659,15 +682,17 @@ HEADER "(find)", "find"
     cp wrk_low, wrk_high
     brbs BIT_ZERO, 10f
 
-    ; save link
+    ; save next link
     rspush wrk_low, wrk_high
 
     ; load size and first char
     pmload wrk_low, wrk_high
 
+    ; save flags
+	mov tos_high, wrk_low
+
     ; must ummask
     ; ( a1 u1 --- f )
-    mov _work_, wrk_low
     andi wrk_low, F_UNMASK
     
     ; ping-pong
@@ -675,49 +700,54 @@ HEADER "(find)", "find"
     cp wrk_low, tos_low
     brne 1b
 
-    ; points to a1
-    movw psp_low, nds_low
-    
 	; save count
 	mov _zero_, tos_low
+
+    ; points to a1
+    movw psp_low, nds_low
+	ld wrk_low, X+
     
     ; load chars
 ;
 ; 	verify first char
 3:  
-	ld wrk_low, X+
     cp wrk_low, wrk_high
     brne 1b
 	dec _zero_
 	breq 4f 
+	
 8:	
+	; verify next chars
 	pmload wrk_low, wrk_high
-	ld tmp_low, X+
-	ld tmp_high, x+
-	cp wrk_low, tmp_low
+
+	ld _work_, X+
+	cp wrk_low, _work_
 	brne 1b
 	dec _zero_
 	breq 4f
-	cp wrk_high, tmp_high
+	ld _work_, x+
+	cp wrk_high, _work_
 	brne 1b
 	dec _zero_
 	breq 4f
+9:
 	rjmp 8b
 
 4:  
     ; found
     ; drop link for next name
-    rspull wrk_low, wrk_high
+    pspull wrk_low, wrk_high
 
     ; restore psp
     rspull psp_low, psp_high
 
 	; push CFA
+	; if need LFA subtract tos
     pspush ips_low, ips_high
 
-    ; return with flags
+    ; return flags
     clr wrk_high
-    mov wrk_low, _work_
+    mov wrk_low, tos_high
     andi wrk_low, F_TOMASK
     ori  wrk_low, F_FOUND
     rjmp 99f
@@ -743,16 +773,20 @@ HEADER "(find)", "find"
 ;----------------------------------------------------------------------
 ;    ok ( a1 f -- ) 
 ;
+HEADER	"(header)", "header"
+	NOOP
+	; .word HERE, LAST, DUP, AT, COMMA, TO,
+	POON
+
+;----------------------------------------------------------------------
+;    ok ( a1 f -- ) 
+;
 ;    s flag
 ;    if state = 1 and flag = 0, does compile
 ;    else does execute
 ;
-HEADER  "evaluate", "evaluate"
+HEADER  "(eval)", "evaluate"
     NOOP
-    ; load state
-    ;ldi _work_, lo8(STATE)
-    ;ldi _zero_, hi8(STATE)
-	; zzz
 
     ; load flags
     pspull wrk_low, wrk_high
@@ -762,19 +796,32 @@ HEADER  "evaluate", "evaluate"
 	brne 10f
 8:
 	; not in dictionary
+	rjmp number
 	
 10:
+    ; load state
+    ldi tos_low, lo8(STATE)
+
 	; if not IMMEDIATE and COMPILE 
     andi wrk_low, F_IMMEDIATE
-	or   wrk_low, _work_
+	or   wrk_low, tos_low
     dec wrk_low
-    brne 2f
+    brne 14f
+12:
     ; compile
-2:
-    ; execute
+	ldi wrk_low, lo8(comma)
+	ldi wrk_high, hi8(comma)
+14:
+    ; is immediate then execute
     rspush wrk_low, wrk_high
-3:
     POON 
+
+;----------------------------------------------------------------------
+;
+HEADER "(number)", "number"
+	NOOP
+	rjmp COLD
+	POON
 
 ;----------------------------------------------------------------------
 ;
@@ -848,8 +895,10 @@ HEADER "(flash)", "flash"
 	sts KEEP+0, ips_low
 	sts KEEP+1, ips_high
 
-	; prepare loop
+	; preserve stack
 	rspush psp_low, psp_high
+
+	; prepare loop
 	ldi psp_low, lo8(LINE)
 	ldi psp_high, hi8(LINE)
 
@@ -866,6 +915,7 @@ HEADER "(flash)", "flash"
 	; update where
 	sts THIS+0, psp_low
 	sts THIS+1, psp_high
+
 	; restore data stack
 	rspull psp_low, psp_high
 	POON

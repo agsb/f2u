@@ -13,9 +13,9 @@ VOID:	.word 0
 NULL:	.word 0
 .equ	LINE, .
 
-.equ free_sram, .
-.equ	EROM, TIB - 20
-.equ	SRAM, TIB - 18
+.equ free_sram, SRAM - 0x60
+.equ	SRAM, TIB - 20
+.equ	EROM, TIB - 18
 .equ	SEED, TIB - 16
 .equ	THIS, TIB - 14	; pointer to next in line
 .equ	TOIN, TIB - 12	; pointer to next in tib
