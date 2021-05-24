@@ -221,7 +221,8 @@ hd_\label:
 ; IMMEDIATE, COMPILE, HIDEN, TOGGLE
 ;
     F_IMMEDIATE = 0x80
-    F_SMUDGE = 0x40
+    F_COMPILE_ONLY = 0x40
+
     F_HIDDEN = 0x20
     F_TOGGLE = 0x10
 	
@@ -229,9 +230,32 @@ hd_\label:
     F_UNMASK = 0x0F
     F_FOUND =  0x01
 
-    F_COMPILE = 1
-    F_EXECUTE = 0
+; STATES
+    S_POSTONE = 2
+    S_COMPILE = 1
+    S_EXECUTE = 0
 
+/*			
+
+	default state is executing
+	while defining a new word, state is compiling
+	while state is compiling 
+		the immediate flag decides if execute or compile
+		but to force compiling next word, then state
+
+
+			common	immediate
+	S_EXECUTE	execute	execute
+	S_COMPILE	compile	execute
+	S_POSTONE	compile compile
+
+	prefer
+
+	S_DECIDES	flag immediate decides
+	S_COMPILE	always compile next word
+	S_EXECUTE	always execute next word	
+
+*/
 ;---------------------------------------------------------------------
 ; default base
 ;

@@ -720,6 +720,7 @@ HEADER "+!", "PLUSTO"
 ;----------------------------------------------------------------------
 ;
 ; ok 
+;	save into and load from eeprom
 ;
 HEADER "(here!e)", "hereto"
 	.word HERE, AT, eehere, weep, _LAST
