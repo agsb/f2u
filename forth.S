@@ -811,7 +811,11 @@ HEADER  "(eval)", "evaluate"
     ; compile
 	ldi wrk_low, lo8(comma)
 	ldi wrk_high, hi8(comma)
+	rjmp 20
 14:
+	:execute
+	pspull wrk_low, wrk_high
+20:
     ; is immediate then execute
     rspush wrk_low, wrk_high
     POON 
@@ -820,6 +824,33 @@ HEADER  "(eval)", "evaluate"
 ;
 HEADER "(number)", "number"
 	NOOP
+	ldi wrw_low, BASE
+	mov _work_, wrk_low
+	psppull isp_low, isp_high
+	psppush isp_low, isp_high
+	
+10:
+	srload wrk_low
+
+	cpi wrk_low, 'F'+1
+	brge 80f
+	cpi wrk_low, 'A'
+	brlt 20f
+	; A to F
+	rjmp 10b
+
+20:
+	cpi wrk_low, '9'+1
+	brge 80f
+	cpi wrk_low, '0'
+	brlt 30f
+	; 0 to 9
+	rjmp 10b
+
+30:
+; 	zzzzzzz		
+80:
+	; NaN	
 	rjmp COLD
 	POON
 
