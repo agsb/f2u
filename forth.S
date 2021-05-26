@@ -771,9 +771,45 @@ HEADER "(find)", "find"
 
 
 ;----------------------------------------------------------------------
+; ok ( mul mut -- d )
+; 16*8 multiplication, 24 bit result, two words result
+; multipicand nd_high:nds_low by multiplier wrk_low, 
+; result low word quotient in tos_high:tos_low, remainder in wrk_low
 ;
-; 16/8 division, 16 bit result, 8 bit remainder
-; dividend tos_high:tos_low by divisor nds_low, 
+HEADER "(basemul)", "basemul"
+	NOOP
+	; pull multiplicanrd
+    pspull nds_low, nds_high
+	; pull multiplier
+    pspull wrk_low, wrk_high
+	clr wrk_high
+;
+; Multiply
+;
+	; Multiply LSB
+	mul nds_low, wrk_low 
+	; copy result to result register
+	mov tos_low, R0 
+	mov tos_high, R1
+	; Multiply MSB
+	mul nds_high, wrk_low 
+	; copy MSB result to result byte 3
+	mov wrk_high, R1 
+	; add LSB result to result byte 2
+	add tos_high, R0 
+	brcc 10f ; if not carry, jump
+	inc wrk_high
+10:
+	pspush tos_low, tos_high	
+	mov wrk_low, wrk_high
+	clr wrk_high
+	pspush wrk_low, wrk_high	
+	POON
+
+;----------------------------------------------------------------------
+;
+; 16/8 division, 16 bit result, 8 bit remainder, two words result
+; dividend nds_high:tos_low by divisor tos_low, 
 ; quotient in tos_high:tos_low, remainder in wrk_low
 ;
 HEADER "(basediv)", "basediv"
@@ -909,40 +945,122 @@ HEADER  "(eval)", "evaluate"
 
 ;----------------------------------------------------------------------
 ;
+;   not official ? (ud1 c-addr1 u1 -- ud2 c-addr2 u2)
+;
+;	ok (c-addr -- c-addr false | ud true)	
+;	uses all but X, Y
+;	ips, wrk, tos, nds, _zero_, _work_, r0, r1
+;
 HEADER "(number)", "number"
     NOOP
-    lds wrk_low, BASE+0
-    mov wrk_high, wrk_low
 
+	; pull address from
     pspull ips_low, ips_high
+	; keep it
     pspush ips_low, ips_high
-    
+
+  	clr _zero_
+	; clear result
+	clr tos_low
+	clr tos_high
+
+
+	; get actual base
+    lds wrk_low, BASE+0
+2:
+	; hold base
+    mov _work_, wrk_low
 10:
     srload wrk_low
 
-    cpi wrk_high, 16
-    brne 40f
+	; allow first char change base
+	tst _zero_
+	brne 18f
+12:
+	; goes hexadecimal
+	cpi wrk_low, '$'
+	brne 14f
+	ldi wrk_low, 16
+	rjmp 2b
 
-    cpi wrk_low, 'F'+1
-    brge 80f
-    cpi wrk_low, 'A'
-    brlt 40f
-    ; A to F
-    rjmp 10b
+14: 
+	; goes decimal
+	cpi wrk_low, '#'
+	brne 16f
+	ldi wrk_low, 10
+	rjmp 2b
+
+16:	
+	; no binary, no octal, no more bases
+
+	; how do negative ? just two-complement at end ?
+
+18:
+	; sorry no lowercases
+	subi wrk_low, '0'
+	; ends ?
+	tst wrk_low
+	brlt 100f
+
+	cpi wrk_low, 9
+	brcc 20f
+
+	; mind the gap !
+	subi wrk_low, 7
+
+20:
+	; ends ?
+    cpi wrk_low, _work_
+    brge 100f
+
+	; add to result
+	clr wrk_high
+	add tos_low, wrk_low
+	adc tos_high, wrk_high
+
+	; multiply by base
+	movw nds_low, tos_low
+
+	; Multiply LSB
+	mul nds_low, _work_
+	; copy MSB result to result byte 1
+	mov tos_low, R0 
+	; copy MSB result to result byte 2
+	mov tos_high, R1
+
+	; Multiply MSB
+	mul nds_high, _work_
+	; copy MSB result to result byte 3
+	mov wrk_high, R1 
+	; add LSB result to result byte 2
+	add tos_high, R0 
+	brcc 30f ; if not carry, jump
+	inc wrk_high
+30:
+	; keep result
+	tst wrk_high
+	brne 40f
+
+	; count digits 
+	inc _zero_
+	; next digit
+	rjmp 10b
 
 40:
-    cpi wrk_low, '9'+1
-    brge 80f
-    cpi wrk_low, '0'
-    brlt 60f
-    ; 0 to 9
-    rjmp 10b
-
-60:
-;     zzzzzzz        
-80:
+	; overflow 16bits
+    ldi wrk_low, OVERFLOW_NUMBER
+    rjmp WARM
+	
+50:
     ; NaN    
-    rjmp COLD
+    ldi wrk_low, NOT_A_NUMBER
+    rjmp WARM
+
+80:
+
+100:
+	pspush tos_low, tos_high
+	pspush wrk_low, wrk_high
     POON
 
 ;----------------------------------------------------------------------
@@ -950,7 +1068,7 @@ HEADER "(number)", "number"
 ; ok ( --- a2 u ) 
 HEADER ".\"", "dotquote"
     NOOP
-
+; what do ????
 	POON	
     
 ;----------------------------------------------------------------------
@@ -1198,6 +1316,16 @@ HEADER "(flush)", "flush"
     rspull psp_low, psp_high
     POON
     
+;----------------------------------------------------------------------
+;
+; ok interpret
+HEADER "(quit)", "quit"
+	NOOP
+	.word (parse), 
+	POON
+		
+
+
 /*
 : execute >R ;
 : compile comma ;
