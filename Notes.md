@@ -2,6 +2,21 @@ Notes about this
 
 *still not operational*
 
+**25/05/2021**
+
+"Another way to look at the problem is to state that the language of thestandard does not match any Forth implementations except cmForth and Gforth. "  http://www.mpeforth.com/arena/SpecialWords3.pdf
+
+my solution for the flash-sram dilema is implement a buffer where all compiled goes and does flash, to init, and flush, to update, from sram to flash memory, disgards many implementations, lenght is from heap of memory and all variables are allocated from bottom.
+
+about postpone, compile, execute, :
+  postone implemented as a new status at STATE variable, valid only for next word, were any word is compiled.
+  then interpret works as:
+  
+           state of interpret: COMPILE   EXECUTE   POSTONE
+    at common word does        compile   execute   compile
+    at immediate word  does    execute   execute   compile
+    
+    
 **12/05/2021**
 
 For simplicity all programming of flash memory is made with common tools and the boot monitor is MiniCore, with optiboot of 512 bytes. 
