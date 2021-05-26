@@ -516,8 +516,8 @@ HEADER "COMPARE", "COMPARE"
 
 ;----------------------------------------------------------------------
 ;
-; CMOVE copy bytes from source++ to destination++, decrease count--
-HEADER "CMOVE", "MOVE"
+; MOVE copy cells from source++ to destination++, decrease count--
+HEADER "MOVE", "MOVE"
 	NOOP
     ; WARNING No bound check and counter equal 0 moves nothing
 
@@ -542,8 +542,10 @@ HEADER "CMOVE", "MOVE"
 
     ; no offset
 
-  	; move a byte
 1:  
+  	; move a cell
+	ld _work_, X+
+    st Z+, _work_
 	ld _work_, X+
     st Z+, _work_
     
@@ -558,51 +560,6 @@ HEADER "CMOVE", "MOVE"
 	rspull psp_low, psp_high
 	POON
 
-;----------------------------------------------------------------------
-;
-; CMOVE> copy bytes from source+count-- to destination--, decrease count--
-HEADER "CMOVE>", "CMOVEGT"
-	NOOP
-    ; WARNING No bound check and counter equal 0 moves nothing
-
-	; pull origin
-	pspull tos_low, tos_high
-	
-	; pull destination
-	pspull ips_low, ips_high
-
-    ; pull counter
-	pspull wrk_low, wrk_high
-
-	; test if zero
-	cp wrk_low, wrk_high
-	brbs BIT_ZERO, 2f
-
-	; push psp
-	rspush psp_low, psp_high
-
-	; copy orign
-	movw psp_low, tos_low
-
-    ; do offset
-	add ips_low, wrk_low
-	adc ips_high, wrk_high
-	add psp_low, wrk_low
-	adc psp_high, wrk_high
-
-    ; move a byte
-1:  
-	ld _work_, -X
-    st -Z, _work_
-    
-    ; decrease counter
-	sbiw wrk_low, 1
-	brbc BIT_ZERO, 1b
-
-	; pull psp
-2:	
-	rspull psp_low, psp_high
-	POON
 
 ;----------------------------------------------------------------------
 ;  data space pointer align to CELL, atmega is always

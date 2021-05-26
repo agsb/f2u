@@ -2,6 +2,7 @@
  *  DISCLAIMER"
  *
  *  Copyright © 2020, Alvaro Barcellos,
+ *
  *  Permission is hereby granted, free of charge, to any person obtaining
  *  a copy of this software and associated documentation files (the
  *  "Software"), to deal in the Software without restriction, including
@@ -23,8 +24,13 @@
 */
 
 /*
+;
+;	Small Forth for ATmega8
+;
 ;---------------------------------------------------------------------
 ; dictionary structure
+;	
+;	cell size is a word of 16 bits
 ;
  .word  link    link to previous
  .byte  size    sizeof name OR flags
@@ -44,9 +50,9 @@
         |state        |common     |immediate|
         |variable     |word       |word     |
         |===================================|
-        |s_execute    |execute    |execute  |
-        |s_compile    |compile    |execute  |
-        |s_postpone   |compile    |compile  |
+        |s_execute  0 |execute    |execute  |
+        |s_compile  1 |compile    |execute  |
+        |s_postpone 2 |compile    |compile  |
         |===================================|
 
     
@@ -66,6 +72,9 @@
 
 */
 
+;
+; classics
+;
     .NOLIST
 
     .LIST
@@ -76,13 +85,13 @@
 
 ;----------------------------------------------------------------------
 ;
-; it is the forth engine,
+; this is the forth engine,
 ;
 ; any twig must end with a reference to LAST
 ;
 ; any leaf must start with NOOP and ends with POON
 ;
-; the size byte must be masked by  or 0xE0
+; the size byte must be masked by  or 0xF0
 ;
 ; instruction pointer r31:r30 as Z 
 ; return stack pointer r29:r28 as Y
@@ -91,7 +100,8 @@
 ;
 ; only LPM access flash ? YES!
 ;
-; all forth constants and variables in sdram
+; all constants in flash
+; all variables in sdram
 ;
 ;----------------------------------------------------------------------
 .section .text
@@ -99,9 +109,9 @@
 .global forth
 forth:
 ;;----------------------------------------------------------------------
-; inner interpreter, must have another name no LAST
+; inner interpreter,
 ;
-HEADER "_LAST", "_LAST"
+HEADER "ENDS", "ENDS"
 ; does nothing and mark instructions code
     NOOP
 
@@ -109,7 +119,7 @@ HEADER "_LAST", "_LAST"
 _exit:             
     rspull wrk_low, wrk_high
 
-; load w with contents of cell at ip, only works in program memory (flash)  
+; load w with contents of cell at ip  
 _next:            
     movw ips_low, wrk_low
     pmload wrk_low, wrk_high
@@ -127,7 +137,7 @@ _exec:
     ; convert to words
     movw ips_low, wrk_low
 
-.ifdef iTRAMPOLIM
+.ifdef TRAMPOLIM
     pmload wrk_low, wrk_high
     movw ips_low, wrk_low
 .endif
@@ -140,7 +150,7 @@ _exec:
 
 ;----------------------------------------------------------------------
 ; 
-; using a classic, no tos, nds cached
+; using no cached
 ; (1st, 2nd, 3rd, 4th, ...)
 ;
 ;----------------------------------------------------------------------
@@ -374,7 +384,7 @@ HEADER "(immediate)", "immediate"
     
 ;----------------------------------------------------------------------
 ;
-; ok ( --- a2 u ) 
+; ok ( --- w ) 
 HEADER "(literal)", "literal"
     NOOP
     rspull wrk_low, wrk_high
@@ -396,42 +406,51 @@ HEADER "(parse)", "parse"
     NOOP
 1:    
     ; start at 
-    ldi ips_low, lo8(TOIN)
-    ldi ips_high, hi8(TOIN)
+    lds ips_low, TOIN+0
+    lds ips_high, TOIN+1
+	; pull delimiter
+	pspull tos_low, tos_high
+	; for \0 check
+	clr tos_high
+
 2:  
     ; skips while equal delimiter (space)
-    srload wrk_high
-    ; if \0  
-    cpi wrk_high, 0
+    srload wrk_low
+    ; if \0
+    cp wrk_low, tos_high
     breq 10f
-    cpi wrk_high, 32
+    cp wrk_low, tos_low
     breq 2b
 3:  
     ; keep address
     sbiw ips_low, 1
-    pspush ips_low, ips_high
-    pspush ips_low, ips_high
+	movw nds_low, ips_low
 4:  
     ; skips while not equal delimiter (space)
-    srload wrk_high
+    srload wrk_low
     ; if \0
-    cpi wrk_high, 0
+    cp wrk_low, tos_high
     breq 5f
-    cpi wrk_low, 32
+    cp wrk_low, tos_low
     brne 4b
 5:  
-    ; keep length
+	; keep length
     sbiw ips_low, 1
-    pspull wrk_low, wrk_high
-    sub ips_low, wrk_low
-    sbc ips_high, wrk_high
+    sub ips_low, nds_low
+    sbc ips_high, nds_high
     movw wrk_low, ips_low
+	movw ips_low, nds_low
     rjmp 20f
 10:
     ; end of buffer
+    ldi ips_low, lo8(TIB)
+    ldi ips_high, hi8(TIB)
     clr wrk_low
     clr wrk_high
 20:
+    ; update TOIN
+    sts TOIN+0, ips_low
+    sts TOIN+1, ips_high
     pspush wrk_low, wrk_high
     POON
 
@@ -610,7 +629,7 @@ HEADER "(refill)", "refill"
 ;----------------------------------------------------------------------
 ;
 ; ok find a word in a vocabulary
-;    ( a u -- a f | 0 )
+;    ( a u -- xt f | a 0 )
 ; counted strings are 254 chars maximum
 ; names are 15 or 32 maximum
 ;
@@ -618,6 +637,7 @@ HEADER "(find)", "find"
     NOOP
     ; get count in low
     pspull tos_low, tos_high
+
     ; get address
     pspull nds_low, nds_high
 
@@ -631,7 +651,7 @@ HEADER "(find)", "find"
     ; push for first loop
     pspush ips_low, ips_high
 
-1: 
+10: 
     ; load link 
     pspull ips_low, ips_high
 
@@ -640,15 +660,15 @@ HEADER "(find)", "find"
 
     ; if null ends
     cp wrk_low, wrk_high
-    brbs BIT_ZERO, 10f
+    brbs BIT_ZERO, 30f
 
     ; save next link
-    rspush wrk_low, wrk_high
+    pspush wrk_low, wrk_high
 
     ; load size and first char
     pmload wrk_low, wrk_high
 
-    ; save flags
+    ; save for flags
     mov tos_high, wrk_low
 
     ; must ummask
@@ -658,7 +678,7 @@ HEADER "(find)", "find"
     ; ping-pong
     ; verify sizes
     cp wrk_low, tos_low
-    brne 1b
+    brne 10b
 
     ; save count
     mov _zero_, tos_low
@@ -667,33 +687,31 @@ HEADER "(find)", "find"
     movw psp_low, nds_low
     ld wrk_low, X+
     
-    ; load chars
-;
-;     verify first char
-3:  
+12:  
+	; verify first char
     cp wrk_low, wrk_high
-    brne 1b
+    brne 10b
     dec _zero_
-    breq 4f 
+    breq 20f 
     
-8:    
+14:    
     ; verify next chars
     pmload wrk_low, wrk_high
 
     ld _work_, X+
     cp wrk_low, _work_
-    brne 1b
+    brne 10b
     dec _zero_
-    breq 4f
+    breq 20f
     ld _work_, x+
     cp wrk_high, _work_
-    brne 1b
+    brne 10b
     dec _zero_
-    breq 4f
-9:
-    rjmp 8b
+    breq 20f
+	; next chars
+    rjmp 14b
 
-4:  
+20:  
     ; found
     ; drop link for next name
     pspull wrk_low, wrk_high
@@ -701,40 +719,49 @@ HEADER "(find)", "find"
     ; restore psp
     rspull psp_low, psp_high
 
-    ; push CFA
-    ; if need LFA subtract tos
+    ; push CFA, (xt)
+    ; if need LFA just subtract tos
+	;
     pspush ips_low, ips_high
 
     ; return flags
+    clr wrk_low
     clr wrk_high
-    mov wrk_low, tos_high
-    andi wrk_low, F_TOMASK
-    ori  wrk_low, F_FOUND
+    andi tos_high, F_IMMEDIATE
+	brne 24f
+22:
+	; immediate
+	inc wrk_low
+	rjmp 99f
+24:
+	; common
+	dec wrk_low
     rjmp 99f
 
-10: 
+30: 
     ; not found
     ; restore psp
     rspull psp_low, psp_high
     
-    ; restore a1
+    ; restore address
     movw wrk_low, nds_low
     pspush wrk_low, wrk_high
     
     ; set flag false
     clr wrk_low
     clr wrk_low
-    ; save results
 99: 
+    ; save results
     pspush wrk_low, wrk_high
     POON
 
 
 ;----------------------------------------------------------------------
-;    ok ( a1 f -- ) 
+;    ok ( -- ) 
 ;
-HEADER    "(header)", "header"
+HEADER    "(create)", "create"
     NOOP
+	.word BL, (parse), (find), zzzzz	
     ; .word HERE, LAST, DUP, AT, COMMA, TO,
     POON
 
@@ -781,11 +808,10 @@ HEADER "(nopostpone)", "nopostpone"
     rjmp states
     
 ;----------------------------------------------------------------------
-;    ok ( a1 f -- ) 
+;    ok ( xt f -- ) 
 ;
-;    s flag
-;    if state = 1 and flag = 0, does compile
-;    else does execute
+;    f flag  1 immediate, -1 common
+;	 state = 1 compile, 0 execute, 2 postone
 ;
 HEADER  "(eval)", "evaluate"
     NOOP
@@ -793,45 +819,39 @@ HEADER  "(eval)", "evaluate"
     ; load flags
     pspull wrk_low, wrk_high
 
-    ; in dictionary
-    cp wrk_low, wrk_high
-    brne 10f
-8:
-    ; not in dictionary
-    rjmp number
-    
 10:
     ; load state
     lds tos_low, STATE+0
 
     ; ever execute 
-    cpi tos_low, S_EXECUTE
+	cpi tos_low, 0
     breq 18f
 
-    ; ever compile
-    andi tos_low, S_POSTONE
-    brne 16f
+	; default check
+	cpi tos_low, 1
+    breq 14f
 
+    ; ever compile
     ; clear postpone
-    lds tos_high, STATE+0
     cbr tos_high, S_POSTONE ; must not be bit 0
-    sts STATE, tos_high
+    sts STATE+0, tos_high
     rjmp 16f    
     
 14:
     ; if not IMMEDIATE and COMPILE 
-    andi wrk_low, F_IMMEDIATE
-    or   wrk_low, tos_low
-    dec wrk_low
-    brne 
+    cpi wrk_low, 1
+    breq 18f
+ 
 16:
     ; compile
     ldi wrk_low, lo8(comma)
     ldi wrk_high, hi8(comma)
     rjmp 20
+
 18:
     ;execute
     pspull wrk_low, wrk_high
+
 20:
     ; is immediate then execute
     rspush wrk_low, wrk_high
@@ -841,8 +861,9 @@ HEADER  "(eval)", "evaluate"
 ;
 HEADER "(number)", "number"
     NOOP
-    lds wrk_low, BASE
-    mov wrK_high, wrk_low
+    lds wrk_low, BASE+0
+    mov wrk_high, wrk_low
+
     pspull ips_low, ips_high
     pspush ips_low, ips_high
     
@@ -850,24 +871,24 @@ HEADER "(number)", "number"
     srload wrk_low
 
     cpi wrk_high, 16
-    brne 20f
+    brne 40f
 
     cpi wrk_low, 'F'+1
     brge 80f
     cpi wrk_low, 'A'
-    brlt 20f
+    brlt 40f
     ; A to F
     rjmp 10b
 
-20:
+40:
     cpi wrk_low, '9'+1
     brge 80f
     cpi wrk_low, '0'
-    brlt 30f
+    brlt 60f
     ; 0 to 9
     rjmp 10b
 
-30:
+60:
 ;     zzzzzzz        
 80:
     ; NaN    
@@ -877,9 +898,15 @@ HEADER "(number)", "number"
 ;----------------------------------------------------------------------
 ;
 ; ok ( --- a2 u ) 
+HEADER ".\"", "dotquote"
+    NOOP
+	POON	
+    
+;----------------------------------------------------------------------
+;
+; ok ( --- a2 u ) 
 HEADER "(comma)", "comma"
     NOOP
-    
     ; copy from psp to sram buffer
     lds ips_low, THIS+0
     lds ips_high, THIS+1
