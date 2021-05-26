@@ -23,17 +23,26 @@ For now:
   
 # Introduction
 
-Forth have two types of words, those called natives, ad primitive ad leaf, which are coded in specific CPU or MCU instructions, and those called forths, ad compound ad twig, which are sequences of references to words.
+Forth have two types of words, those called natives, ad primitive ad leaves, which are coded in specific CPU or MCU instructions, and those called forths, ad compounds ad twigs, which are sequences of references to words.
 
-I want a forth for a Atmega8, but there is no need for speed, because I want a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a MCU family and a outer interpreter and compound words independent of any specific CPU family, like a imutable list with rellocable references without any code inline.
+I want a forth with a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a MCU family and a outer interpreter and compound words independent of any specific CPU family, like a imutable list with rellocable references without any code inline.
 
-PS. Atmega8 is a MCU with harvard architeture, 8k program flash memory, 1k static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, but (R16 to R31) could be used as 16 bits.
+A Atmega8 is a MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, with some (R16 to R31) that could be used as 16 bits.
+
+There are many low cost MCU with far more resources and pleny of SRAM and flash. Why use an old MCU for hosting Forth ? 
+
+Most to refine paradigms and understood how forth works from inside, form behind the stacks.
 
 look at Notes.md
 
+# Size or Speed ?
+
+Most of Forth implementations goes "runnig for speed" for timming applications or simply to be "the most faster than", but when memory space is the critical limit most of design decisions must take another route.
+
+
 # References
 
-1. In eforth for Cortex M4,  http://forth.org/OffeteStore/1013_eForthAndZen.pdf, to use in a ESP32, Dr. C.H.Ting uses a optimal approach for forth engine, with cpu family specific instructions (ISA) *inline into dictionary*.
+# 1. In eforth for Cortex M4,  http://forth.org/OffeteStore/1013_eForthAndZen.pdf, to use in a ESP32, Dr. C.H.Ting uses a optimal approach for forth engine, with cpu family specific instructions (ISA) *inline into dictionary*.
 
 _in my opinion best and ideal solution per cpu_ (at cost of size and portability)
 
@@ -61,7 +70,7 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     
     Uses many memory than a Atmega8 have, also no unified memory model, but lots of SRAM.
     
-2. In amforth for AVR family, http://amforth.sourceforge.net/,  
+# 2. In amforth for AVR family, http://amforth.sourceforge.net/,  
 
 ; the interpreter, XH:XL is Instruction pointer, ZH:ZL is program memory pointer, WH:WL is working register, Tmp1:Tmp0 is a scratch temporary
 
@@ -108,7 +117,7 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     the memory model is not unified, separate address for flash, sdram.
     why two "adiw WL, 1" ? Adjust Z to a even address
 
-3. In flashforth, https://flashforth.com/index.html, for avr uCs with at least 32k flash,
+# 3. In flashforth, https://flashforth.com/index.html, for avr uCs with at least 32k flash,
     uses SP for return stack, uses Y for data stack, uses Z as address pointer
 
     *interleaves rcall and rjmp inside dictionary;*
@@ -118,7 +127,7 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     
     Can not run into a Atmega8 with 8k flash.
     
-4. In this F2U implementation for ATMEGA8, there is no use of call, return, pop and push.
+# 4. In this F2U implementation for ATMEGA8, there is no use of call, return, pop and push.
       
 ; the inner interpreter
 
@@ -207,6 +216,7 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     ??? minus one reference execution per each compound word  at cost of a test if NULL
     ??? if all dependent bellow a limit address, no need 0x00 mark too, just compare to exec (if bellow) or enter (if above) .
     ??? all mature forths does inline or code at start of parameters 
+    
 ; details
 
       No use of SP intructions (pop, push, call, ret), leaving those for external extensions and libraries;
@@ -276,32 +286,3 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
   5. move bytes: CMOVE upwards, CMOVE> downwards;
   6. word names lenght can be 1 to 15, padded with space (0x20);
 
-# Notation
-
-1. To translate forth names to assembler names, 
-   
-I use as prefix or sufix
-    
-    use LE for <=
-    use GT for >=
-    use NE for <>
-    use LT for <
-    use GT for >
-    use EQ for =
-
-    use MUL for *
-    use DIV for /
-    use PLUS for +
-    use MINUS for -
-
-    use BY for /
-    use QM for ?
-    use AT for @
-    use TO for !
-    use TK for '
-    use CM for ,
-    use DT for .
-
-    use NIL for 0
-    use ONE for 1
-    use TWO for 2
