@@ -271,7 +271,9 @@ hd_\label:
 
 	NO_ERROR	= 0
 	INVALID_MEMORY = -9
+	OVERFLOW = -11
 	WRITE_TO_READ_ONLY = -20
+	NOT_A_NUMBER = -24
 
 ;---------------------------------------------------------------------
 ; Flow Control

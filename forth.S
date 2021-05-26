@@ -947,7 +947,9 @@ HEADER  "(eval)", "evaluate"
 ;
 ;   not official ? (ud1 c-addr1 u1 -- ud2 c-addr2 u2)
 ;
-;	ok (c-addr -- c-addr false | ud true)	
+;	ok (a -- a 0 | ud n)	
+;	assumes a not a counted string, but ends with 32 or \0
+;
 ;	uses all but X, Y
 ;	ips, wrk, tos, nds, _zero_, _work_, r0, r1
 ;
@@ -963,7 +965,6 @@ HEADER "(number)", "number"
 	; clear result
 	clr tos_low
 	clr tos_high
-
 
 	; get actual base
     lds wrk_low, BASE+0
@@ -996,11 +997,20 @@ HEADER "(number)", "number"
 	; how do negative ? just two-complement at end ?
 
 18:
+	; test end 
+
+	cpi wrk_low, 0
+	breq 80f
+	 
+	cpi wrk_low, 32
+	breq 80f
+
 	; sorry no lowercases
 	subi wrk_low, '0'
+
 	; ends ?
 	tst wrk_low
-	brlt 100f
+	brlt 50f
 
 	cpi wrk_low, 9
 	brcc 20f
@@ -1011,7 +1021,7 @@ HEADER "(number)", "number"
 20:
 	; ends ?
     cpi wrk_low, _work_
-    brge 100f
+    brge 50f
 
 	; add to result
 	clr wrk_high
@@ -1037,7 +1047,7 @@ HEADER "(number)", "number"
 	brcc 30f ; if not carry, jump
 	inc wrk_high
 30:
-	; keep result
+	; test overflow
 	tst wrk_high
 	brne 40f
 
@@ -1048,7 +1058,7 @@ HEADER "(number)", "number"
 
 40:
 	; overflow 16bits
-    ldi wrk_low, OVERFLOW_NUMBER
+    ldi wrk_low, OVERFLOW
     rjmp WARM
 	
 50:
@@ -1057,9 +1067,14 @@ HEADER "(number)", "number"
     rjmp WARM
 
 80:
+	; discards addr
+	pspull ips_low, ips_high
+
+	; push value
+	pspush tos_low, tos_high
 
 100:
-	pspush tos_low, tos_high
+	; push digits
 	pspush wrk_low, wrk_high
     POON
 
@@ -1321,29 +1336,5 @@ HEADER "(flush)", "flush"
 ; ok interpret
 HEADER "(quit)", "quit"
 	NOOP
-	.word (parse), 
 	POON
-		
 
-
-/*
-: execute >R ;
-: compile comma ;
-: interpret
-    begin accept
-        begin token
-        while 
-            name? if eval    if execute
-                                    else compile  
-                                    then
-            else number?  if state    if compile
-                                      else execute
-                                    then
-                          else abort    
-                          then
-            then
-        repeat
-    again
- ;
-
-*/            
