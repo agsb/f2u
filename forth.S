@@ -292,6 +292,15 @@ HEADER "STATE", "state_"
     POON
 
 ;----------------------------------------------------------------------
+;ok 
+HEADER "BL", "BL"
+    NOOP
+    ldi wrk_low, 32
+    clr wrk_high
+    pspush wrk_low, wrk_high
+    POON
+
+;----------------------------------------------------------------------
 ;
 ; beware, it blocks! test if can receive a char
 ;
@@ -339,9 +348,6 @@ HEADER "BYE", "BYE"
 ;
 HEADER "COLD", "COLD"
     NOOP
-
-; enable interrupts
-    sei
 
 ; restart return stack
     ldi rsp_low, lo8(RSP)
@@ -512,7 +518,7 @@ HEADER "(refill)", "refill"
     brne 32f
 
     ; process BS
-    ; had any char ?
+    ; no char ?
     cp nds_high, nds_high
     breq 12b
 
@@ -527,9 +533,7 @@ HEADER "(refill)", "refill"
     brne 34f
 
     ; magic to 32
-    lsl wrk_low 
-    lsl wrk_low 
-    cbr wrk_low, 2
+	ldi wrk_low, 32
     rjmp 40f
     
 34:
@@ -562,6 +566,14 @@ HEADER "(refill)", "refill"
     cpi wrk_low, 32
     brne 42f
 
+;	; verify if a " \ " alone
+;	tst tos_low
+;	brne 41f
+;	dec tos_low
+;	dec tos_low
+
+41:
+	; highlander it !
     cp wrk_low, wrk_high
     breq 12b
 
@@ -612,7 +624,7 @@ HEADER "(refill)", "refill"
   
 21: 
     ; push counter
-    ; always add a space and a \0 terminator
+    ; always add \0 terminator
     clr wrk_low
     srsave wrk_low
 
@@ -703,11 +715,13 @@ HEADER "(find)", "find"
     brne 10b
     dec _zero_
     breq 20f
+
     ld _work_, x+
     cp wrk_high, _work_
     brne 10b
     dec _zero_
     breq 20f
+
 	; next chars
     rjmp 14b
 
@@ -730,16 +744,16 @@ HEADER "(find)", "find"
     andi tos_high, F_IMMEDIATE
 	brne 24f
 22:
-	; immediate
+	; immediate (1)
 	inc wrk_low
 	rjmp 99f
 24:
-	; common
+	; common (-1)
 	dec wrk_low
     rjmp 99f
 
 30: 
-    ; not found
+    ; not found (0)
     ; restore psp
     rspull psp_low, psp_high
     
@@ -757,13 +771,49 @@ HEADER "(find)", "find"
 
 
 ;----------------------------------------------------------------------
-;    ok ( -- ) 
 ;
-HEADER    "(create)", "create"
-    NOOP
-	.word BL, (parse), (find), zzzzz	
-    ; .word HERE, LAST, DUP, AT, COMMA, TO,
-    POON
+; 16/8 division, 16 bit result, 8 bit remainder
+; dividend tos_high:tos_low by divisor nds_low, 
+; quotient in tos_high:tos_low, remainder in wrk_low
+;
+HEADER "(basediv)", "basediv"
+	NOOP
+	; pull dividend
+    pspull nds_low, nds_high
+	; pull divisor
+    pspull tos_low, tos_high
+10:
+	; clear remainder
+    clr wrk_low               
+	; 16 bits rounds
+    ldi wrk_high,0x10         
+20:  
+	; next dividend bit to wrk_low
+    lsl tos_low
+    rol tos_high
+    rol wrk_low             
+	; this should never, ever, happen
+    brcs 30f                    
+	; trial subtraction
+    cp wrk_low, nds_low    
+	; not big enough
+    brcs 40f                    
+30:
+	; ok, subtract it
+    sub wrk_low, nds_low      
+	; add this power of 2 to quotient
+    inc tos_low               
+40:  
+	; count bit
+    dec wrk_high      
+	; do until done
+    brne 20b           
+     
+	; push quotient
+    pspush tos_low, tos_high
+    ; push remainder
+    pspush wrk_low, wrk_high        
+	POON
 
 ;----------------------------------------------------------------------
 ;    ok ( -- ) 
@@ -849,11 +899,11 @@ HEADER  "(eval)", "evaluate"
     rjmp 20
 
 18:
-    ;execute
+    ; execute
     pspull wrk_low, wrk_high
 
 20:
-    ; is immediate then execute
+    ; resolve 
     rspush wrk_low, wrk_high
     POON 
 
@@ -900,8 +950,54 @@ HEADER "(number)", "number"
 ; ok ( --- a2 u ) 
 HEADER ".\"", "dotquote"
     NOOP
+
 	POON	
     
+;----------------------------------------------------------------------
+;    ok ( c-add u -- ) 
+;	called after parse ;)
+;
+HEADER    "(create)", "create"
+    NOOP
+    ; copy from psp to sram buffer
+    lds ips_low, THIS+0
+    lds ips_high, THIS+1
+
+	; save link 
+	lds wrk_low, LAST+0
+	lds wrk_high, LAST+1
+    st Z+, wrk_low
+    st Z+, wrk_high
+	
+	; save size word
+	pspull tos_low, tos_high
+	st Z+, tos_low
+
+	; save size
+	mov tos_high, tos_low
+
+	; get address
+	pspull wrk_low, wrk_high
+
+	; save psp
+	rspush psp_low, psp_high
+
+	; copy it
+	movw psp_low, wrk_low
+10:
+    ld wrk_low, X+
+	st Z+, wrk_low
+	dec tos_high
+	brne 10b
+
+	; load psp
+	rspull psp_low, psp_high
+
+	; updates
+	rjmp line_void
+
+    POON
+
 ;----------------------------------------------------------------------
 ;
 ; ok ( --- a2 u ) 
@@ -910,44 +1006,53 @@ HEADER "(comma)", "comma"
     ; copy from psp to sram buffer
     lds ips_low, THIS+0
     lds ips_high, THIS+1
+
     pspull wrk_low, wrk_high
     st Z+, wrk_low
     st Z+, wrk_high
+
+	clr tos_low
+	clr tos_high
+
+line_void:
+10:
     ; update this 
     sts THIS+0, ips_low
     sts THIS+1, ips_high
-    
-; extras for sram and flash
 
+	; SRAM hold bottom of free ram
     ; verify free ram
     lds wrk_low, SRAM+0
     lds wrk_high, SRAM+1
     cp wrk_high, ips_high
     cpc wrk_low, ips_low
-    brlt 2f
+    brlt 20f
 
     ; no more free ram    
     ldi wrk_low, INVALID_MEMORY
     rjmp WARM
 
-2:
+20:
     ; update here
     lds wrk_low, HERE+0
     lds wrk_high, HERE+1
-    adiw wrk_low, 2
+    add wrk_low, tos_low
+    adc wrk_low, tos_high
+	adiw wrk_low, 2
     sts HERE+0, wrk_low
     sts HERE+1, wrk_high
 
+; FLASH_STOP is bottom of free flash
     ; verify free flash
     cpi wrk_high, hi8(FLASH_STOP)
     cpi wrk_low, lo8(FLASH_STOP)
-    brlt 3f
+    brlt 30f
 
     ; no more free flash
     ldi wrk_low, WRITE_TO_READ_ONLY
     rjmp WARM
 
-3:
+30:
     POON
 
 ;---------------------------------------------------------------------

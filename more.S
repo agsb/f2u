@@ -680,34 +680,34 @@ HEADER "+!", "PLUSTO"
 ;	save into and load from eeprom
 ;
 HEADER "(here!e)", "hereto"
-	.word HERE, AT, eehere, weep, _LAST
+	.word HERE, AT, eehere, weep, ENDS
 
 HEADER "(here@e)", "hereat"
-	.word eehere, reep, HERE, TO, _LAST
+	.word eehere, reep, HERE, TO, ENDS
 
 HEADER "(last!e)", "lastto"
-	.word LAST, AT, eelast, weep, _LAST
+	.word LAST, AT, eelast, weep, ENDS
 
 HEADER "(last@e)", "lastat"
-	.word eelast, reep, LAST, TO, _LAST
+	.word eelast, reep, LAST, TO, ENDS
 
 HEADER "(seed!e)", "seedto"
-	.word SEED, AT, eeseed, weep, _LAST
+	.word SEED, AT, eeseed, weep, ENDS
 
 HEADER "(seed@e)", "seedat"
-	.word eeseed, reep, SEED, TO, _LAST
+	.word eeseed, reep, SEED, TO, ENDS
 
 HEADER "(sram!e)", "sramto"
-	.word SRAM, AT, eesram, weep, _LAST
+	.word SRAM, AT, eesram, weep, ENDS
 
 HEADER "(sram@e)", "sramat"
-	.word eesram, reep, SRAM, TO, _LAST
+	.word eesram, reep, SRAM, TO, ENDS
 
 HEADER "(erom!e)", "eromto"
-	.word EROM, AT, eeprom, weep, _LAST
+	.word EROM, AT, eeprom, weep, ENDS
 
 HEADER "(erom@e)", "eromat"
-	.word eeprom, reep, EROM, TO, _LAST
+	.word eeprom, reep, EROM, TO, ENDS
 
 
 
