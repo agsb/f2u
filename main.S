@@ -31,21 +31,21 @@ NULL:	.word 0
 .equ	RSP, SPZ - STACK_SIZE
 .equ	SPZ, RAMEND		
 
-.align 2
+.p2align 1, 0x00
 #include "bios.S"
 
-.align 2
+.p2align 1, 0x00
 #include "forth.S"
 
-.align 2
+.p2align 1, 0x00
 #include "more.S"
 
-.align 2
+.p2align 1, 0x00
 #include "math.S"
 
 .equ free_flash, .
 
-.align 2
+.p2align 1, 0x00
 #include "nrww.S"
 
 

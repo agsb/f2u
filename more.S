@@ -21,7 +21,9 @@
  *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  *
 */
-
+;
+; those tests are using br* must be at 64 range, so reorder can fail
+;
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- 0 | -1)
 HEADER "=", "EQUAL"
@@ -67,24 +69,6 @@ HEADER ">", "GTHAN"
 	rjmp _iftrue
 
 ;----------------------------------------------------------------------
-;  ok 0>	must be signed
-HEADER "0>", "ZEROGT"
-	NOOP
-	pspull wrk_low, wrk_high
-    sbiw wrk_low, 1
-    brge _iffalse
-    rjmp _iftrue
-
-;----------------------------------------------------------------------
-;  ok 0<
-HEADER "0<", "ZEROLT"
-	NOOP
-	pspull wrk_low, wrk_high
-    sbiw wrk_low, 1
-    brge _iftrue
-    rjmp _iffalse
-
-;----------------------------------------------------------------------
 ; ok ( -- -1 )
 HEADER "TRUE", "FTRUE"
 	NOOP
@@ -103,6 +87,24 @@ _iffalse:
 	clr wrk_low
 	clr wrk_high
     pushw
+
+;----------------------------------------------------------------------
+;  ok 0>	must be signed
+HEADER "0>", "ZEROGT"
+	NOOP
+	pspull wrk_low, wrk_high
+    sbiw wrk_low, 1
+    brge _iffalse
+    rjmp _iftrue
+
+;----------------------------------------------------------------------
+;  ok 0<
+HEADER "0<", "ZEROLT"
+	NOOP
+	pspull wrk_low, wrk_high
+    sbiw wrk_low, 1
+    brge _iftrue
+    rjmp _iffalse
 
 ;----------------------------------------------------------------------
 ; 
