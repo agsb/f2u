@@ -43,18 +43,13 @@
     
     Done comma, flash, flush for solve sram//flash
 
-    implements postpone as a flag to always compile next word only, solves compiling, [compiling],
+    implemented postpone as a flag to always compile next word only, solves compile and [compile]
     
     matriz of interpret now is:
-        |===================================|
-        |state        |common     |immediate|
-        |variable     |word       |word     |
-        |===================================|
-        |s_execute  0 |execute    |execute  |
-        |s_compile  1 |compile    |execute  |
-        |s_postpone 2 |compile    |compile  |
-        |===================================|
 
+						state 1		state 0		postone 1
+		common word		compile		execute		compile
+ 	 immediate word		execute		execute		compile
     
     why not same for  ', [']
 
@@ -155,7 +150,41 @@ _exec:
 ;
 ;----------------------------------------------------------------------
 ;**********************************************************************
+;
 ;    init of minimal words
+;
+.macro pushw
+.ifndef EXTENDED
+	rjmp _push
+.else
+    pspush wrk_low, wrk_high
+    POON
+.endif
+.endm
+
+;----------------------------------------------------------------------
+;ok ( w1 w2 -- w2 AND w1 )
+HEADER "0", "zero_"
+    NOOP
+_ffalse:
+    clr wrk_low
+    clr wrk_high
+_push:
+    pspush wrk_low, wrk_high
+    POON
+
+;----------------------------------------------------------------------
+; ok 0=
+HEADER "0=", "ZEROEQU"
+    NOOP
+    pspull wrk_low, wrk_high
+    cp wrk_high, wrk_low
+    brbc BIT_ZERO, _ffalse
+_ftrue:
+    ser wrk_low
+    ser wrk_high
+	pushw
+
 ;----------------------------------------------------------------------
 ; ok ! to (x a -- )
 HEADER "!", "TO"
@@ -173,32 +202,21 @@ HEADER "@", "AT"
     pspull ips_low, ips_high
     srload wrk_low
     srload wrk_high
-    rjmp _zero
+	pushw
 
 ;----------------------------------------------------------------------
 ; ok ( -- rsp)
 HEADER "RP@", "RPAT"
     NOOP
     movw wrk_low, rsp_low
-    rjmp _push
+	pushw
 
 ;----------------------------------------------------------------------
 ; ok ( -- psp )
 HEADER "SP@", "SPAT"
     NOOP
     movw wrk_low, psp_low
-    rjmp _push
-
-;----------------------------------------------------------------------
-; ok 0=
-HEADER "0=", "ZEROEQU"
-    NOOP
-    pspull wrk_low, wrk_high
-    cp wrk_high, wrk_low
-    brbc BIT_ZERO, _zero
-    ser wrk_low
-    ser wrk_high
-    rjmp _push
+	pushw
 
 ;----------------------------------------------------------------------
 ;ok ( w1 w2 -- w2 AND w1 )
@@ -210,7 +228,7 @@ HEADER "NAND", "NAND"
     and wrk_low, tos_low
     com wrk_high
     com wrk_low
-    rjmp _push
+    pushw
 
 ;----------------------------------------------------------------------
 ;ok ( w1 w2 -- w2 AND w1 )
@@ -221,17 +239,7 @@ HEADER "+", "PLUS"
     clc
     add wrk_low, tos_low
     adc wrk_high, tos_high
-    rjmp _push
-
-;----------------------------------------------------------------------
-;ok ( w1 w2 -- w2 AND w1 )
-HEADER "0", "_zero"
-    NOOP
-    clr wrk_low
-    clr wrk_high
-_push:
-    pspush wrk_low, wrk_high
-    POON
+    pushw
 
 ;----------------------------------------------------------------------
 ;    end of minimal words
@@ -243,8 +251,7 @@ HEADER "TIB", "tib_"
     NOOP
     ldi wrk_low, lo8(TIB)
     ldi wrk_high, hi8(TIB)
-    pspush wrk_low, wrk_high
-    POON
+	pushw
 
 ;----------------------------------------------------------------------
 ;ok 
@@ -252,8 +259,7 @@ HEADER ">IN", "toin_"
     NOOP
     ldi wrk_low, lo8(TOIN)
     ldi wrk_high, hi8(TOIN)
-    pspush wrk_low, wrk_high
-    POON
+	pushw
 
 ;----------------------------------------------------------------------
 ;ok 
@@ -261,8 +267,7 @@ HEADER "HERE", "here_"
     NOOP
     ldi wrk_low, lo8(HERE)
     ldi wrk_high, hi8(HERE)
-    pspush wrk_low, wrk_high
-    POON
+	pushw
 
 ;----------------------------------------------------------------------
 ;ok 
@@ -270,8 +275,7 @@ HEADER "LAST", "last_"
     NOOP
     ldi wrk_low, lo8(LAST)
     ldi wrk_high, hi8(LAST)
-    pspush wrk_low, wrk_high
-    POON
+	pushw
 
 ;----------------------------------------------------------------------
 ;ok 
@@ -279,8 +283,7 @@ HEADER "BASE", "base_"
     NOOP
     ldi wrk_low, lo8(BASE)
     ldi wrk_high, hi8(BASE)
-    pspush wrk_low, wrk_high
-    POON
+	pushw
 
 ;----------------------------------------------------------------------
 ;ok 
@@ -288,8 +291,7 @@ HEADER "STATE", "state_"
     NOOP
     ldi wrk_low, lo8(STATE)
     ldi wrk_high, hi8(STATE)
-    pspush wrk_low, wrk_high
-    POON
+	pushw
 
 ;----------------------------------------------------------------------
 ;ok 
@@ -297,8 +299,7 @@ HEADER "BL", "BL"
     NOOP
     ldi wrk_low, 32
     clr wrk_high
-    pspush wrk_low, wrk_high
-    POON
+	pushw
 
 ;----------------------------------------------------------------------
 ;
@@ -311,8 +312,7 @@ HEADER "key", "key_"
     rjmp 1b
     in wrk_low, 0x0c
     clr wrk_high
-    pspush wrk_low, wrk_high
-    POON
+	pushw
 
 ;----------------------------------------------------------------------
 ;
@@ -333,8 +333,8 @@ HEADER "emit", "emit_"
 ;
 HEADER "millis", "millis_"
     NOOP
-    pspush tmr_low, tmr_high
-    POON
+    movw wrk_low, tmr_low
+	pushw
 
 ;----------------------------------------------------------------------
 ; does reset
@@ -374,7 +374,7 @@ HEADER  "WARM", "WARM"
 
 ;----------------------------------------------------------------------
 ;
-; ok ( --- a2 u ) 
+; ok ( --- ) 
 ; tricky 
 ; all new word starts at THIS=0, 1 and 2 bytes is link, 3 byte is size+flags
 HEADER "(immediate)", "immediate"
@@ -398,8 +398,7 @@ HEADER "(literal)", "literal"
     adiw wrk_low, 2
     rspush wrk_low, wrk_high
     pmload wrk_low, wrk_high
-    pspush wrk_low, wrk_high
-    POON
+	pushw
 
 ;----------------------------------------------------------------------
 ;
@@ -457,8 +456,7 @@ HEADER "(parse)", "parse"
     ; update TOIN
     sts TOIN+0, ips_low
     sts TOIN+1, ips_high
-    pspush wrk_low, wrk_high
-    POON
+	pushw
 
 ;----------------------------------------------------------------------
 ;
@@ -635,8 +633,7 @@ HEADER "(refill)", "refill"
     ; save counter
     mov wrk_low, wrk_high
     clr wrk_high
-    pspush wrk_low, wrk_high
-    POON
+	pushw
 
 ;----------------------------------------------------------------------
 ;
@@ -766,9 +763,7 @@ HEADER "(find)", "find"
     clr wrk_low
 99: 
     ; save results
-    pspush wrk_low, wrk_high
-    POON
-
+	pushw
 
 ;----------------------------------------------------------------------
 ; ok ( mul mut -- d )
@@ -803,8 +798,7 @@ HEADER "(basemul)", "basemul"
 	pspush tos_low, tos_high	
 	mov wrk_low, wrk_high
 	clr wrk_high
-	pspush wrk_low, wrk_high	
-	POON
+	pushw
 
 ;----------------------------------------------------------------------
 ;
@@ -848,8 +842,7 @@ HEADER "(basediv)", "basediv"
 	; push quotient
     pspush tos_low, tos_high
     ; push remainder
-    pspush wrk_low, wrk_high        
-	POON
+	pushw
 
 ;----------------------------------------------------------------------
 ;    ok ( -- ) 
@@ -857,10 +850,10 @@ HEADER "(basediv)", "basediv"
 HEADER "]", "isexecute"
     NOOP
     ; 
-    lds tos_high, STATE+0
-    clr tos_high
+    lds wrk_low, STATE+0
+    clr wrk_low
 states:
-    sts STATE, tos_high
+    sts STATE, wrk_low
     POON
 
 ;----------------------------------------------------------------------
@@ -869,8 +862,8 @@ states:
 HEADER "[", "iscompile"
     NOOP
     ; 
-    lds tos_high, STATE+0
-    inc tos_high
+    lds wrk_low, STATE+0
+    inc wrk_low
     rjmp states
 
 ;----------------------------------------------------------------------
@@ -879,8 +872,8 @@ HEADER "[", "iscompile"
 HEADER "(postpone)", "ispostpone"
     NOOP
     ; clear postpone
-    lds tos_high, STATE+0
-    sbr tos_high, S_POSTONE ; must not be bit 0
+    lds wrk_low, STATE+0
+    sbr wrk_low, S_POSTONE ; must not be bit 0
     rjmp states
     
 ;----------------------------------------------------------------------
@@ -889,8 +882,8 @@ HEADER "(postpone)", "ispostpone"
 HEADER "(nopostpone)", "nopostpone"
     NOOP
     ; clear postpone
-    lds tos_high, STATE+0
-    cbr tos_high, S_POSTONE ; must not be bit 0
+    lds wrk_low, STATE+0
+    cbr wrk_low, S_POSTONE ; must not be bit 0
     rjmp states
     
 ;----------------------------------------------------------------------
@@ -1020,7 +1013,7 @@ HEADER "(number)", "number"
 
 20:
 	; ends ?
-    cpi wrk_low, _work_
+    cp wrk_low, _work_
     brge 50f
 
 	; add to result
@@ -1075,8 +1068,7 @@ HEADER "(number)", "number"
 
 100:
 	; push digits
-	pspush wrk_low, wrk_high
-    POON
+	pushw
 
 ;----------------------------------------------------------------------
 ;
@@ -1087,7 +1079,7 @@ HEADER ".\"", "dotquote"
 	POON	
     
 ;----------------------------------------------------------------------
-;    ok ( c-add u -- ) 
+;    ok ( a u -- ) 
 ;	called after parse ;)
 ;
 HEADER    "(create)", "create"
@@ -1129,11 +1121,9 @@ HEADER    "(create)", "create"
 	; updates
 	rjmp line_void
 
-    POON
-
 ;----------------------------------------------------------------------
 ;
-; ok ( --- a2 u ) 
+; ok ( w --- ) 
 HEADER "(comma)", "comma"
     NOOP
     ; copy from psp to sram buffer
