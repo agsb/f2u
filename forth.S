@@ -388,16 +388,35 @@ HEADER "(immediate)", "immediate"
     srsave wrk_low
     POON
     
+    
 ;----------------------------------------------------------------------
 ;
 ; ok ( --- w ) 
-HEADER "(literal)", "literal"
+;
+; push the contents of next to stack, updates next
+; 
+HEADER "(doval)", "doval"
     NOOP
     rspull wrk_low, wrk_high
     movw ips_low, wrk_low    
     adiw wrk_low, 2
     rspush wrk_low, wrk_high
     pmload wrk_low, wrk_high
+	pushw
+
+;----------------------------------------------------------------------
+;
+; ok ( --- a )
+;
+; push the reference of next to stack, updates next
+;
+HEADER "(doref)", "doref"
+    NOOP
+    rspull wrk_low, wrk_high
+    movw ips_low, wrk_low    
+    adiw wrk_low, 2
+    rspush wrk_low, wrk_high
+    movw wrk_low, ips_low    
 	pushw
 
 ;----------------------------------------------------------------------
@@ -598,7 +617,7 @@ HEADER "(refill)", "refill"
     rjmp 12b
 
 48: 
-   ; skip comments
+    ; skip comments
     tst tos_low
     brne 12b
     tst tos_high
@@ -1098,7 +1117,11 @@ HEADER    "(create)", "create"
 	pspull tos_low, tos_high
 	st Z+, tos_low
 
-	; save size
+	; if odd
+	sbrc tos_low, 0
+	inc tos_low
+
+	; keep size
 	mov tos_high, tos_low
 
 	; get address
@@ -1115,8 +1138,17 @@ HEADER    "(create)", "create"
 	dec tos_high
 	brne 10b
 
+	;zzzzzzzz must push reference to a code that push next addres dp in stack, not next contents!
+
+
 	; load psp
 	rspull psp_low, psp_high
+
+	; push xt
+	pspush ips_low, ips_high
+
+	; off set link for here
+	adiw tos_low, 2
 
 	; updates
 	rjmp line_void
@@ -1138,6 +1170,7 @@ HEADER "(comma)", "comma"
 	clr tos_high
 
 line_void:
+
 10:
     ; update this 
     sts THIS+0, ips_low
@@ -1161,6 +1194,7 @@ line_void:
     lds wrk_high, HERE+1
     add wrk_low, tos_low
     adc wrk_low, tos_high
+	; point to next free cell
 	adiw wrk_low, 2
     sts HERE+0, wrk_low
     sts HERE+1, wrk_high
@@ -1265,14 +1299,12 @@ HEADER "(flush)", "flush"
     ;  next page 
     movw ips_low, nds_low
 
-; zzzz must include code to protect NRWW and core forth
-
     ; erase page
-    ldi tmp_low, (1<<PGERS) | (1<<SPMEN)
+    ldi _work_, (1<<PGERS) | (1<<SPMEN)
     rcall do_spm
 
     ; re-enable the RWW section
-    ;ldi tmp_low, (1<<RWWSRE) | (1<<SPMEN)
+    ;ldi _work_, (1<<RWWSRE) | (1<<SPMEN)
     ;rcall do_spm
 
     ; one page loop
@@ -1282,7 +1314,7 @@ HEADER "(flush)", "flush"
     ; fill page flash from sram buffer
     ld r0, X+
     ld r1, X+
-    ldi tmp_low, (1<<SPMEN)
+    ldi _work_, (1<<SPMEN)
     rcall do_spm
     adiw ips_low, 2
     dec wrk_low
@@ -1297,11 +1329,11 @@ HEADER "(flush)", "flush"
     movw ips_low, nds_low
 
     ; write page
-    ldi tmp_low, (1<<PGWRT) | (1<<SPMEN)
+    ldi _work_, (1<<PGWRT) | (1<<SPMEN)
     rcall do_spm
 
     ; re-enable the RWW section
-    ;ldi tmp_low, (1<<RWWSRE) | (1<<SPMEN)
+    ;ldi _work_, (1<<RWWSRE) | (1<<SPMEN)
     ;rcall do_spm
 
 40:
@@ -1326,5 +1358,22 @@ HEADER "(flush)", "flush"
 ; ok interpret
 HEADER "(quit)", "quit"
 	NOOP
+	POON
+
+;----------------------------------------------------------------------
+;
+; ok comma
+HEADER ":", "colon"
+	NOOP
+	.word iscompile, flash, HERE, AT, create, ENDS
+	POON
+
+
+;----------------------------------------------------------------------
+;
+; ok semmi
+HEADER ";", "semmi"
+	NOOP
+	.word isexecute, flush, LAST, TO, hereto, lastto, ENDS
 	POON
 

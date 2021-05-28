@@ -342,6 +342,8 @@ HEADER "><", "ENDIAN"
 
 ;----------------------------------------------------------------------
 ;  os doLIT ( -- w ), from flash program memory to data stack
+;	execute semantics
+;
 HEADER "DOLIT", "DOLIT"
 	NOOP
 	rspull ips_low, ips_high
@@ -352,6 +354,7 @@ HEADER "DOLIT", "DOLIT"
 
 ;----------------------------------------------------------------------
 ;  zzz doCON ( -- w ) from sram memory to data stack
+;
 HEADER "DOCON", "DOCON"
 	NOOP
 	rspull ips_low, ips_high
@@ -382,12 +385,14 @@ HEADER "DOVAR", "DOVAR"
 
 ;----------------------------------------------------------------------
 ; ok C! ( c a -- )
+; sorry all in words
 HEADER "C!", "CTO"
 	NOOP
 	rjmp TO
 
 ;----------------------------------------------------------------------
 ; ok C@ ( c a -- )
+; sorry all in words
 HEADER "C@", "CAT"
 	NOOP
 	rjmp AT
@@ -397,6 +402,7 @@ HEADER "C@", "CAT"
 HEADER "INV", "INV"
 	NOOP
 	pspull wrk_low, wrk_high
+_inv:
     com wrk_low
     com wrk_high
 	pushw
@@ -406,6 +412,7 @@ HEADER "INV", "INV"
 HEADER "NEG", "NEG"
 	NOOP
 	pspull wrk_low, wrk_high
+_neg:
     neg wrk_low
     neg wrk_high
 	pushw
@@ -415,7 +422,9 @@ HEADER "NEG", "NEG"
 HEADER "ABS", "ABS"
 	NOOP
 	pspull wrk_low, wrk_high
-    cbr wrk_high, 7
+_abs:
+	sbrc wrk_high, 7
+	rjmp _neg
 	pushw
 
 ;----------------------------------------------------------------------
@@ -645,34 +654,34 @@ HEADER "+!", "PLUSTO"
 ;	save into and load from eeprom
 ;
 HEADER "(here!e)", "hereto"
-	.word HERE, AT, eehere, weep, ENDS
+	.word HERE, AT, e_here, weep, ENDS
 
 HEADER "(here@e)", "hereat"
-	.word eehere, reep, HERE, TO, ENDS
+	.word e_here, reep, HERE, TO, ENDS
 
 HEADER "(last!e)", "lastto"
-	.word LAST, AT, eelast, weep, ENDS
+	.word LAST, AT, e_last, weep, ENDS
 
 HEADER "(last@e)", "lastat"
-	.word eelast, reep, LAST, TO, ENDS
+	.word e_last, reep, LAST, TO, ENDS
 
 HEADER "(seed!e)", "seedto"
-	.word SEED, AT, eeseed, weep, ENDS
+	.word SEED, AT, e_seed, weep, ENDS
 
 HEADER "(seed@e)", "seedat"
-	.word eeseed, reep, SEED, TO, ENDS
+	.word e_seed, reep, SEED, TO, ENDS
 
 HEADER "(sram!e)", "sramto"
-	.word SRAM, AT, eesram, weep, ENDS
+	.word SRAM, AT, e_sram, weep, ENDS
 
 HEADER "(sram@e)", "sramat"
-	.word eesram, reep, SRAM, TO, ENDS
+	.word e_sram, reep, SRAM, TO, ENDS
 
 HEADER "(erom!e)", "eromto"
-	.word EROM, AT, eeprom, weep, ENDS
+	.word EROM, AT, e_erom, weep, ENDS
 
 HEADER "(erom@e)", "eromat"
-	.word eeprom, reep, EROM, TO, ENDS
+	.word e_erom, reep, EROM, TO, ENDS
 
 
 

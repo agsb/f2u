@@ -38,8 +38,8 @@ RESET:
 ; clear interrupts
     cli
 ; init _zero_ as zero
-    clr _zero_ ; exclusive or, xor
-    out __SREG__, _zero_; clear sreg
+    clr _zero_  
+    out __SREG__, _zero_ ; clear sreg
 ; init real sp at end of sram
     ldi wrk_high, hi8(SRAM_END)
     out __SP_H__, wrk_high
@@ -56,9 +56,11 @@ RESET:
 ;    64 * 125 = 8000 ; 
 ;    256 - 125 = 131 ; offset
 ;    miliseconds
-;    r3:r2    counter each 1ms
-;    r4        offset to prescale
-;    r5        save SREG
+;    r3:r2 counter each 1ms
+;    r4 offset to prescale
+;    r5 save SREG
+;
+;	 r0 and r1 are scratch registers used in spm, mul, des, etc
 ;
 TIM0_OVF:
 ;    save flags
@@ -67,6 +69,7 @@ TIM0_OVF:
     cli
 ;    increase counter and also clear R1
     clc
+; must correct do not use r0 or r1
     clr r1
     inc r1
     add r2, r1
