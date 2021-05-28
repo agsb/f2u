@@ -302,6 +302,24 @@ HEADER "BL", "BL"
 	pushw
 
 ;----------------------------------------------------------------------
+;----------------------------------------------------------------------
+;ok 
+HEADER "(sram)", "sram"
+    NOOP
+    ldi wrk_low, lo8(SRAM)
+    ldi wrk_high, hi8(SRAM)
+	pushw
+
+;----------------------------------------------------------------------
+;ok 
+HEADER "(erom)", "erom"
+    NOOP
+    ldi wrk_low, lo8(EROM)
+    ldi wrk_high, hi8(EROM)
+	pushw
+
+;----------------------------------------------------------------------
+;----------------------------------------------------------------------
 ;
 ; beware, it blocks! test if can receive a char
 ;
@@ -387,7 +405,6 @@ HEADER "(immediate)", "immediate"
     sbiw ips_low, 1
     srsave wrk_low
     POON
-    
     
 ;----------------------------------------------------------------------
 ;
@@ -870,7 +887,7 @@ HEADER "]", "isexecute"
     NOOP
     ; 
     lds wrk_low, STATE+0
-    clr wrk_low
+    cbr wrk_low, BIT_COMPILE
 states:
     sts STATE, wrk_low
     POON
@@ -882,7 +899,7 @@ HEADER "[", "iscompile"
     NOOP
     ; 
     lds wrk_low, STATE+0
-    inc wrk_low
+    sbr wrk_low, BIT_COMPILE
     rjmp states
 
 ;----------------------------------------------------------------------
@@ -892,7 +909,7 @@ HEADER "(postpone)", "ispostpone"
     NOOP
     ; clear postpone
     lds wrk_low, STATE+0
-    sbr wrk_low, S_POSTONE ; must not be bit 0
+    sbr wrk_low, BIT_POSTONE 
     rjmp states
     
 ;----------------------------------------------------------------------
@@ -902,14 +919,14 @@ HEADER "(nopostpone)", "nopostpone"
     NOOP
     ; clear postpone
     lds wrk_low, STATE+0
-    cbr wrk_low, S_POSTONE ; must not be bit 0
+    cbr wrk_low, BIT_POSTONE ; must not be bit 0
     rjmp states
     
 ;----------------------------------------------------------------------
 ;    ok ( xt f -- ) 
 ;
 ;    f flag  1 immediate, -1 common
-;	 state = 1 compile, 0 execute, 2 postone
+;	 state = 0 execute, 1 compile,  3 postone
 ;
 HEADER  "(eval)", "evaluate"
     NOOP
@@ -931,7 +948,7 @@ HEADER  "(eval)", "evaluate"
 
     ; ever compile
     ; clear postpone
-    cbr tos_high, S_POSTONE ; must not be bit 0
+    cbr tos_high, BIT_POSTONE ; must not be bit 0
     sts STATE+0, tos_high
     rjmp 16f    
     
@@ -1099,11 +1116,12 @@ HEADER ".\"", "dotquote"
     
 ;----------------------------------------------------------------------
 ;    ok ( a u -- ) 
+;
 ;	called after parse ;)
 ;
 HEADER    "(create)", "create"
     NOOP
-    ; copy from psp to sram buffer
+    ; sram buffer
     lds ips_low, THIS+0
     lds ips_high, THIS+1
 
@@ -1138,18 +1156,21 @@ HEADER    "(create)", "create"
 	dec tos_high
 	brne 10b
 
-	;zzzzzzzz must push reference to a code that push next addres dp in stack, not next contents!
-
-
 	; load psp
 	rspull psp_low, psp_high
 
-	; push xt
-	pspush ips_low, ips_high
-
-	; off set link for here
-	adiw tos_low, 2
-
+	; point to next free cell
+	; push dp to stack
+    lds wrk_low, HERE+0
+    lds wrk_high, HERE+1
+	; add link
+	adiw wrk_low, 2
+	; add size 
+    add wrk_low, tos_low
+    adc wrk_low, tos_high
+	; 
+	pspush wrk_low, wrk_high
+	
 	; updates
 	rjmp line_void
 
@@ -1166,8 +1187,8 @@ HEADER "(comma)", "comma"
     st Z+, wrk_low
     st Z+, wrk_high
 
-	clr tos_low
 	clr tos_high
+	clr tos_low
 
 line_void:
 
@@ -1364,16 +1385,31 @@ HEADER "(quit)", "quit"
 ;
 ; ok comma
 HEADER ":", "colon"
-	NOOP
 	.word iscompile, flash, HERE, AT, create, ENDS
-	POON
 
 
 ;----------------------------------------------------------------------
 ;
 ; ok semmi
 HEADER ";", "semmi"
+	.word isexecute, flush, updateep, ENDS
+
+;----------------------------------------------------------------------
+; ok variable
+;	ZZZZZ must check init sram and limits
+;
+HEADER "(variable)", "variable"
+	.word (sram), DUP, AT, 
+	.word DUP, create, comma, 
+	.word DUP, ZERO, SWAP, TO, 
+	.word TWOLESS, SWAP, TO,
+	.word updateep, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok 
+;	
+HEADER "(updateep)", "updateep"
 	NOOP
-	.word isexecute, flush, LAST, TO, hereto, lastto, ENDS
-	POON
+	.word LAST, TO, hereto, lastto, ENDS
 

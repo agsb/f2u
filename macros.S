@@ -20,8 +20,8 @@
 #define sreg_low r5
 
 ; generic use
-#define _work_ r6
-#define _zero_ r7
+#define _work_ r18
+#define _zero_ r19
 
 ; Z instruction pointer for access sram and flash high memory
 #define ips_low r30
@@ -226,11 +226,14 @@ hd_\label:
     F_UNMASK = 0x0F
     F_FOUND =  0x01
 
-; STATES
+; STATES BIT!
+; execute STATE == 0
+; compile STATE == 1
+; postone STATE == 2 or 3, only for next word
 
-    S_POSTONE = 2
-    S_COMPILE = 1
-    S_EXECUTE = 0
+    BIT_POSTONE = 1
+    BIT_COMPILE = 0
+    BIT_EXECUTE = 0
 
 /*       
 
