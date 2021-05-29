@@ -20,31 +20,34 @@ For now:
   The optiboot v8.0 could do program flash memory, as do_spm, so will use it as boot loader.
   
   12/05/2021  Still no operational
-  
+
+take a look at Notes.md
+
 # Introduction
+
+*In the chat session Chuck was asked, "How did you come to the conclusion that Forth was too complex, and that sourceless programming was your next move?" His reply was, "Maybe by reading the Forth Standard." [Moore, 2002] http://www.ultratechnology.com/levels.htm *
 
 Forth have two types of words, those called natives, ad primitive ad leaves, which are coded in specific CPU or MCU instructions, and those called forths, ad compounds ad twigs, which are sequences of references to words.
 
-I want a forth with a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a MCU family and a outer interpreter and compound words independent of any specific CPU family, like a imutable list with rellocable references without any code inline.
-
-A Atmega8 is a MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, with some (R16 to R31) that could be used as 16 bits.
-
-There are many low cost MCU with far more resources and pleny of SRAM and flash. Why use an old MCU for hosting Forth ? 
-
-Most to refine paradigms and understood how forth works from inside, form behind the stacks.
-
-look at Notes.md
+I want a forth with: 1) a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a MCU family; 2) a outer interpreter and compound words independent of any specific CPU family, like a imutable list with rellocable references without any code inline.
 
 # Size or Speed ?
 
 Most of Forth implementations goes "runnig for speed" for timming applications or simply to be "the most faster than", but when memory space is the critical limit most of design decisions must take another route.
+
+My choice for design is a Atmega8, a MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, with some (R16 to R31) that could be used as 16 bits.
+
+There are many low cost MCU with far more resources and pleny of SRAM and flash. Why use an old MCU for hosting Forth ? Most to refine paradigms and understood how forth works inside, looking from behind the stacks.
+
+For comparation, in 1979, the PDP-11, was six 16-bit registers, one stack pointer and one program counter;
+http://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP11_Handbook1979.pdf
 
 
 # References
 
 # 1. In eforth for Cortex M4,  http://forth.org/OffeteStore/1013_eForthAndZen.pdf, to use in a ESP32, Dr. C.H.Ting uses a optimal approach for forth engine, with cpu family specific instructions (ISA) *inline into dictionary*.
 
-_in my opinion best and ideal solution per cpu_ (at cost of size and portability)
+_in my opinion, is the best and ideal solution per cpu_ (at cost of size and portability)
 
 ; the inner interpreter, in macro code:
 
