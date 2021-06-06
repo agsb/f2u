@@ -35,13 +35,28 @@ I want a forth with: 1) a minimal inner interpreter and primitives words (system
 
 Most of Forth implementations goes "runnig for speed" for timming applications or simply to be "the most faster than", but when memory space is the critical limit most of design decisions must take another route.
 
-My choice for design is a Atmega8, a MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, with some (R16 to R31) that could be used as 16 bits.
+My choice for design is a Atmega8, a MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, with some (R16 to R31) that could be used as 8 x 16 bits.
 
 There are many low cost MCU with far more resources and pleny of SRAM and flash. Why use an old MCU for hosting Forth ? Most to refine paradigms and understood how forth works inside, looking from behind the stacks.
 
-For comparation, in 1979, the PDP-11, was six 16-bit registers, one stack pointer and one program counter;
+For comparation, in 1979, the PDP-11, was six 16-bit registers, one stack pointer and one program counter, unifed memory addressing and devices.
 http://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP11_Handbook1979.pdf
 
+# Memory Models
+
+Forth born in  CPUs with Von Neumann memory paradigm, were instructions and data share same address space and external magnetic devices stores data for permanent read and write cycles. Else for Read Only Memory, with main system routines, and I/O Mapped Memory, all Random Access Memory, where Forth lives, can be changed with same instructions. 
+
+Modern MCUs uses Harvard memory paradigm, instructions and data do not share address, and the program memory is flash with about 10.000 cycles of read and write, and static random access memory, those spaces have separated MCUs instructions and processes to be changed, and this makes a fundamental diference at implementations of Forth.
+
+In AVR MCUs flash memory is erased and writed in pages, with sizes varyng from 32 to 128 words, there is no way to change only one specific word.
+
+Many Forths go around this limitation with schemes of mapping where dictionary is writtren and ping-pong buffers to perform as a transparent, or not, system, some uses explicit sram, eeprom, and flash spaces and leaves for user where and what use.
+
+Looking into Forth standarts (79, 83, ANS, 2012, FIG, etc) and implementations, (using mnemonics for those words) there are small lists of 1) words that changes the dictionary as COMMA (,), CREATE, DOTSTR (."); 2) words that changes flag bits as IMMEDIATE, SMUDGE, HIDE, REVEAL; 3) words that changes memory as STORE (!), MOVE, FILL; 
+
+When defining a new word between COLON (:) and SEMI (;), copy the actual flash page correspondent of DP pointer to sram buffer, start pointers offsets, make the changes into sram buffer and when is full, or at end, flush contents and restart pointers; 
+
+When defining words with CREATE and DOES>, 
 
 # References
 
