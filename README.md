@@ -4,23 +4,54 @@
 
 # *"To master riding bicycles you have do ride bicycles"*
 
-This is a evolution from what I learning with u2forth, ATMEGA8 gcc assembler and forth interpreters from eforth, avr-forth, gforth, flashforth, etc
+This is a evolution from what I learning with u2forth, ATMEGA8 gcc assembler and forth implementations as eforth, amforth, avr-forth, gforth, flashforth, etc
+
+**"this is a work in progress, not completed"**
 
 For now:
 
-  The inner interpreter is done and is very effcient.
-  The primitive words are done, as minimal set from eforth plus some extras.
-  
-  But I'm at easter egg of forth:
-    I have sources of words as ": word ~~~ ;" and I need a forth done to compile or
-    I have sources of words compiled with some forth and need use same forth engine;
-  
-  Then sectorforth (https://github.com/cesarblum/sectorforth) comes to simplifly all, and I restart again.
-  
-  The optiboot v8.0 could do program flash memory, as do_spm, so will use it as boot loader.
-  
-  12/05/2021  Still no operational
+  10/06/2021, Still no operational
 
+    The basic functional words are done, as minimal set for parse, find, evaluate, number, create, does;
+    
+    Controls
+    a)  testing top of stack:
+      
+      *standart implementation for*
+      (if ... else ... then ...), forward jumps, (1)
+      (begin ... again), inconditional backward jump, (2)
+      (begin ... until), conditional backward jump, (2)
+      
+      *non-standart implementation for*
+      (while ... repeat), conditional forward jump and inconditional backward jump, (3)
+      (while ... again), maybe ?
+      att: *repeat jumps to while*, both independent of begin.
+    
+    b) testing values on return stack 
+      *not for now*
+     (do ... leave ... loop), counter backward jump, test at loop
+     (for ... next), counter backward jump, test at for
+        
+  12/05/2021,  Still no operational
+  
+    Start basic assembler for parse, find, evaluate, number, create, does;
+    Defined specific functions for flash memory. All changes at dictionary are done in a buffer sram. 
+    Created routines, a **flash** for init the buffer, from flash page of HERE, and a **flush** for copy to flash update
+  
+  08/04/2021, resumes from 2020
+  
+    The inner interpreter is done and is very effcient;
+  
+    The primitive words are done, as minimal set from forth plus some extras;
+  
+    But I'm at easter egg of forth:
+      I have sources of words as ": word ~~~ ;" and I need a forth done to compile or
+      I have sources of words compiled with some forth and need use same forth engine;
+  
+    Then sectorforth (https://github.com/cesarblum/sectorforth) comes to simplifly all, and I restart again.
+  
+    The optiboot v8.0 could do program flash memory, as do_spm, so will use it as boot loader.
+  
 take a look at Notes.md
 
 # Introduction
@@ -29,22 +60,25 @@ take a look at Notes.md
 
 Forth have two types of words, those called natives, ad primitive ad leaves, which are coded in specific CPU or MCU instructions, and those called forths, ad compounds ad twigs, which are sequences of references to words.
 
-I want a forth with: 1) a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a MCU family; 2) a outer interpreter and compound words independent of any specific CPU family, like a imutable list with rellocable references without any code inline.
+I want a forth with: 
+1) a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a MCU family; 
+2) all compound words independent of any specific MCU family, like a imutable list with rellocable references without any code inline.
 
 # Size or Speed ?
 
-Most of Forth implementations goes "runnig for speed" for timming applications or simply to be "the most faster than", but when memory space is the critical limit most of design decisions must take another route.
+Most of Forth implementations goes "runnig for speed" for timming applications or simply to be "the most faster than", but when memory space is the critical limit most of design decisions must take another path.
 
 My choice for design is a Atmega8, a MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, with some (R16 to R31) that could be used as 8 x 16 bits.
 
-There are many low cost MCU with far more resources and pleny of SRAM and flash. Why use an old MCU for hosting Forth ? Most to refine paradigms and understood how forth works inside, looking from behind the stacks.
+There are many low cost MCU with far more resources and pleny of SRAM and flash. Why use an old MCU for hosting Forth ? Most to refine paradigms and understood how forth works inside, looking from behind the stacks. 
 
-For comparation, in 1979, the PDP-11, was six 16-bit registers, one stack pointer and one program counter, unifed memory addressing and devices.
-http://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP11_Handbook1979.pdf
+Many challenges to resolve, how make a minimal bios, what basic word set,  how update flash memory, how access internal resources, etc. Learn from previous implementations and adapt to survice.
+
+For comparation, in 1979, the PDP-11, was eight 16-bit registers, ( including one stack pointer and one program counter), unifed memory addressing and devices. http://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP11_Handbook1979.pdf. 
 
 # Memory Models
 
-Forth born in  CPUs with Von Neumann memory paradigm, were instructions and data share same address space and external magnetic devices stores data for permanent read and write cycles. Else for Read Only Memory, with main system routines, and I/O Mapped Memory, all Random Access Memory, where Forth lives, can be changed with same instructions. 
+Forth born in  CPUs with Von Neumann memory paradigm, were instructions and data share same address space and external magnetic devices stores data for permanent read and write cycles. Main system routines are stored in Read Only Memory, with reserved address for I/O Mapped Memory, but all Random Access Memory, where Forth lives, can be changed with same CPU instructions. 
 
 Modern MCUs uses Harvard memory paradigm, instructions and data do not share address, and the program memory is flash with about 10.000 cycles of read and write, and static random access memory, those spaces have separated MCUs instructions and processes to be changed, and this makes a fundamental diference at implementations of Forth.
 
