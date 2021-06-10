@@ -92,9 +92,9 @@ When defining a new word between COLON (:) and SEMI (;), copy the actual flash p
 
 When defining words with CREATE and DOES>, 
 
-# References
+# Implementation References
 
-# 1. In eforth for Cortex M4,  http://forth.org/OffeteStore/1013_eForthAndZen.pdf, to use in a ESP32, Dr. C.H.Ting uses a optimal approach for forth engine, with cpu family specific instructions (ISA) *inline into dictionary*.
+1. In eforth for Cortex M4,  http://forth.org/OffeteStore/1013_eForthAndZen.pdf, to use in a ESP32, Dr. C.H.Ting uses a optimal approach for forth engine, with cpu family specific instructions (ISA) *inline into dictionary*.
 
 _in my opinion, is the best and ideal solution per cpu_ (at cost of size and portability)
 
@@ -118,11 +118,11 @@ _in my opinion, is the best and ideal solution per cpu_ (at cost of size and por
     all compond words have a payload per reference;
     the memory model is unified, flash and sdrom are continuous address;
     BL accepts +/- 32 Mb offset, then dictionary must be less than 32 MB, 
-      (4 bytes per word then 8M, 2 words per reference then 4M)  
+       (4 bytes per word then 8M, 2 words per reference then 4M)  
     
     Uses many memory than a Atmega8 have, also no unified memory model, but lots of SRAM.
     
-# 2. In amforth for AVR family, http://amforth.sourceforge.net/,  
+2. In amforth for AVR family, http://amforth.sourceforge.net/,  
 
 ; the interpreter, XH:XL is Instruction pointer, ZH:ZL is program memory pointer, WH:WL is working register, Tmp1:Tmp0 is a scratch temporary
 
@@ -169,17 +169,18 @@ _in my opinion, is the best and ideal solution per cpu_ (at cost of size and por
     the memory model is not unified, separate address for flash, sdram.
     why two "adiw WL, 1" ? Adjust Z to a even address
 
-# 3. In flashforth, https://flashforth.com/index.html, for avr uCs with at least 32k flash,
-    uses SP for return stack, uses Y for data stack, uses Z as address pointer
+3. In flashforth, https://flashforth.com/index.html, for avr uCs with at least 32k flash
+    
+      uses SP for return stack, uses Y for data stack, uses Z as address pointer
 
-    *interleaves rcall and rjmp inside dictionary;*
-    all dicionary is CPU dependent;
-    all twig words have a payload as first and last references;
-    all leaf words have a payload as self reference and last jump;
+     *interleaves rcall and rjmp inside dictionary;*
+     all dicionary is CPU dependent;
+     all twig words have a payload as first and last references;
+     all leaf words have a payload as self reference and last jump;
     
-    Can not run into a Atmega8 with 8k flash.
+     Can not run into a Atmega8 with 8k flash.
     
-# 4. In this F2U implementation for ATMEGA8, there is no use of call, return, pop and push.
+4. In this F2U implementation for ATMEGA8, there is no use of call, return, pop and push.
       
 ; the inner interpreter
 
@@ -211,7 +212,7 @@ _in my opinion, is the best and ideal solution per cpu_ (at cost of size and por
     ror z30
     .endm
     
-    _void:
+    _ends:
       ; does nothing and mark as primitive
      nop
       
@@ -226,35 +227,39 @@ _in my opinion, is the best and ideal solution per cpu_ (at cost of size and por
      
       ; if zero then is a primitive, go exec it
      cp wrk_low, wrk_high
-     brbs 1, _EXEC
+     brbs 1, _exec
      
     _enter:
       ; else 
       ; push isp into rsp
      rspush isp_low, isp_high
       ; is a compound reference, go next it
-     rjmp _NEXT 
+     rjmp _next
     
-    _exec:
-     movw isp_low, wrk_low
+    _exec: *****zzzzz:>
+     ; movw isp_low, wrk_low
+     lsr ips_low
+     ror ips_high
      ijmp
-    
     
 ; the dicionary, PFAs are (LINK+NAME+REFERENCES)
   
     ;------------- independent
     
-    twig ==>  ref, ..., leaf, ... , ref, (_void)
+    twig ==>  ref, ..., leaf, ... , ref, (_ends)
     
     leaf ==>  0x00, (ptr)
     
     ;--------------dependent
+    
     ; table trampolim
     (rjmp ref), (rjmp ref) ....
+    
     ; inner interpreter
     (_void) (0x00), _exit, _next, _enter, _exec  
+    
     ; code for primitives
-    (ptr) code ... code (rjmp _exit)
+    (ptr) code ... code (rjmp _ends)
      
 ; considerations
     
@@ -301,6 +306,7 @@ _in my opinion, is the best and ideal solution per cpu_ (at cost of size and por
 # Specifics
  
  For ATmega8 MCU specifics plan, using 
+ 
     a MiniCore and optboot;
     a internal clock of 8MHz and 
     a uart at 9600, 8N1, asynchronous;
@@ -309,32 +315,33 @@ _in my opinion, is the best and ideal solution per cpu_ (at cost of size and por
     a pseudo 16bit random generator; 
     a adapted djb hash generator for 16bits;
     all 8bits and 16bits math from AVR200 manual;
-   
- **still do not write to flash.**
     
-# Decisions
+    update flash memory using a sram buffer ***
+
+    
+# Specifics
 
   all dictionary in flash;
-  all constants and variables in sram;
+  all constants in flash;
+  all values and variables in sram;
   eeprom preserves constants;
   a cell is 16 bits;
+  little endian, low byte at low address;
   a char is ASCII 7 bits, one byte at SRAM, one cell at stacks.
-  little endian, low byte at low address.
   maximum word lenght is 15; 
   four bits flags (IMMEDIATE, COMPILE, HIDEN, TOGGLE) per word;
-  numbers are signed two-complement;
-  parameter stack is 20 words, return stack is 20 words;
-  terminal input buffer is 80 bytes, scratch-pad is 80 bytes, hold is 16 bytes;
-  variables and constants uses 128bytes
-  free ram is about 640 bytes;
   word names are padded with space (0x20)
+  numbers are signed two-complement;
+  parameter stack is 18 words, return stack is 18 words;
+  terminal input buffer is 72 bytes, scratch-pad is 24 bytes, hold is 16 bytes;
+  all buffers ends in \0
   
 # Notes
 
-  1. primitives (Leaf) routine does not do any call. Compound (Twig) routines do.
+  1. primitives (Leaf) routine does not do any call or jump. Compound (Twig) routines do.
   2. index routines counts downwards until 0, ever, exact as C: for (; n != 0 ; n--) { ~~~ }
   3. no bounds check, none.
   4. compare bytes: COMPARE return FALSE or TRUE, only;
-  5. move bytes: CMOVE upwards, CMOVE> downwards;
+  5. move bytes: only MOVE done, ( still no CMOVE upwards, no CMOVE> downwards);
   6. word names lenght can be 1 to 15, padded with space (0x20);
 
