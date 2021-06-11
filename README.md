@@ -188,58 +188,51 @@ _in my opinion, is the best and ideal solution per cpu_ (at cost of size and por
     ; WARNING: this inner still only works for program memory (flash) 
     ;
     
-    isp_low = r30
-    isp_high = 31
-    wrk_low = r24
-    wrk_high = r25
-    
-    .macro rspush
-    st Y+, @0
-    st Y+, @1
-    .endm
-    
-    .macro rspull
-    ld @1, -Y
-    ld @0, -y
-    .endm
-    
-    .macro pmload
-    lsl z30
-    rol z31
-    lpm @0, Z+
-    lpm @1, Z+
-    ror z31
-    ror z30
-    .endm
-    
     _ends:
-      ; does nothing and mark as primitive
+     ; does nothing and mark as primitive
      nop
       
     _exit:
-      ; pull isp from rsp
-     rspull wrk_low, wrk_high
-
+     ; pull isp from rsp
+     ld r24, Y+
+     ld r25, Y+
+   
     _next:
-      ; load wrk with contents of cell at isp and auto increments isp
-     movw isp_low, wrk_low
-     pmload wrk_low, wrl_high
+     ; load wrk with contents of cell at isp and auto increments isp
      
-      ; if zero then is a primitive, go exec it
-     cp wrk_low, wrk_high
+     movw r30, r24
+     
+     lsl z30
+     rol z31
+     lpm r24, Z+
+     lpm r25, Z+
+     ror z31
+     ror z30
+    
+     ; if zero then is a primitive, go exec it
+     cp r25, r24
      brbs 1, _exec
      
     _enter:
-      ; else 
-      ; push isp into rsp
-     rspush isp_low, isp_high
-      ; is a compound reference, go next it
+     ; push isp into rsp
+     st -Y, r30
+     st -Y, r31
+    
+     ; go next it
      rjmp _next
     
-    _exec: *****zzzzz:>
-     ; movw isp_low, wrk_low
-     lsr ips_low
-     ror ips_high
+    _exec: 
+     ; execute it
+     .ifdef TRAMPOLIM
+        lsl z30
+        rol z31
+        lpm r24, Z+
+        lpm r25, Z+
+        ror r31
+        ror r30
+        movw r30, r24
+     .endif
+ 
      ijmp
     
 ; the dicionary, PFAs are (LINK+NAME+REFERENCES)
