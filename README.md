@@ -4,47 +4,99 @@
 
 # *"To master riding bicycles you have do ride bicycles"*
 
-This is a evolution from what I learning with u2forth, ATMEGA8 gcc assembler and forth interpreters from eforth, avr-forth, gforth, flashforth, etc
+This is a evolution from what I learning with u2forth, ATMEGA8 gcc assembler and forth implementations as eforth, amforth, avr-forth, gforth, flashforth, etc
+
+**"this is a work in progress, not completed"**
 
 For now:
 
-  The inner interpreter is done and is very effcient.
-  The primitive words are done, as minimal set from eforth plus some extras.
+  10/06/2021, Still no operational
+
+    The basic functional words are done, as minimal set for parse, find, evaluate, number, create, does;
+    
+    Controls
+    a)  testing top of stack:
+      
+      *standart implementation for*
+      (if ... else ... then ...), forward jumps, (1)
+      (begin ... again), inconditional backward jump, (2)
+      (begin ... until), conditional backward jump, (2)
+      
+      *non-standart implementation for*
+      (while ... repeat), conditional forward jump and inconditional backward jump, (3)
+      (while ... again), maybe ?
+      att: *repeat jumps to while*, both independent of begin.
+    
+    b) testing values on return stack 
+      *not for now*
+     (do ... leave ... loop), counter backward jump, test at loop
+     (for ... next), counter backward jump, test at for
+        
+  12/05/2021,  Still no operational
   
-  But I'm at easter egg of forth:
-    I have sources of words as ": word ~~~ ;" and I need a forth done to compile or
-    I have sources of words compiled with some forth and need use same forth engine;
+    Start basic assembler for parse, find, evaluate, number, create, does;
+    Defined specific functions for flash memory. All changes at dictionary are done in a buffer sram. 
+    Created routines, a **flash** for init the buffer, from flash page of HERE, and a **flush** for copy to flash update
   
-  Then sectorforth (https://github.com/cesarblum/sectorforth) comes to simplifly all, and I restart again.
+  08/04/2021, resumes from 2020
   
-  The optiboot v8.0 could do program flash memory, as do_spm, so will use it as boot loader.
+    The inner interpreter is done and is very effcient;
   
-  12/05/2021  Still no operational
+    The primitive words are done, as minimal set from forth plus some extras;
   
+    But I'm at easter egg of forth:
+      I have sources of words as ": word ~~~ ;" and I need a forth done to compile or
+      I have sources of words compiled with some forth and need use same forth engine;
+  
+    Then sectorforth (https://github.com/cesarblum/sectorforth) comes to simplifly all, and I restart again.
+  
+    The optiboot v8.0 could do program flash memory, as do_spm, so will use it as boot loader.
+  
+take a look at Notes.md
+
 # Introduction
+
+*In the chat session Chuck was asked, "How did you come to the conclusion that Forth was too complex, and that sourceless programming was your next move?" His reply was, "Maybe by reading the Forth Standard." [Moore, 2002] http://www.ultratechnology.com/levels.htm *
 
 Forth have two types of words, those called natives, ad primitive ad leaves, which are coded in specific CPU or MCU instructions, and those called forths, ad compounds ad twigs, which are sequences of references to words.
 
-I want a forth with a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a MCU family and a outer interpreter and compound words independent of any specific CPU family, like a imutable list with rellocable references without any code inline.
-
-A Atmega8 is a MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, with some (R16 to R31) that could be used as 16 bits.
-
-There are many low cost MCU with far more resources and pleny of SRAM and flash. Why use an old MCU for hosting Forth ? 
-
-Most to refine paradigms and understood how forth works from inside, form behind the stacks.
-
-look at Notes.md
+I want a forth with: 
+1) a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a MCU family; 
+2) all compound words independent of any specific MCU family, like a imutable list with rellocable references without any code inline.
 
 # Size or Speed ?
 
-Most of Forth implementations goes "runnig for speed" for timming applications or simply to be "the most faster than", but when memory space is the critical limit most of design decisions must take another route.
+Most of Forth implementations goes "runnig for speed" for timming applications or simply to be "the most faster than", but when memory space is the critical limit most of design decisions must take another path.
 
+My choice for design is a Atmega8, a MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, 32 (R0 to R31) 8bits registers, with some (R16 to R31) that could be used as 8 x 16 bits.
 
-# References
+There are many low cost MCU with far more resources and pleny of SRAM and flash. Why use an old MCU for hosting Forth ? Most to refine paradigms and understood how forth works inside, looking from behind the stacks. 
 
-# 1. In eforth for Cortex M4,  http://forth.org/OffeteStore/1013_eForthAndZen.pdf, to use in a ESP32, Dr. C.H.Ting uses a optimal approach for forth engine, with cpu family specific instructions (ISA) *inline into dictionary*.
+Many challenges to resolve, how make a minimal bios, what basic word set,  how update flash memory, how access internal resources, etc. Learn from previous implementations and adapt to survice.
 
-_in my opinion best and ideal solution per cpu_ (at cost of size and portability)
+For comparation, in 1979, the PDP-11, was eight 16-bit registers, ( including one stack pointer and one program counter), unifed memory addressing and devices. http://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP11_Handbook1979.pdf. 
+
+# Memory Models
+
+Forth born in  CPUs with Von Neumann memory paradigm, were instructions and data share same address space and external magnetic devices stores data for permanent read and write cycles. Main system routines are stored in Read Only Memory, with reserved address for I/O Mapped Memory, but all Random Access Memory, where Forth lives, can be changed with same CPU instructions. 
+
+Modern MCUs uses Harvard memory paradigm, instructions and data do not share address, and the program memory is flash with about 10.000 cycles of read and write, and static random access memory, those spaces have separated MCUs instructions and processes to be changed, and this makes a fundamental diference at implementations of Forth.
+
+In AVR MCUs flash memory is erased and writed in pages, with sizes varyng from 32 to 128 words, there is no way to change only one specific word.
+
+Many Forths go around this limitation with schemes of mapping where dictionary is writtren and ping-pong buffers to perform as a transparent, or not, system, some uses explicit sram, eeprom, and flash spaces and leaves for user where and what use.
+
+Looking into Forth standarts (79, 83, ANS, 2012, FIG, etc) and implementations, (using mnemonics for those words) there are small lists of 1) words that changes the dictionary as COMMA (,), CREATE, DOTSTR (."); 2) words that changes flag bits as IMMEDIATE, SMUDGE, HIDE, REVEAL; 3) words that changes memory as STORE (!), MOVE, FILL; 
+
+When defining a new word between COLON (:) and SEMI (;), copy the actual flash page correspondent of DP pointer to sram buffer, start pointers offsets, make the changes into sram buffer and when is full, or at end, flush contents and restart pointers; 
+
+When defining words with CREATE and DOES>, 
+
+# Implementation References
+
+1. In eforth for Cortex M4,  http://forth.org/OffeteStore/1013_eForthAndZen.pdf, to use in a ESP32, Dr. C.H.Ting uses a optimal approach for forth engine, with cpu family specific instructions (ISA) *inline into dictionary*.
+
+_in my opinion, is the best and ideal solution per cpu_ (at cost of size and portability)
 
 ; the inner interpreter, in macro code:
 
@@ -66,11 +118,11 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     all compond words have a payload per reference;
     the memory model is unified, flash and sdrom are continuous address;
     BL accepts +/- 32 Mb offset, then dictionary must be less than 32 MB, 
-      (4 bytes per word then 8M, 2 words per reference then 4M)  
+       (4 bytes per word then 8M, 2 words per reference then 4M)  
     
     Uses many memory than a Atmega8 have, also no unified memory model, but lots of SRAM.
     
-# 2. In amforth for AVR family, http://amforth.sourceforge.net/,  
+2. In amforth for AVR family, http://amforth.sourceforge.net/,  
 
 ; the interpreter, XH:XL is Instruction pointer, ZH:ZL is program memory pointer, WH:WL is working register, Tmp1:Tmp0 is a scratch temporary
 
@@ -117,17 +169,18 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     the memory model is not unified, separate address for flash, sdram.
     why two "adiw WL, 1" ? Adjust Z to a even address
 
-# 3. In flashforth, https://flashforth.com/index.html, for avr uCs with at least 32k flash,
-    uses SP for return stack, uses Y for data stack, uses Z as address pointer
+3. In flashforth, https://flashforth.com/index.html, for avr uCs with at least 32k flash
+    
+      uses SP for return stack, uses Y for data stack, uses Z as address pointer
 
-    *interleaves rcall and rjmp inside dictionary;*
-    all dicionary is CPU dependent;
-    all twig words have a payload as first and last references;
-    all leaf words have a payload as self reference and last jump;
+     *interleaves rcall and rjmp inside dictionary;*
+     all dicionary is CPU dependent;
+     all twig words have a payload as first and last references;
+     all leaf words have a payload as self reference and last jump;
     
-    Can not run into a Atmega8 with 8k flash.
+     Can not run into a Atmega8 with 8k flash.
     
-# 4. In this F2U implementation for ATMEGA8, there is no use of call, return, pop and push.
+4. In this F2U implementation for ATMEGA8, there is no use of call, return, pop and push.
       
 ; the inner interpreter
 
@@ -135,74 +188,71 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     ; WARNING: this inner still only works for program memory (flash) 
     ;
     
-    isp_low = r30
-    isp_high = 31
-    wrk_low = r24
-    wrk_high = r25
-    
-    .macro rspush
-    st Y+, @0
-    st Y+, @1
-    .endm
-    
-    .macro rspull
-    ld @1, -Y
-    ld @0, -y
-    .endm
-    
-    .macro pmload
-    lsl z30
-    rol z31
-    lpm @0, Z+
-    lpm @1, Z+
-    ror z31
-    ror z30
-    .endm
-    
-    _void:
-      ; does nothing and mark as primitive
+    _ends:
+     ; does nothing and mark as primitive
      nop
       
     _exit:
-      ; pull isp from rsp
-     rspull wrk_low, wrk_high
-
+     ; pull isp from rsp
+     ld r24, Y+
+     ld r25, Y+
+   
     _next:
-      ; load wrk with contents of cell at isp and auto increments isp
-     movw isp_low, wrk_low
-     pmload wrk_low, wrl_high
+     ; load wrk with contents of cell at isp and auto increments isp
      
-      ; if zero then is a primitive, go exec it
-     cp wrk_low, wrk_high
-     brbs 1, _EXEC
+     movw r30, r24
+     
+     lsl z30
+     rol z31
+     lpm r24, Z+
+     lpm r25, Z+
+     ror z31
+     ror z30
+    
+     ; if zero then is a primitive, go exec it
+     cp r25, r24
+     brbs 1, _exec
      
     _enter:
-      ; else 
-      ; push isp into rsp
-     rspush isp_low, isp_high
-      ; is a compound reference, go next it
-     rjmp _NEXT 
+     ; push isp into rsp
+     st -Y, r30
+     st -Y, r31
     
-    _exec:
-     movw isp_low, wrk_low
+     ; go next it
+     rjmp _next
+    
+    _exec: 
+     ; execute it
+     .ifdef TRAMPOLIM
+        lsl z30
+        rol z31
+        lpm r24, Z+
+        lpm r25, Z+
+        ror r31
+        ror r30
+        movw r30, r24
+     .endif
+ 
      ijmp
-    
     
 ; the dicionary, PFAs are (LINK+NAME+REFERENCES)
   
     ;------------- independent
     
-    twig ==>  ref, ..., leaf, ... , ref, (_void)
+    twig ==>  ref, ..., leaf, ... , ref, (_ends)
     
     leaf ==>  0x00, (ptr)
     
     ;--------------dependent
+    
     ; table trampolim
     (rjmp ref), (rjmp ref) ....
+    
     ; inner interpreter
     (_void) (0x00), _exit, _next, _enter, _exec  
+    
     ; code for primitives
-    (ptr) code ... code (rjmp _exit)
+    (ptr) code ... code (rjmp _ends)
      
 ; considerations
     
@@ -249,6 +299,7 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
 # Specifics
  
  For ATmega8 MCU specifics plan, using 
+ 
     a MiniCore and optboot;
     a internal clock of 8MHz and 
     a uart at 9600, 8N1, asynchronous;
@@ -257,32 +308,33 @@ _in my opinion best and ideal solution per cpu_ (at cost of size and portability
     a pseudo 16bit random generator; 
     a adapted djb hash generator for 16bits;
     all 8bits and 16bits math from AVR200 manual;
-   
- **still do not write to flash.**
     
-# Decisions
+    update flash memory using a sram buffer ***
+
+    
+# Specifics
 
   all dictionary in flash;
-  all constants and variables in sram;
+  all constants in flash;
+  all values and variables in sram;
   eeprom preserves constants;
   a cell is 16 bits;
+  little endian, low byte at low address;
   a char is ASCII 7 bits, one byte at SRAM, one cell at stacks.
-  little endian, low byte at low address.
   maximum word lenght is 15; 
   four bits flags (IMMEDIATE, COMPILE, HIDEN, TOGGLE) per word;
-  numbers are signed two-complement;
-  parameter stack is 20 words, return stack is 20 words;
-  terminal input buffer is 80 bytes, scratch-pad is 80 bytes, hold is 16 bytes;
-  variables and constants uses 128bytes
-  free ram is about 640 bytes;
   word names are padded with space (0x20)
+  numbers are signed two-complement;
+  parameter stack is 18 words, return stack is 18 words;
+  terminal input buffer is 72 bytes, scratch-pad is 24 bytes, hold is 16 bytes;
+  all buffers ends in \0
   
 # Notes
 
-  1. primitives (Leaf) routine does not do any call. Compound (Twig) routines do.
+  1. primitives (Leaf) routine does not do any call or jump. Compound (Twig) routines do.
   2. index routines counts downwards until 0, ever, exact as C: for (; n != 0 ; n--) { ~~~ }
   3. no bounds check, none.
   4. compare bytes: COMPARE return FALSE or TRUE, only;
-  5. move bytes: CMOVE upwards, CMOVE> downwards;
+  5. move bytes: only MOVE done, ( still no CMOVE upwards, no CMOVE> downwards);
   6. word names lenght can be 1 to 15, padded with space (0x20);
 
