@@ -47,9 +47,9 @@
     
     matriz of interpret now is:
 
-						state 1		state 0		postone 1
-		common word		compile		execute		compile
- 	 immediate word		execute		execute		compile
+                            state 1        state 0        postone 1
+         common word        compile        execute        compile
+      immediate word        execute        execute        compile
     
     why not same for  ', [']
 
@@ -106,7 +106,7 @@ forth:
 ;;----------------------------------------------------------------------
 ; inner interpreter,
 ;
-HEADER "ENDS", "ENDS"
+HEADER "ENDS", "_ends"
 ; does nothing and mark instructions code
     NOOP
 
@@ -116,7 +116,7 @@ _exit:
 
 ; load w with contents of cell at ip  
 _next:            
-    movw ips_low, wrk_low
+	mov isp_low, wrk_low
     pmload wrk_low, wrk_high
 
 ; if zero then is a exec 
@@ -128,18 +128,13 @@ _enter:
     rspush ips_low, ips_high
     rjmp _next
 
+; then exec it 
 _exec:
-    ; convert to words
-    movw ips_low, wrk_low
 
 .ifdef TRAMPOLIM
     pmload wrk_low, wrk_high
     movw ips_low, wrk_low
 .endif
-
-    ; byte to address
-    lsr ips_low
-    ror ips_high
 
     ijmp
 
@@ -164,7 +159,7 @@ _exec:
 
 ;----------------------------------------------------------------------
 ;ok ( w1 w2 -- w2 AND w1 )
-HEADER "0", "zero_"
+HEADER "0", "ZERO"
     NOOP
 _ffalse:
     clr wrk_low
@@ -401,7 +396,7 @@ HEADER "(immediate)", "immediate"
     ldi ips_high, hi8(LINE)
     adiw ips_low, 3
     srload wrk_low
-    andi wrk_low, F_IMMEDIATE
+    ori wrk_low, F_IMMEDIATE
     sbiw ips_low, 1
     srsave wrk_low
     POON
@@ -438,8 +433,8 @@ HEADER "(doref)", "doref"
 
 ;----------------------------------------------------------------------
 ;
-; ok ( --- a u | 0 ) 
-;    search TIB start at TOIN for next word delimited by 32 or \0
+; ok ( c --- a u | 0 ) 
+;    search TIB start at TOIN for next word delimited by c or \0
 ;    returns start of word and u lenght
 ;     or zero if no word
 ;
@@ -455,7 +450,7 @@ HEADER "(parse)", "parse"
 	clr tos_high
 
 2:  
-    ; skips while equal delimiter (space)
+    ; skips while equal delimiter
     srload wrk_low
     ; if \0
     cp wrk_low, tos_high
@@ -467,7 +462,7 @@ HEADER "(parse)", "parse"
     sbiw ips_low, 1
 	movw nds_low, ips_low
 4:  
-    ; skips while not equal delimiter (space)
+    ; skips while not equal delimiter
     srload wrk_low
     ; if \0
     cp wrk_low, tos_high
@@ -779,25 +774,22 @@ HEADER "(find)", "find"
 22:
 	; immediate (1)
 	inc wrk_low
-	rjmp 99f
+	pushw
 24:
 	; common (-1)
 	dec wrk_low
-    rjmp 99f
+	pushw
 
 30: 
     ; not found (0)
     ; restore psp
     rspull psp_low, psp_high
-    
     ; restore address
     movw wrk_low, nds_low
     pspush wrk_low, wrk_high
-    
     ; set flag false
     clr wrk_low
     clr wrk_low
-99: 
     ; save results
 	pushw
 
@@ -919,7 +911,7 @@ HEADER "(nopostpone)", "nopostpone"
     NOOP
     ; clear postpone
     lds wrk_low, STATE+0
-    cbr wrk_low, BIT_POSTONE ; must not be bit 0
+    cbr wrk_low, BIT_POSTONE 
     rjmp states
     
 ;----------------------------------------------------------------------
@@ -1111,9 +1103,26 @@ HEADER "(number)", "number"
 ; ok ( --- a2 u ) 
 HEADER ".\"", "dotquote"
     NOOP
-; what do ????
 	POON	
     
+;----------------------------------------------------------------------
+;    ok ( a u -- ) 
+;
+;	called after parse ;)
+;
+HEADER    "<BUILDS", "builds"
+    NOOP
+	POON
+
+;----------------------------------------------------------------------
+;    ok ( a u -- ) 
+;
+;	called after parse ;)
+;
+HEADER    "DOES>", "does"
+    NOOP
+	POON
+
 ;----------------------------------------------------------------------
 ;    ok ( a u -- ) 
 ;
@@ -1159,6 +1168,15 @@ HEADER    "(create)", "create"
 	; load psp
 	rspull psp_low, psp_high
 
+	; LAST and HERE are update as SEMI is executed
+	; but if is out of a : ; ?
+	; if is a  execute ?
+/*
+
+; Recall that words defined by CREATE  
+; return the address of the next free dictionary 
+; location at the time they werecreated.
+
 	; point to next free cell
 	; push dp to stack
     lds wrk_low, HERE+0
@@ -1171,6 +1189,8 @@ HEADER    "(create)", "create"
 	; 
 	pspush wrk_low, wrk_high
 	
+	OR just use: create HERE 
+*/
 	; updates
 	rjmp line_void
 
@@ -1385,7 +1405,8 @@ HEADER "(quit)", "quit"
 ;
 ; ok comma
 HEADER ":", "colon"
-	.word iscompile, flash, HERE, AT, create, ENDS
+	.word iscompile, flash, HERE, AT, ; for LAST link
+	.word create, HERE, SWAP, ENDS
 
 
 ;----------------------------------------------------------------------
@@ -1395,6 +1416,23 @@ HEADER ";", "semmi"
 	.word isexecute, flush, updateep, ENDS
 
 ;----------------------------------------------------------------------
+;
+; ok 
+;	
+HEADER "(updateep)", "updateep"
+	NOOP
+	.word LAST, TO, hereto, lastto, ENDS
+
+
+;----------------------------------------------------------------------
+;
+; ok 
+;	
+HEADER "CREATE", "CREATE"
+	NOOP
+	.word create, HERE, ENDS
+
+;----------------------------------------------------------------------
 ; ok variable
 ;	ZZZZZ must check init sram and limits
 ;
@@ -1402,14 +1440,6 @@ HEADER "(variable)", "variable"
 	.word (sram), DUP, AT, 
 	.word DUP, create, comma, 
 	.word DUP, ZERO, SWAP, TO, 
-	.word TWOLESS, SWAP, TO,
+	.word TWOMINUS, SWAP, TO,
 	.word updateep, ENDS
-
-;----------------------------------------------------------------------
-;
-; ok 
-;	
-HEADER "(updateep)", "updateep"
-	NOOP
-	.word LAST, TO, hereto, lastto, ENDS
 
