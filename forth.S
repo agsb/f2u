@@ -106,17 +106,16 @@ forth:
 ;;----------------------------------------------------------------------
 ; inner interpreter,
 ;
-HEADER "ENDS", "_ends"
+HEADER "ENDS", "ENDS"
 ; does nothing and mark instructions code
     NOOP
 
 ; pull ip from rsp
 _exit:             
-    rspull wrk_low, wrk_high
+    rspull ips_low, ips_high
 
 ; load w with contents of cell at ip  
 _next:            
-	mov isp_low, wrk_low
     pmload wrk_low, wrk_high
 
 ; if zero then is a exec 
@@ -126,6 +125,7 @@ _next:
 ; else is a reference
 _enter:            
     rspush ips_low, ips_high
+	mov ips_low, wrk_low
     rjmp _next
 
 ; then exec it 
@@ -389,7 +389,7 @@ HEADER  "WARM", "WARM"
 ;
 ; ok ( --- ) 
 ; tricky 
-; all new word starts at THIS=0, 1 and 2 bytes is link, 3 byte is size+flags
+; iBUGGED ZZZZ NOT REALLY all new word starts at THIS=0, 1 and 2 bytes is link, 3 byte is size+flags
 HEADER "(immediate)", "immediate"
     NOOP
     ldi ips_low, lo8(LINE)
