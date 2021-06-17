@@ -199,9 +199,6 @@ _in my opinion, is the best and ideal solution per cpu_ (at cost of size and por
    
     _next:
      ; load wrk with contents of cell at isp and auto increments isp
-     
-     movw r30, r24
-     
      lsl z30
      rol z31
      lpm r24, Z+
@@ -217,12 +214,14 @@ _in my opinion, is the best and ideal solution per cpu_ (at cost of size and por
      ; push isp into rsp
      st -Y, r30
      st -Y, r31
-    
+     
      ; go next it
+     movw r30, r24
      rjmp _next
     
     _exec: 
      ; execute it
+     
      .ifdef TRAMPOLIM
         lsl z30
         rol z31
