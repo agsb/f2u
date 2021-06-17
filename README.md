@@ -207,8 +207,8 @@ _in my opinion, is the best and ideal solution per cpu_ (at cost of size and por
       
     _exit:
      ; pull isp from rsp
-     ld r24, Y+
-     ld r25, Y+
+     ld r31, Y+
+     ld r30, Y+
    
     _next:
      ; load wrk with contents of cell at isp and auto increments isp
