@@ -69,6 +69,8 @@ I want a forth with:
 
 # Size or Speed ?
 
+*Keep it Simple*
+
 Most of Forth implementations goes "runnig for speed" for timming applications or simply to be "the most faster than", but when memory space is the critical limit most of design decisions must take another path.
 
 My choice for design is a Atmega8, a MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, with 32 (R0 to R31) 8 bits registers, with some (R16 to R31) that could be used as 16 bits.
@@ -80,6 +82,7 @@ Many challenges to resolve, how make a minimal bios, what basic word set, how up
 For comparation, in 1979, the PDP-11, was eight 16-bit registers, (including one stack pointer R6, and one program counter R7), unifed memory addressing and memory mapped devices. http://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP11_Handbook1979.pdf. 
 
 # Memory Models
+*Do not Speculate*
 
 Forth born in CPUs with Von Neumann memory paradigm, were instructions and data share same address space and external magnetic devices stores data for permanent read and write cycles. Main system routines are stored in Read Only Memory, with reserved address for I/O Mapped Memory, but all Random Access Memory, where Forth lives, can be changed with same CPU instructions. 
 
@@ -100,6 +103,7 @@ When defining a new word between COLON (:) and SEMI (;), copy the actual flash p
 When defining words with CREATE and DOES> use same aprouch.
 
 # Implementation References
+*Do it yourself*
 
 ## 1. In eforth for Cortex M4,  http://forth.org/OffeteStore/1013_eForthAndZen.pdf, to use in a ESP32, Dr. C.H.Ting uses a optimal approach for forth engine, with cpu family specific instructions (ISA) *inline into dictionary*.
 
