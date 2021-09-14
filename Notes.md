@@ -1,12 +1,12 @@
-Notes about this
+ Notes about this
 
 *still not operational*
 
 **25/05/2021**
 
-"Another way to look at the problem is to state that the language of thestandard does not match any Forth implementations except cmForth and Gforth. "  http://www.mpeforth.com/arena/SpecialWords3.pdf
+"Another way to look at the problem is to state that the language of the standard does not match any Forth implementations except cmForth and Gforth. "  http://www.mpeforth.com/arena/SpecialWords3.pdf
 
-my solution for the flash-sram dilema is implement a buffer where all compiled goes and does flash, to init, and flush, to update, from sram to flash memory, disgards many implementations, lenght is from heap of memory and all variables are allocated from bottom.
+My solution for the flash-sram dilema is implement a buffer where all compiled goes and does flash, to init, and flush, to update, from sram to flash memory, disgards many implementations, lenght is from heap of memory and all variables are allocated from bottom.
 
 about postpone, compile, execute, :
   postone implemented as a new status at STATE variable, valid only for next word, were any word is compiled.
