@@ -8,7 +8,6 @@ This is a evolution from what I learning with u2forth, ATMEGA8 gcc assembler and
 
 **"this is a work in progress, not completed"**
 
-
 take a look at changes.md
 
 # Introduction
@@ -17,13 +16,13 @@ take a look at changes.md
 
 Forth is language based in thread code, with a dictionary of words as named routines and two stacks for arguments.
 
-The dictionary have two types of words, those called primitives, ad natives ad leaves, which are coded in specific CPU or MCU instructions, and those called compounds, ad twigs, which are sequences of references to words.
+The dictionary have two types of words, those called primitives, ad natives ad leaves, which are coded in specific CPU or MCU instructions, and those called compounds, ad twigs, which are sequences with references to words.
 
 I want a forth with:
 
-  1) a minimal inner interpreter and primitives words (system, uart, interrupts, stacks, math, moves) dependent of a MCU family;
+  1) a minimal inner interpreter and primitives words (clock, uart, interrupts, stacks, math, moves) dependent of a MCU family;
 
-  2) all compound words independent of any specific MCU family, like a imutable list with rellocable references without any assembler specifc code inline.
+  2) all compound words independent of any specific MCU family,  without any assembler specifc code inline, like a imutable list with rellocable references.
 
 # Size or Speed ?
 
