@@ -2,6 +2,23 @@
 
 *still not operational*
 
+**14/10/2021**
+
+"Finally I understood that Charles Moore invents both BL and BLR instruction in late 1970's"
+
+I found a bottleneck with >R and R> words, as those uses the return stack and also any compound word, that uses docolon and semmis. But the solution is unique and easy, just do no use any compound word between >R and R> .
+
+The most undervalued feature of Forth is the IP register. It performs exactly as modern instructions BL and BLR, keeping in a register the next address at queue, for routines that do not use any call inside.
+
+Then all primitives words uses just IP as cursor for queue while all compound words uses return stack for queue.
+
+Minor changes done to internal interpreter also a new pair of registers reserved for  preserve  IP.
+
+refactoring the inner interpret to satisfy both call/return and branch/link styles.
+
+refactoring macros and memory reserved variables
+
+
 **25/05/2021**
 
 "Another way to look at the problem is to state that the language of the standard does not match any Forth implementations except cmForth and Gforth. "  http://www.mpeforth.com/arena/SpecialWords3.pdf
@@ -16,6 +33,34 @@ about postpone, compile, execute, :
     at common word does        compile   execute   compile
     at immediate word  does    execute   execute   compile
     
+    
+24/05/2021
+    
+    Done comma, flash, flush for solve sram//flash
+
+    implemented postpone as a flag to always compile next word only, solves compile and [compile]
+    
+    matriz of interpret now is:
+
+                            state 1        state 0        postone 1
+         common word        compile        execute        compile
+      immediate word        execute        execute        compile
+    
+    why not same for  ', [']
+
+19/05/2021
+
+    Rewrite for plain use of sram as buffer for flash, 
+
+02/05/2021
+
+    Rewrite again using sectorforth as minimal design
+
+18/04/2021
+
+    Rewrite all from u2f*, using a new minimal forth engine as LAST word 
+
+
     
 **12/05/2021**
 

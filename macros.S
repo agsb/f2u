@@ -11,19 +11,22 @@
 ;
 
 ; reserved fo interrupt timer0 
-	; counter for timer0
+
+; counter for timer0
 #define tmr_low r2
 #define tmr_high r3
-	; offset for timer0
+
+; offset for timer0
 #define offs_low r4
-	; sreg reserved
+
+; sreg reserved
 #define sreg_low r5
 
 ; generic use
-#define _work_ r18
-#define _zero_ r19
+#define _work_ r16
+#define _zero_ r17
 
-; Z instruction pointer for access sram and flash high memory
+; Z generic pointer for access sram and flash memory
 #define ips_low r30
 #define ips_high r31
 
@@ -47,6 +50,15 @@
 #define tos_low r20
 #define tos_high r21
 
+; this could be a sram address between 0x40 and 0xbf, 
+; or 0x0060, 0x0061 using LD and ST but we have spare registers
+; and movw is small and clear
+
+; Instruction pointer register for branch and link return
+#define ipr_low r18
+#define ipr_high r19
+
+
 ;----------------------------------------------------------------------
 ;
 ; version information
@@ -62,18 +74,6 @@
     .byte 8f - 7f
 7:  .ascii "\string"
 8:  .balign 2
-.endm
-
-;----------------------------------------------------------------------
-;
-; all leaf must start with NOOP and end with POON
-;
-.macro NOOP
-    nop
-.endm
-
-.macro POON
-    rjmp _exit
 .endm
 
 ;----------------------------------------------------------------------
@@ -192,28 +192,32 @@ hd_\label:
 ;    sizes
 ;
 ; "Column 72 means Continue", 72 always \0
+;   Readability is good
     TIB_SIZE = 72
 
 ; small collate for numbers and words
+;   no more than 16 chars in a 16bit number system
     PIC_SIZE = 16
 
-; stacks 18 words deep
+; stacks 18 words deep. WISE as M00re said.
     STACK_SIZE = 36
 
 ;----------------------------------------------------------------------
 ;    eeprom used
 ;
     eeprom = 0x00
-    e_void = eeprom + 0
-    e_turn = eeprom + 2
-    e_seed = eeprom + 4
-    e_here = eeprom + 6
-    e_last = eeprom + 8
-    e_sram = eeprom + 10 ; as a stack
-    e_erom = eeprom + 12 ; as a stack 
+    e_void = eeprom + 0 ; always zero
+    e_turn = eeprom + 2 ; turnkey rotine after boot
+    e_seed = eeprom + 4 ; seed for random
+    e_last = eeprom + 6 ; last link addres to dictionary 
+    e_here = eeprom + 8 ; next free flash address for dictionary
+    e_were = eeprom + 10 ; next free sram address for variables, as stack
+    e_erom = eeprom + 12 ; next free eprom address for values, as stack
     
 ;----------------------------------------------------------------------
 ;    flags 
+;   words can be 1 to 16 chars lenght, 
+;   almost over for normal english words http://norvig.com/mayzner.html
 ;
 ; IMMEDIATE, COMPILE, HIDEN, TOGGLE
 ;
