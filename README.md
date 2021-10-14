@@ -160,7 +160,9 @@ high (most) efficient code;
 
 ## 4. In this F2U implementation for ATMEGA8, there is no use of call, return, pop and push
 
-  note: using AVR pseudo 16 bit registers X (26 27), Y (28 29), Z (30 31)
+  note: using AVR pseudo 16 bit registers X (26 27) as SP, Y (28 29) as RP, 
+        Z (30 31) as generic memory pointer for sram and flash,
+        and W (24 25), T (22, 23), N (20, 21), I (18 19)
 
 ; the inner interpreter
 
@@ -180,29 +182,23 @@ high (most) efficient code;
     _next:
      ; load wrk with contents of cell at isp and auto increments isp
      ; mind specific address Flash memory squema for AVRs lpm 
-     lsl z30
-     rol z31
-     lpm r24, Z+
-     lpm r25, Z+
-     ror z31
-     ror z30
+    lsl z30
+    rol z31
+    lpm r24, Z+
+    lpm r25, Z+
+    ror z31
+    ror z30
     
-     ; if zero then is a primitive, go exec it
-     cp r25, r24
-     brbs 1, _exec
+     ; if not zero then is a reference to compound word, goto _enter 
+    cpi r24, 0
+    brne _enter
+    cpi r25, 0
+    brne _enter
+
+    _branch: 
+    ; else is a primitive then branch to it
      
-    _enter:
-     ; push isp into rsp
-     st -Y, r30
-     st -Y, r31
-     
-     ; go next it
-     movw r30, r24
-     rjmp _next
-    
-    _exec: 
-     ; execute it
-     
+     ; if using a table to primitives as a classic gcc trampolim
      .ifdef TRAMPOLIM
         lsl z30
         rol z31
@@ -212,9 +208,26 @@ high (most) efficient code;
         ror r30
         movw r30, r24
      .endif
- 
-     ijmp
+    
+    movw r24, r30   ; copy this reference
+    addw r24, +2    ; point to next reference
+    movw r18, r24   ; keep this reference
+    ijmp
 
+    _link:
+    movw r30, r18 ; points to next reference
+    rjmp _next
+   
+    _enter: 
+    ; push isp into rsp
+    st -Y, r30
+    st -Y, r31
+     
+    ; go next it
+    movw r30, r24
+    rjmp _next
+    
+  
 ; the dicionary, PFAs are (LINK+NAME+REFERENCES)
   
     ;------------- independent 
@@ -223,16 +236,16 @@ high (most) efficient code;
     
     leaf ==>  0x00, (ptr)
     
-    ;--------------dependent
+    ;-------------- dependent
     
     ; table trampolim
     (rjmp ref), (rjmp ref) ....
     
     ; inner interpreter
-    (_void) (0x00), _exit, _next, _enter, _exec  
+    (_void) (0x00), _exit, _next, _branch, _link, _enter  
     
     ; code for primitives
-    (ptr) code ... code (rjmp _ends)
+    (ptr) code ... code (rjmp _link)
 
 ; considerations
 
@@ -247,36 +260,40 @@ high (most) efficient code;
     all internal words defined between parentheses; 
     the memory model is not unified, separate address for flash and for sdram;
     ??? minus one reference execution per each compound word  at cost of a test if NULL
-    ??? all mature forths does inline or code at start of parameters 
+    ??? all mature forths does inline or code at start of parameters ???
 
 ; details
 
       Not using of SP intructions (pop, push, call, ret), leaving those for external extensions and libraries;
       Only using IJMP to primitives else use indirect push and pull for references address;
       All references are done using of indirect LD and ST with Z, Y, X, 16 bits registers;
-      All primitive words finish with a rjmp _exit, so the (inner + primitives) must be less than +2k words;
+      All primitive words finish with a rjmp _link, so the (inner + primitives) must be less than +2k words;
       
       address pointer is Z (r31:r30) for lpm/spm (flash), lds (sram), sts (sram) instructions;
       
       first stack pointer is Y (r29:r28) for forth return stack;
       second stack pointer is X (r27:r26) for forth data stack;
       
-      working register is W (r25:r24) for forth working register;
+      working register is W (r25:r24) for forth as acumulator register;
       
       temporary register T (r23:r22)
       temporary register N (r21:r20)
       
+      instruction register I (r18:r19)
+
       for convenience
+
         register r0:r1 as generic scratch 
         
         reserved for interrupts:
         registers r2:r3 used by counter of timer interrup, (borrow from flashforth)
         register r4, constant offset for timer0 
-        register r5, preserve sreg
+        register r5, to preserve sreg in interrupts
       
-        registers r6::r19 free
+        registers r6::r17 free
      
-      flash memory from $000 to $FFF ($0000 to $1FFF bytes), words NRWW ($C00 to $FFF) and RWW( $000 to $BFF)
+      flash memory from $000 to $FFF ($0000 to $1FFF bytes), 
+      words NRWW ($C00 to $FFF) and RWW($000 to $BFF)
       sram memory from  $0C0 to $45F (1024 bytes)
 
 # Specifics
