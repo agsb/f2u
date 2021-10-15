@@ -89,7 +89,7 @@ high (most) efficient code;
 
     all dicionary is CPU dependent;
     all compond words have a payload per reference;
-    the memory model is unified, flash and sdrom are continuous address;
+    the memory model is unified, flash and sram are continuous address;
 
 ### ; notes
 
@@ -132,9 +132,9 @@ high (most) efficient code;
 
 ; the dicionary, inside PFA
   
-    leaf ==>  (rjmp code), code ... , (rjmp DO_NEXT)
+    leaf ==>  (rjmp code0), code0, code ... , (rjmp DO_NEXT)
     
-    twig ==>  (code of DO_COLON), ptr ... ptr, (DO_EXIT)
+    twig ==>  (code of DO_COLON), ptr ... ptr, (ptr of DO_EXIT)
 
 ### ; considerations
 
