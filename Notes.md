@@ -2,21 +2,42 @@
 
 *still not operational*
 
+*still lots of english errors, please correct me*
+
+**15/10/2021**
+
+start to review of EPROM, SRAM, FLASH uses, memory maps, and easy variables allocation;
+
+start to review of dual buffer, sram to flash, flash to sram, flush sizes and how to.
+
+note to self: HATE any word that ends with a comma (,) else comma (,).
+
+todo: CREATE, <BUILDS, DOES>, 
+
+
 **14/10/2021**
 
-"Finally I understood that Charles Moore invents both BL and BLR instruction in late 1970's"
+"Finally I understood that Charles Moore invents both BL and BX instructions in late 1970's", or not really maybe.
 
-I found a bottleneck with >R and R> words, as those uses the return stack and also any compound word, that uses docolon and semmis. But the solution is unique and easy, just do no use any compound word between >R and R> .
+I found a possible bottleneck with >R and R> words, as those uses the return stack and also any compound word, that uses docolon and semmis. But the solution is unique and easy, just use balanced >R and R> inside the word. Any word. (thanks to poralexc for point it, reddit, r/forth, 2021/10)
 
-The most undervalued feature of Forth is the IP register. It performs exactly as modern instructions BL and BLR, keeping in a register the next address at queue, for routines that do not use any call inside.
+The most undervalued feature of Forth is the IP register. It performs exactly as modern instructions BL and BX, keeping in a register the next address at queue, for routines that do not use any call inside.
 
-Then all primitives words uses just IP as cursor for queue while all compound words uses return stack for queue.
+Then all primitives words uses just IP as cursor for queue while all compound words uses return stack for queue. It saves stack depth.
 
-Minor changes done to internal interpreter also a new pair of registers reserved for  preserve  IP.
+Minor changes done to internal interpreter also a new pair of registers reserved for preserve IP.
+
+using eprom as safe for keep variables between boots.
 
 refactoring the inner interpret to satisfy both call/return and branch/link styles.
 
-refactoring macros and memory reserved variables
+refactoring macros and memory reserved constants and variables.
+
+refactoring eprom use for load and save addresses for turnkey, seed, last, here, eram and erom 
+
+words can be 1 to 16 chars lenght, almost over for normal english words http://norvig.com/mayzner.html
+
+todo: someday, must unify call "data or parameter or argument" stack in all texts.
 
 
 **25/05/2021**
@@ -26,19 +47,18 @@ refactoring macros and memory reserved variables
 My solution for the flash-sram dilema is implement a buffer where all compiled goes and does flash, to init, and flush, to update, from sram to flash memory, disgards many implementations, lenght is from heap of memory and all variables are allocated from bottom.
 
 about postpone, compile, execute, :
-  postone implemented as a new status at STATE variable, valid only for next word, were any word is compiled.
-  then interpret works as:
+postone implemented as a new status in the STATE variable, valid only for the next word, in which any word must be compiled, then outer interpret works as:
   
-           state of interpret: COMPILE   EXECUTE   POSTONE
-    at common word does        compile   execute   compile
-    at immediate word  does    execute   execute   compile
+        state of interpret:       COMPILE   EXECUTE   POSTPONE
+        at common word does       compile   execute   compile
+        at immediate word does    execute   execute   compile
     
     
 24/05/2021
     
-    Done comma, flash, flush for solve sram//flash
+    Done comma, flash, flush for solve sram//flash, not full tested
 
-    implemented postpone as a flag to always compile next word only, solves compile and [compile]
+    implemented postpone as a flag to always compile next word only, solves compile and [compile], etc
     
     matriz of interpret now is:
 
@@ -76,19 +96,19 @@ AVR Atmegas have a harvard architeture them flash program memory (flash) and sta
 
 How to keep chars (1 byte) in dictionary at flash for use of c! and c@ and c, ? Don't do, keep all in words, low byte is char and clear high byte. How to keep chars (1 byte) in static memory ? as bytes :)
 
-Times for POP/PUSH with SP as same of LD/ST with Z, Y, X registers, so I decide use Y as return stack and X as parameter stack, leaving Z for access flash and sram.
+_Times for POP/PUSH with SP as same of LD/ST with Z, Y, X registers_, so I decide use Y as return stack and X as parameter stack, leaving Z for access flash and sram.
 
-Also no use CALL and RET, leaving SP for interrupts and tasks stuff.
+Also no use CALL and RET, leaving SP for external libraries, interrupts and tasks stuff.
 
 No need to have a complete ANS Forth in such small MCU, then trimmed almost stuff to essentials and funny :)
 
-No need for speed, but to try a concept of a immutable dictionary, no assembler instructions into dictionary.
+No need for speed, but to try a proof concept of a immutable dictionary, no assembler instructions into dictionary.
 
 I made a bag of notes from many implementations of eforth, amforth, flashforth, jonasforth, sectorforth, cmforth and etc, to learn about how it resolve issues of CPU, MCU, memory models, protocols, devices, speed, and do not reinvent the wheel.
 
 for dictionary struture, and vocabularies: a) unique LINK+NAME+CODE+PARAMETERS; b) link is the reference for previous word and is NULL at end of linked list; c) names are counted strings, with length of 1 to 15 7bit ASCII and 4 bit flags in counter byte (first one); d) CODE and PARAMETERS are implementation dependent at next section
 
-All forth constants are in flash and all forth variables are at top of sram
+All forth constants are in flash and all forth variables are at top of sram, how else ?
 
 A memory model for forth f2u in Atmega8 SRAM is sram_init = 0x060, variables, parameter stack 20 cells, return stack 20 cells, tib buffer 72 bytes, pad 72 buffer bytes, free, stack pointer 20 cells, sram_end = 0x45F.
 
@@ -115,8 +135,13 @@ Codes and Parameters
      _unest, pull instruction point from return
      _exec, jump to next cell 
      _exit, do _unest, do exec
-     _dolit, copy next cell to data, advance two cells
   
+     _branch, _zbranch
+     _dovar, copy a address in a cell to data, 
+     _docon, copy contents of a address in cell to data,
+     _dolit, copy next cell to data, advance two cells
+     _pushrs, pullrs, _pushds, _pullds, in return stack or data stack
+     
     im most forths those are specific inline opcodes 
     
     Since f2u intents a concept of immutable dictionary without inline code, the inner engine only see cells as references with one exception, if a cell reference is 0x0 then next cell is a reference to a leaf, to be executed.

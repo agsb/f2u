@@ -7,6 +7,8 @@
 ; can't use alias 
 ;----------------------------------------------------------------------
 ;
+; all defines, equs, macros are defined in this file
+;
 ; r1:r0 reserved and used in self instructions, as spm, mul, des etc
 ;
 
@@ -50,14 +52,13 @@
 #define tos_low r20
 #define tos_high r21
 
-; this could be a sram address between 0x40 and 0xbf, 
+; this could be done using a sram address between 0x40 and 0xbf, 
 ; or 0x0060, 0x0061 using LD and ST but we have spare registers
 ; and movw is small and clear
 
 ; Instruction pointer register for branch and link return
 #define ipr_low r18
 #define ipr_high r19
-
 
 ;----------------------------------------------------------------------
 ;
@@ -203,7 +204,7 @@ hd_\label:
     STACK_SIZE = 36
 
 ;----------------------------------------------------------------------
-;    eeprom used
+;    eeprom used (256 words total, 248 avaliabe) 
 ;
     eeprom = 0x00
     e_void = eeprom + 0 ; always zero
@@ -211,7 +212,7 @@ hd_\label:
     e_seed = eeprom + 4 ; seed for random
     e_last = eeprom + 6 ; last link addres to dictionary 
     e_here = eeprom + 8 ; next free flash address for dictionary
-    e_were = eeprom + 10 ; next free sram address for variables, as stack
+    e_eram = eeprom + 10 ; next free sram address for variables, as stack
     e_erom = eeprom + 12 ; next free eprom address for values, as stack
     
 ;----------------------------------------------------------------------
@@ -251,7 +252,7 @@ hd_\label:
        common   immediate
     S_EXECUTE   execute   execute
     S_COMPILE   compile   execute
-    S_POSTONE   compile compile
+    S_POSTONE   compile   compile
 
     prefer
 
@@ -271,7 +272,7 @@ hd_\label:
     CELL_SIZE = 2
 
 ;---------------------------------------------------------------------
-;    status register 
+;    status register from error codes forth 2012
 
     NO_ERROR = 0
     INVALID_MEMORY = -9
@@ -292,7 +293,7 @@ hd_\label:
  ESC_   =   0x1B
 
 ;---------------------------------------------------------------------
-; from avr manual
+; from avr manual, does not change for atmega8
 ;
     __SREG__ = 0x3f
     __SP_H__ = 0x3e
@@ -335,12 +336,14 @@ hd_\label:
 
 
 /* Constants */
-#define SPM_PAGESIZE 64
 #define RAMSTART         (0x60)
-#define RAMEND           0x45F
+#define RAMEND           (0x45F)
 #define XRAMEND          RAMEND
+
 #define E2END            0x1FF
-#define E2PAGESIZE   4
+#define E2PAGESIZE           4
+
+#define SPM_PAGESIZE        64
 #define FLASHEND         0x1FFF
 
 

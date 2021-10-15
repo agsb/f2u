@@ -30,13 +30,13 @@ I want a forth with:
 
 Most of Forth implementations goes "runnig for speed" for timming applications or simply to be "the most faster than", but when memory space is the critical limit most of design decisions must take another path.
 
-My choice for design is a Atmega8, a MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, with 32 (R0 to R31) 8 bits registers, with some that could be used as eight (R16 to R31) 16 bits registers.
+My choice for design is a Atmega8, a MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, with 32 (R0 to R31) 8 bits registers, with some that could be used as eight (R16 to R31) 16 bits registers.  A challenge.
 
 There are many low cost MCU with far more resources and pleny of SRAM and flash. Why use an old MCU for hosting Forth ?
 
 Most to refine language paradigms and understood manage memory, RAM and FLASH, and how forth works inside, looking from behind the stacks.
 
-Many challenges to resolve, how make a minimal bios, what basic word set, how update flash memory, how access internal resources, etc. Learn from previous many implementations of Forth and adapt to survive.
+Many challenges to resolve, how make a minimal bios, what basic word must set, how update flash memory, how access internal resources, etc. Learn from previous many implementations of Forth and adapt to survive.
 
 For comparation, in 1979, the PDP-11, was eight 16-bit registers, (including one stack pointer R6, and one program counter R7), unifed memory addressing and memory mapped devices. <http://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP11_Handbook1979.pdf>.
 
@@ -58,9 +58,9 @@ Looking into Forth standarts (79, 83, ANS, 2012, FIG, etc) and implementations, 
     2) words that changes the dictionary as COMMA (,), CREATE, DOTSTR (."); 
     3) words that changes flag bits as IMMEDIATE, SMUDGE, HIDE, REVEAL; 
 
-When defining a new word between COLON (:) and SEMI (;), copy the actual flash page correspondent of DP pointer to sram buffer, start pointers offsets, make the changes into sram buffer and when is full, or at end, flush contents and restart pointers;
+When defining a new word between COLON (:) and SEMI (;), copy the actual flash page correspondent of DP pointer to sram buffer, start pointers offsets, make the changes into sram buffer and when is full, or at end, flush contents and restart pointers, repeat until done;
 
-When defining words with CREATE and DOES> use same aprouch.
+When defining words with CREATE, <BUILDS and DOES> use same aprouch.
 
 # Implementation References
 
@@ -72,10 +72,10 @@ _in my opinion, is the best and ideal solution per cpu_ (at cost of size and por
 
 ; the inner interpreter, in macro code:
 
-    _next:    BX LR                 ; branch to ptr in LR, link register
+    _next:    BX LR                 ; branch to ptr in LR, (exchange PC and LR, inc LR, inc LR, jmp PC)
     _nest:    STMFD R2!, {LR}       ; push LR into return stack
     _unnest:  LDMFD R2!, {PC}       ; pull PC from return stack
-    BL ptr                          ; branch and link, ( mov LR ptr, inc LR, inc LR, jmp ptr)
+    _exec:    BL ptr                ; branch and link, ( mov ptr to LR, inc LR, inc LR, jmp ptr)
 
 ; the dictionary, PFA:
 
@@ -86,6 +86,7 @@ _in my opinion, is the best and ideal solution per cpu_ (at cost of size and por
 ; considerations
 
 high (most) efficient code;
+
     all dicionary is CPU dependent;
     all compond words have a payload per reference;
     the memory model is unified, flash and sdrom are continuous address;
@@ -137,7 +138,7 @@ high (most) efficient code;
 
 ; considerations
 
-    traditional efficient code;
+    traditional and efficient code;
     *twig dictionary is CPU independent;*
     all twig words have a payload as first and last references;
     all leaf words have a payload as self reference and last jump;
@@ -160,11 +161,72 @@ high (most) efficient code;
 
 ## 4. In this F2U implementation for ATMEGA8, there is no use of call, return, pop and push
 
-  note: using AVR pseudo 16 bit registers X (26 27) as SP, Y (28 29) as RP, 
-        Z (30 31) as generic memory pointer for sram and flash,
-        and W (24 25), T (22, 23), N (20, 21), I (18 19)
+  note: using AVR pseudo 16 bit registers X (26 27) as DS data stack, Y (28 29) as RP return stack, 
+        Z (30 31) as generic memory pointer ISP for sram and flash,
+        and generic work (24 25), top of DS (22, 23), second of DS (20, 21), 
+        instruction register IR (18 19) for branch and link,
+        in all instructions, first argument are destiny register 
 
-; the inner interpreter
+there are 2 versions of inner interpreter
+
+1) the inner interpreter with only pull and push at return stack
+
+    ;
+    ; WARNING: this inner still only works for program memory (flash) 
+    ;
+    
+    _ends:
+     ; does nothing and mark as primitive
+     nop
+      
+    _exit:
+     ; pull isp from rsp
+     ld r31, Y+
+     ld r30, Y+
+   
+    _next:
+     ; load wrk with contents of cell at isp and auto increments isp
+     ; mind specific address Flash memory squema for AVRs lpm 
+    lsl z30
+    rol z31
+    lpm r24, Z+
+    lpm r25, Z+
+    ror z31
+    ror z30
+    
+     ; if not zero then is a reference to compound word, goto _enter 
+    cpi r24, 0
+    brne _enter
+    cpi r25, 0
+    brne _enter
+
+    _exec: 
+    ; else is a primitive then branch to it
+     
+     ; if using a table to primitives as a classic gcc trampolim
+     .ifdef TRAMPOLIM
+        lsl z30
+        rol z31
+        lpm r24, Z+
+        lpm r25, Z+
+        ror r31
+        ror r30
+        movw r30, r24
+     .endif
+    
+    ijmp
+
+    _enter: 
+    ; push isp into rsp
+    st -Y, r30
+    st -Y, r31
+     
+    ; go next it
+    movw r30, r24
+    rjmp _next
+    
+
+2) the inner interpreter with pull and push at return stack and emulated branch and link for primitives
 
     ;
     ; WARNING: this inner still only works for program memory (flash) 
@@ -211,8 +273,8 @@ high (most) efficient code;
     
     movw r24, r30   ; copy this reference
     addw r24, +2    ; point to next reference
-    movw r18, r24   ; keep this reference
-    ijmp
+    movw r18, r24   ; keep next reference to link
+    ijmp            ; jump to this
 
     _link:
     movw r30, r18 ; points to next reference
@@ -227,7 +289,15 @@ high (most) efficient code;
     movw r30, r24
     rjmp _next
     
-  
+
+Why two versions ? 
+
+the first form is easy and simple, do less overhead, but return stack grows for any word.
+
+the second form is more complex, but don't use return stack for primitives words and really saves stack depth.
+
+there is no significant overhead between those variants, just few cycles.
+
 ; the dicionary, PFAs are (LINK+NAME+REFERENCES)
   
     ;------------- independent 
@@ -251,16 +321,17 @@ high (most) efficient code;
 
     efficient code;
     twig and leaf are dicionary is CPU independent;
-    leaf (could) do references of trampolim table
+    leaf (could) do references of trampolim table;
     all twig words have only a payload at last references;
     all leaf words have a payload as, starts with NOP and ends with a jump;
 
 ; notes
 
-    all internal words defined between parentheses; 
+    all internal words defined between parentheses, so user never could use ; 
     the memory model is not unified, separate address for flash and for sdram;
-    ??? minus one reference execution per each compound word  at cost of a test if NULL
-    ??? all mature forths does inline or code at start of parameters ???
+    uses minus one reference execution per each compound word  at cost of a test if NULL
+
+    ??? why all mature forths does inline or code at start of parameters, just for speed ???
 
 ; details
 
@@ -279,7 +350,7 @@ high (most) efficient code;
       temporary register T (r23:r22)
       temporary register N (r21:r20)
       
-      instruction register I (r18:r19)
+      instruction register IR (r19:r18)
 
       for convenience
 
@@ -289,7 +360,7 @@ high (most) efficient code;
         registers r2:r3 used by counter of timer interrup, (borrow from flashforth)
         register r4, constant offset for timer0 
         register r5, to preserve sreg in interrupts
-      
+
         registers r6::r17 free
      
       flash memory from $000 to $FFF ($0000 to $1FFF bytes), 
@@ -327,10 +398,11 @@ high (most) efficient code;
   parameter stack is 18 words, return stack is 18 words;
   terminal input buffer is 72 bytes, scratch-pad is 24 bytes, hold is 16 bytes;
   all buffers ends in \0
+  still interrupts can't be nested, SREG breaks.
   
 # Notes
 
-  1. primitives (Leaf) routine does not do any call or jump. Compound (Twig) routines do.
+  1. primitive (Leaf) routine does not do any calls. Compound (Twig) routines could do.
   2. index routines counts downwards until 0, ever, exact as C: for (; n != 0 ; n--) { ~~~ }
   3. no bounds check, none.
   4. compare bytes: COMPARE return FALSE or TRUE, only;
