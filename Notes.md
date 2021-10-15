@@ -6,11 +6,14 @@
 
 **15/10/2021**
 
+
 start to review of EPROM, SRAM, FLASH uses, memory maps, and easy variables allocation;
 
 start to review of dual buffer, sram to flash, flash to sram, flush sizes and how to.
 
-note to self: HATE any word that ends with a comma (,) else comma (,).
+note to self: Need better understand those .md format codes.
+
+note to self: HATE any word that ends with a comma (,) or dot (.) else comma (,) and (.).
 
 todo: CREATE, <BUILDS, DOES>, 
 

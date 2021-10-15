@@ -8,7 +8,7 @@ This is a evolution from what I learning with u2forth, ATMEGA8 gcc assembler and
 
 **"this is a work in progress, not completed"**
 
-take a look at changes.md
+(take a look at notes and changes)
 
 # Introduction
 
@@ -70,20 +70,20 @@ When defining words with CREATE, <BUILDS and DOES> use same aprouch.
 
 _in my opinion, is the best and ideal solution per cpu_ (at cost of size and portability)
 
-; the inner interpreter, in macro code:
+### ; the inner interpreter, in macro code:
 
     _next:    BX LR                 ; branch to ptr in LR, (exchange PC and LR, inc LR, inc LR, jmp PC)
     _nest:    STMFD R2!, {LR}       ; push LR into return stack
     _unnest:  LDMFD R2!, {PC}       ; pull PC from return stack
     _exec:    BL ptr                ; branch and link, ( mov ptr to LR, inc LR, inc LR, jmp ptr)
 
-; the dictionary, PFA:
+### ; the dictionary, PFA:
 
     leaf ==> instr, instr, instr, instr, _next
     
     twig ==> _nest, *BL* ptr, *BL* ptr, *BL* ptr, _unest         
 
-; considerations
+### ; considerations
 
 high (most) efficient code;
 
@@ -91,7 +91,7 @@ high (most) efficient code;
     all compond words have a payload per reference;
     the memory model is unified, flash and sdrom are continuous address;
 
-; notes
+### ; notes
 
     BL accepts +/- 32 Mb offset, then dictionary must be less than 32 MB, 
     with 4 bytes per word then it is about 8M, with 2 words per reference then almost 4M for free space.  
@@ -136,14 +136,14 @@ high (most) efficient code;
     
     twig ==>  (code of DO_COLON), ptr ... ptr, (DO_EXIT)
 
-; considerations
+### ; considerations
 
     traditional and efficient code;
     *twig dictionary is CPU independent;*
     all twig words have a payload as first and last references;
     all leaf words have a payload as self reference and last jump;
 
-; notes
+### ; notes
 
     the memory model is not unified, separate address for flash, sdram.
     why two "adiw WL, 1" ? Adjust Z to a even address
@@ -159,26 +159,24 @@ high (most) efficient code;
     
      Can not run into a Atmega8 with 8k flash.
 
-## 4. In this F2U implementation for ATMEGA8, there is no use of call, return, pop and push
+## 4. In this F2U implementation for ATMEGA8, 
+  
+  there is no use of call, return, pop and push
 
-  note: using AVR pseudo 16 bit registers X (26 27) as DS data stack, Y (28 29) as RP return stack, 
-        Z (30 31) as generic memory pointer ISP for sram and flash,
-        and generic work (24 25), top of DS (22, 23), second of DS (20, 21), 
-        instruction register IR (18 19) for branch and link,
-        in all instructions, first argument are destiny register 
+ there are 2 versions of inner interpreter, using AVR pseudo 16 bit registers. In all instructions, first argument are destiny register.
 
-there are 2 versions of inner interpreter
+WARNING: those inner interpreters only works for program memory (flash), due specific address flash memory squema for AVRs using lpm 
 
-1) the inner interpreter with only pull and push at return stack
+## _The inner interpreter (1) with only pull and push at return stack._
 
     ;
-    ; WARNING: this inner still only works for program memory (flash) 
+    ; inner interpreter pull/push only
     ;
-    
+
     _ends:
      ; does nothing and mark as primitive
      nop
-      
+
     _exit:
      ; pull isp from rsp
      ld r31, Y+
@@ -186,22 +184,21 @@ there are 2 versions of inner interpreter
    
     _next:
      ; load wrk with contents of cell at isp and auto increments isp
-     ; mind specific address Flash memory squema for AVRs lpm 
-    lsl z30
-    rol z31
-    lpm r24, Z+
-    lpm r25, Z+
-    ror z31
-    ror z30
+     lsl z30
+     rol z31
+     lpm r24, Z+
+     lpm r25, Z+
+     ror z31
+     ror z30
     
      ; if not zero then is a reference to compound word, goto _enter 
-    cpi r24, 0
-    brne _enter
-    cpi r25, 0
-    brne _enter
+     cpi r24, 0
+     brne _enter
+     cpi r25, 0
+     brne _enter
 
     _exec: 
-    ; else is a primitive then branch to it
+     ; else is a primitive then branch to it
      
      ; if using a table to primitives as a classic gcc trampolim
      .ifdef TRAMPOLIM
@@ -214,24 +211,28 @@ there are 2 versions of inner interpreter
         movw r30, r24
      .endif
     
-    ijmp
+     ijmp
 
     _enter: 
-    ; push isp into rsp
-    st -Y, r30
-    st -Y, r31
+     ; push isp into rsp
+     st -Y, r30
+     st -Y, r31
      
     ; go next it
-    movw r30, r24
-    rjmp _next
+     movw r30, r24
+     rjmp _next
+
+    ; inner ends
+
     
 
-2) the inner interpreter with pull and push at return stack and emulated branch and link for primitives
+
+## _the inner interpreter (2) with pull and push at return stack and emulated branch and link for primitives_
 
     ;
-    ; WARNING: this inner still only works for program memory (flash) 
+    ; inner interpreter pull/push and branch/link
     ;
-    
+
     _ends:
      ; does nothing and mark as primitive
      nop
@@ -244,21 +245,21 @@ there are 2 versions of inner interpreter
     _next:
      ; load wrk with contents of cell at isp and auto increments isp
      ; mind specific address Flash memory squema for AVRs lpm 
-    lsl z30
-    rol z31
-    lpm r24, Z+
-    lpm r25, Z+
-    ror z31
-    ror z30
+     lsl z30
+     rol z31
+     lpm r24, Z+
+     lpm r25, Z+
+     ror z31
+     ror z30
     
      ; if not zero then is a reference to compound word, goto _enter 
-    cpi r24, 0
-    brne _enter
-    cpi r25, 0
-    brne _enter
+     cpi r24, 0
+     brne _enter
+     cpi r25, 0
+     brne _enter
 
     _branch: 
-    ; else is a primitive then branch to it
+     ; else is a primitive then branch to it
      
      ; if using a table to primitives as a classic gcc trampolim
      .ifdef TRAMPOLIM
@@ -271,14 +272,14 @@ there are 2 versions of inner interpreter
         movw r30, r24
      .endif
     
-    movw r24, r30   ; copy this reference
-    addw r24, +2    ; point to next reference
-    movw r18, r24   ; keep next reference to link
-    ijmp            ; jump to this
+     movw r24, r30   ; copy this reference
+     addw r24, +2    ; point to next reference
+     movw r18, r24   ; keep next reference to link
+     ijmp            ; jump to this
 
     _link:
-    movw r30, r18 ; points to next reference
-    rjmp _next
+     movw r30, r18 ; points to next reference
+     rjmp _next
    
     _enter: 
     ; push isp into rsp
@@ -289,16 +290,17 @@ there are 2 versions of inner interpreter
     movw r30, r24
     rjmp _next
     
+    ; inner ends
 
-Why two versions ? 
+## Why two versions ? 
 
-the first form is easy and simple, do less overhead, but return stack grows for any word.
+the first form is easy and simple, do a bit less overhead, but return stack grows for any word.
 
 the second form is more complex, but don't use return stack for primitives words and really saves stack depth.
 
 there is no significant overhead between those variants, just few cycles.
 
-; the dicionary, PFAs are (LINK+NAME+REFERENCES)
+### into the dicionary, PFAs are (LINK+SZ+NAME+PAD?+REFERENCES)
   
     ;------------- independent 
     
@@ -317,7 +319,7 @@ there is no significant overhead between those variants, just few cycles.
     ; code for primitives
     (ptr) code ... code (rjmp _link)
 
-; considerations
+### ; considerations
 
     efficient code;
     twig and leaf are dicionary is CPU independent;
@@ -325,7 +327,7 @@ there is no significant overhead between those variants, just few cycles.
     all twig words have only a payload at last references;
     all leaf words have a payload as, starts with NOP and ends with a jump;
 
-; notes
+### ; notes
 
     all internal words defined between parentheses, so user never could use ; 
     the memory model is not unified, separate address for flash and for sdram;
@@ -333,24 +335,28 @@ there is no significant overhead between those variants, just few cycles.
 
     ??? why all mature forths does inline or code at start of parameters, just for speed ???
 
-; details
+### ; details
 
       Not using of SP intructions (pop, push, call, ret), leaving those for external extensions and libraries;
       Only using IJMP to primitives else use indirect push and pull for references address;
+     
       All references are done using of indirect LD and ST with Z, Y, X, 16 bits registers;
+     
       All primitive words finish with a rjmp _link, so the (inner + primitives) must be less than +2k words;
       
-      address pointer is Z (r31:r30) for lpm/spm (flash), lds (sram), sts (sram) instructions;
+      Uses address pointer is Z (r31:r30) for lpm/spm (flash), lds (sram), sts (sram) instructions;
       
-      first stack pointer is Y (r29:r28) for forth return stack;
-      second stack pointer is X (r27:r26) for forth data stack;
+      The first stack pointer is Y (r29:r28) for forth return stack;
       
-      working register is W (r25:r24) for forth as acumulator register;
+      The second stack pointer is X (r27:r26) for forth data stack;
       
-      temporary register T (r23:r22)
-      temporary register N (r21:r20)
+      A working register is W (r25:r24) for forth as acumulator register;
       
-      instruction register IR (r19:r18)
+      A temporary register T (r23:r22);
+      
+      A temporary register N (r21:r20);
+      
+      A instruction register IR (r19:r18);
 
       for convenience
 

@@ -1,6 +1,6 @@
 
-"Letter to the Editor" of Forth Dimensimrv [Moore 1983] concerning the practice 
-of storing names of Forth words as a count and first three characters.
+#  "Letter to the Editor" of Forth Dimensimrv [Moore 1983] concerning the practice of storing names of Forth words as a count and first three characters.
+
 https://raw.githubusercontent.com/larsbrinkhoff/forth-documents/master/Evolution.pdf, figure 13.1
 
     DEA- EDI--- 
