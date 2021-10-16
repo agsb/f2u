@@ -153,6 +153,7 @@ high (most) efficient code;
       uses SP for return stack, uses Y for data stack, uses Z as address pointer
 
      *interleaves rcall and rjmp inside dictionary;*
+     
      all dicionary is CPU dependent;
      all twig words have a payload as first and last references;
      all leaf words have a payload as self reference and last jump;
@@ -346,9 +347,9 @@ there is no significant overhead between those variants, just few cycles.
       
       Uses address pointer is Z (r31:r30) for lpm/spm (flash), lds (sram), sts (sram) instructions;
       
-      The first stack pointer is Y (r29:r28) for forth return stack;
+      The return stack pointer is Y (r29:r28) for forth return stack;
       
-      The second stack pointer is X (r27:r26) for forth data stack;
+      The parameter stack pointer is X (r27:r26) for forth data stack;
       
       A working register is W (r25:r24) for forth as acumulator register;
       
@@ -356,7 +357,7 @@ there is no significant overhead between those variants, just few cycles.
       
       A temporary register N (r21:r20);
       
-      A instruction register IR (r19:r18);
+      A instruction register NIP (r19:r18);
 
       for convenience
 
