@@ -4,7 +4,7 @@
 
 # *"To master riding bicycles you have do ride bicycles"*
 
-This is a evolution from what I learning with u2forth, ATMEGA8 gcc assembler and forth implementations as eforth, amforth, avr-forth, gforth, flashforth, etc
+This is a evolution from what I learning with u2forth, ATMEGA8 gcc assembler and forth implementations as eforth, amforth, avr-forth, gforth, flashforth, punyforth, etc
 
 **"this is a work in progress, not completed"**
 
@@ -14,7 +14,7 @@ This is a evolution from what I learning with u2forth, ATMEGA8 gcc assembler and
 
 *In the chat session Chuck was asked, "How did you come to the conclusion that Forth was too complex, and that sourceless programming was your next move?" His reply was, "Maybe by reading the Forth Standard." [Moore, 2002] <http://www.ultratechnology.com/levels.htm>*
 
-Forth is language based in thread code, with a dictionary of words as named routines and two stacks for arguments.
+Forth is language based in thread code, with a dictionary of words as named routines and two stacks for arguments in a forever read–eval–print-loop.
 
 The dictionary have two types of words, those called primitives, ad natives ad leaves, which are coded in specific CPU or MCU instructions, and those called compounds, ad twigs, which are sequences with references to words.
 
