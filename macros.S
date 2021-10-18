@@ -87,7 +87,7 @@
 ; header of leaf word in dictionary
 ;
 .macro HEADER name, label
-hd_\label:
+is_\label:
     .p2align 1, 0x00
 7:    
     .word _link_
