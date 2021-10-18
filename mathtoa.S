@@ -17,9 +17,9 @@
 ;
 HEADER "utoa", "utoa" 
 	NOOP
-	ldi ips_low, lo8(PIC)
-	ldi ips_high, hi8(PIC)
-	movw nds_low, ips_low
+	ldi zpm_low, lo8(PIC)
+	ldi zpm_high, hi8(PIC)
+	movw nds_low, zpm_low
 	pspull wrk_low, wrk_high
 	
 itoa:
@@ -70,8 +70,8 @@ HEADER "itoa", "itoa"
 	pspull nds_low, nds_high
 	
 itoa_short:
-	ldi	ips_low, low(dectab)
-	ldi	ips_high, high(dectab)
+	ldi	zpm_low, low(dectab)
+	ldi	zpm_high, high(dectab)
 
 itoa_lext:
 	ldi	wrk_low, '0' - 1

@@ -1,7 +1,7 @@
 /*
  *  DISCLAIMER"
  *
- *  Copyright © 2020, Alvaro Gomes Sobral Barcellos,
+ *  Copyright © 2020, Alvaro Barcellos,
  *
  *  Permission is hereby granted, free of charge, to any person obtaining
  *  a copy of this software and associated documentation files (the
@@ -39,6 +39,32 @@
 
 ;----------------------------------------------------------------------
 
+24/05/2021
+    
+    Done comma, flash, flush for solve sram//flash
+
+    implemented postpone as a flag to always compile next word only, solves compile and [compile]
+    
+    matriz of interpret now is:
+
+						state 1		state 0		postone 1
+		common word		compile		execute		compile
+ 	 immediate word		execute		execute		compile
+    
+    why not same for  ', [']
+
+19/05/2021
+
+    Rewrite for plain use of sram as buffer for flash, 
+
+02/05/2021
+
+    Rewrite again using sectorforth as minimal design
+
+18/04/2021
+
+    Rewrite all from u2f*, using a new minimal forth engine as LAST word 
+
 */
 
 ;
@@ -54,122 +80,82 @@
 
 ;----------------------------------------------------------------------
 ;
-; this is the forth inner engine,
+; this is the forth engine,
 ;
-; a compound word, aka twig, must end with a reference to ENDS
+; any twig must end with a reference to LAST
 ;
-; a primitive work, aka leaf, must start with NOOP and ends with POON
+; any leaf must start with NOOP and ends with POON
 ;
-; the size byte must be masked by or 0xF0
+; the size byte must be masked by  or 0xF0
 ;
-; memory pointer r31:r30 as Z 
+; instruction pointer r31:r30 as Z 
 ; return stack pointer r29:r28 as Y
 ; working register r25:r24 as W
-; instruction pointer r18:r19
 ; scratch register r0
 ;
-; Can only LPM to access flash memory ? YES!
+; only LPM access flash ? YES!
 ;
 ; all constants in flash
 ; all variables in sdram
 ;
-
 ;----------------------------------------------------------------------
 .section .text
 .org 0x100
 .global forth
 forth:
-;----------------------------------------------------------------------
+;;----------------------------------------------------------------------
 ; inner interpreter,
-; it is also a primitive word
 ;
 HEADER "ENDS", "ENDS"
 ; does nothing and mark instructions code
     NOOP
 
-; pull ips from rsp
+; pull ip from rsp
 _exit:             
-    rspull zpm_low, zpm_high
+    rspull wrk_low, wrk_high
 
-; load w with contents of cell at ips 
+; load w with contents of cell at ip  
 _next:            
-    pmload wrk_low, wrk_high ; also increments ips
+    movw ips_low, wrk_low
+    pmload wrk_low, wrk_high
 
-; if not zero then is a compound word, aka a twig, go to _enter
-    ;*** must test one for zero reference aka NULL
-    cpi wrk_low, 0
-    brne _enter
-    cpi wrk_high, 0
-    brne _enter
-
-; else branch and link, for exec it 
-_branch:
-.ifdef TRAMPOLIM
-; used for indirect contents, as in a list of references
-    pmload wrk_low, wrk_high ;  also increments ips
-    movw zpm_low, wrk_low ; points to this reference
-.endif
-    
-    movw wrk_low, zpm_low   ; copy this reference
-    adiw wrk_low, 2             ; point to next reference
-    movw ipr_low, wrk_low   ; keep this reference
-    ijmp
-
-_link:
-    movw zpm_low, ipr_low ; points to next reference
-    rjmp _next
+; if zero then is a exec 
+    cp wrk_low, wrk_high
+    brbs BIT_ZERO, _exec
 
 ; else is a reference
 _enter:            
-    rspush zpm_low, zpm_high ; push next reference
-	movw zpm_low, wrk_low ; point to this reference
+    rspush ips_low, ips_high
     rjmp _next
+
+_exec:
+    ; convert to words
+    movw ips_low, wrk_low
+
+.ifdef TRAMPOLIM
+    pmload wrk_low, wrk_high
+    movw ips_low, wrk_low
+.endif
+
+    ; byte to address
+    lsr ips_low
+    ror ips_high
+
+    ijmp
 
 ;----------------------------------------------------------------------
 ; 
-; using no cached
+; using wrk as TOS
 ; (1st, 2nd, 3rd, 4th, ...)
-;
-; all operations are done in W (r24:r25) as acumulator
-; and it must be pushed when need else is scratch.
 ;
 ;----------------------------------------------------------------------
 ;**********************************************************************
-;
 ;    init of minimal words
-;----------------------------------------------------------------------
-
-;----------------------------------------------------------------------
-;ok ( -- 0 )
-; also a shortcut for false and push acumulator W
-HEADER "0", "ZERO"
-    NOOP
-_ffalse:
-    clr wrk_low
-    clr wrk_high
-_pushw:
-    pspush wrk_low, wrk_high
-    POON
-
-;----------------------------------------------------------------------
-; ok 0=
-HEADER "0=", "ZEROEQU"
-    NOOP
-    pspull wrk_low, wrk_high
-    cpi wrk_low, 0
-    brne _ffalse 
-    cpi wrk_high, 0
-    brne _ffalse
-_ftrue:
-    ser wrk_low
-    ser wrk_high
-	WOOP
-
 ;----------------------------------------------------------------------
 ; ok ! to (x a -- )
 HEADER "!", "TO"
     NOOP
-    pspull zpm_low, zpm_high
+    movw ips_low, wrk_high
     pspull wrk_low, wrk_high
     srsave wrk_low
     srsave wrk_high
@@ -179,47 +165,68 @@ HEADER "!", "TO"
 ; ok @ at ( a -- w )
 HEADER "@", "AT"
     NOOP
-    pspull zpm_low, zpm_high
+    movw ips_low, wrk_high
     srload wrk_low
     srload wrk_high
-	WOOP
+	POON
 
 ;----------------------------------------------------------------------
 ; ok ( -- rsp)
 HEADER "RP@", "RPAT"
     NOOP
+	pspush wrk_low, wrk_high
     movw wrk_low, rsp_low
-	WOOP
+	POON
 
 ;----------------------------------------------------------------------
 ; ok ( -- psp )
 HEADER "SP@", "SPAT"
     NOOP
+	pspush wrk_low, wrk_high
     movw wrk_low, psp_low
-	WOOP
+	POON
 
 ;----------------------------------------------------------------------
-;ok ( w1 w2 -- w2 NAND w1 )
+; ok 0=
+HEADER "0=", "ZEROEQU"
+    NOOP
+    cp wrk_high, wrk_low
+    brbc BIT_ZERO, _ffalse
+_fftrue:
+    ser wrk_low
+    ser wrk_high
+	POON
+
+;----------------------------------------------------------------------
+;ok ( w1 w2 -- w2 AND w1 )
 HEADER "NAND", "NAND"
     NOOP
-    pspull wrk_low, wrk_high
     pspull tos_low, tos_high
     and wrk_high, tos_high
     and wrk_low, tos_low
     com wrk_high
     com wrk_low
-    WOOP
+	POON
 
 ;----------------------------------------------------------------------
-;ok ( w1 w2 -- w2 + w1 )
+;ok ( w1 w2 -- w2 AND w1 )
 HEADER "+", "PLUS"
     NOOP
-    pspull wrk_low, wrk_high
     pspull tos_low, tos_high
     clc
     add wrk_low, tos_low
     adc wrk_high, tos_high
-    WOOP
+	POON
+
+;----------------------------------------------------------------------
+;ok ( w1 w2 -- w2 AND w1 )
+HEADER "0", "_zero"
+    NOOP
+    pspush wrk_low, wrk_high
+_ffalse:
+    clr wrk_low
+    clr wrk_high
+    POON
 
 ;----------------------------------------------------------------------
 ;    end of minimal words
@@ -229,76 +236,65 @@ HEADER "+", "PLUS"
 ;ok 
 HEADER "TIB", "tib_"
     NOOP
+    pspush wrk_low, wrk_high
     ldi wrk_low, lo8(TIB)
     ldi wrk_high, hi8(TIB)
-	WOOP
+    rjmp _push
 
 ;----------------------------------------------------------------------
 ;ok 
 HEADER ">IN", "toin_"
     NOOP
+    pspush wrk_low, wrk_high
     ldi wrk_low, lo8(TOIN)
     ldi wrk_high, hi8(TOIN)
-	WOOP
+	rjmp _push
 
 ;----------------------------------------------------------------------
 ;ok 
 HEADER "HERE", "here_"
     NOOP
+    pspush wrk_low, wrk_high
     ldi wrk_low, lo8(HERE)
     ldi wrk_high, hi8(HERE)
-	WOOP
+	rjmp _push
 
 ;----------------------------------------------------------------------
 ;ok 
 HEADER "LAST", "last_"
     NOOP
+    pspush wrk_low, wrk_high
     ldi wrk_low, lo8(LAST)
     ldi wrk_high, hi8(LAST)
-	WOOP
+	rjmp _push
 
 ;----------------------------------------------------------------------
 ;ok 
 HEADER "BASE", "base_"
     NOOP
+    pspush wrk_low, wrk_high
     ldi wrk_low, lo8(BASE)
     ldi wrk_high, hi8(BASE)
-	WOOP
+	rjmp _push
 
 ;----------------------------------------------------------------------
 ;ok 
 HEADER "STATE", "state_"
     NOOP
+    pspush wrk_low, wrk_high
     ldi wrk_low, lo8(STATE)
     ldi wrk_high, hi8(STATE)
-	WOOP
+	rjmp _push
 
 ;----------------------------------------------------------------------
 ;ok 
 HEADER "BL", "BL"
     NOOP
+    pspush wrk_low, wrk_high
     ldi wrk_low, 32
     clr wrk_high
-	WOOP
+	rjmp _push
 
-;----------------------------------------------------------------------
-;----------------------------------------------------------------------
-;ok 
-HEADER "(sram)", "sram"
-    NOOP
-    ldi wrk_low, lo8(SRAM)
-    ldi wrk_high, hi8(SRAM)
-	WOOP
-
-;----------------------------------------------------------------------
-;ok 
-HEADER "(erom)", "erom"
-    NOOP
-    ldi wrk_low, lo8(EROM)
-    ldi wrk_high, hi8(EROM)
-	WOOP
-
-;----------------------------------------------------------------------
 ;----------------------------------------------------------------------
 ;
 ; beware, it blocks! test if can receive a char
@@ -310,7 +306,8 @@ HEADER "key", "key_"
     rjmp 1b
     in wrk_low, 0x0c
     clr wrk_high
-	WOOP
+    pspush wrk_low, wrk_high
+    POON
 
 ;----------------------------------------------------------------------
 ;
@@ -321,7 +318,6 @@ HEADER "emit", "emit_"
 1:  
     sbis 0x0b, 5
     rjmp 1b
-    pspull wrk_low, wrk_high
     out 0x0c, wrk_low
     POON
 
@@ -331,8 +327,9 @@ HEADER "emit", "emit_"
 ;
 HEADER "millis", "millis_"
     NOOP
+    pspush wrk_low, wrk_high
     movw wrk_low, tmr_low
-	WOOP
+    POON
 
 ;----------------------------------------------------------------------
 ; does reset
@@ -357,9 +354,9 @@ HEADER "COLD", "COLD"
 
 ; preload to WARM
     ; next word
-    ldi zpm_low, lo8(WARM)
-    ldi zpm_high, hi8(WARM)
-    rspush zpm_low, zpm_high
+    ldi ips_low, lo8(WARM)
+    ldi ips_high, hi8(WARM)
+    rspush ips_low, ips_high
     POON
 
 ;----------------------------------------------------------------------
@@ -370,56 +367,40 @@ HEADER  "WARM", "WARM"
     ; resets etc
     POON
 
+; ZZZZZZ changed till here TOS in wrk
 ;----------------------------------------------------------------------
 ;
-; ok ( --- ) 
+; ok ( --- a2 u ) 
 ; tricky 
-; iBUGGED ZZZZ NOT REALLY all new word starts at THIS=0, 1 and 2 bytes is link, 3 byte is size+flags
+; all new word starts at THIS=0, 1 and 2 bytes is link, 3 byte is size+flags
 HEADER "(immediate)", "immediate"
     NOOP
-    ldi zpm_low, lo8(LINE)
-    ldi zpm_high, hi8(LINE)
-    adiw zpm_low, 3
+    ldi ips_low, lo8(LINE)
+    ldi ips_high, hi8(LINE)
+    adiw ips_low, 3
     srload wrk_low
-    ori wrk_low, F_IMMEDIATE
-    sbiw zpm_low, 1
+    andi wrk_low, F_IMMEDIATE
+    sbiw ips_low, 1
     srsave wrk_low
     POON
     
 ;----------------------------------------------------------------------
 ;
 ; ok ( --- w ) 
-;
-; push the contents of next to stack, updates next
-; 
-HEADER "(doval)", "doval"
+HEADER "(literal)", "literal"
     NOOP
     rspull wrk_low, wrk_high
-    movw zpm_low, wrk_low    
+    movw ips_low, wrk_low    
     adiw wrk_low, 2
     rspush wrk_low, wrk_high
     pmload wrk_low, wrk_high
-	WOOP
+    pspush wrk_low, wrk_high
+    POON
 
 ;----------------------------------------------------------------------
 ;
-; ok ( --- a )
-;
-; push the reference of next to stack, updates next
-;
-HEADER "(doref)", "doref"
-    NOOP
-    rspull wrk_low, wrk_high
-    movw zpm_low, wrk_low    
-    adiw wrk_low, 2
-    rspush wrk_low, wrk_high
-    movw wrk_low, zpm_low    
-	WOOP
-
-;----------------------------------------------------------------------
-;
-; ok ( c --- a u | 0 ) 
-;    search TIB start at TOIN for next word delimited by c or \0
+; ok ( --- a u | 0 ) 
+;    search TIB start at TOIN for next word delimited by 32 or \0
 ;    returns start of word and u lenght
 ;     or zero if no word
 ;
@@ -427,15 +408,15 @@ HEADER "(parse)", "parse"
     NOOP
 1:    
     ; start at 
-    lds zpm_low, TOIN+0
-    lds zpm_high, TOIN+1
+    lds ips_low, TOIN+0
+    lds ips_high, TOIN+1
 	; pull delimiter
 	pspull tos_low, tos_high
 	; for \0 check
 	clr tos_high
 
 2:  
-    ; skips while equal delimiter
+    ; skips while equal delimiter (space)
     srload wrk_low
     ; if \0
     cp wrk_low, tos_high
@@ -444,10 +425,10 @@ HEADER "(parse)", "parse"
     breq 2b
 3:  
     ; keep address
-    sbiw zpm_low, 1
-	movw nds_low, zpm_low
+    sbiw ips_low, 1
+	movw nds_low, ips_low
 4:  
-    ; skips while not equal delimiter
+    ; skips while not equal delimiter (space)
     srload wrk_low
     ; if \0
     cp wrk_low, tos_high
@@ -456,23 +437,24 @@ HEADER "(parse)", "parse"
     brne 4b
 5:  
 	; keep length
-    sbiw zpm_low, 1
-    sub zpm_low, nds_low
-    sbc zpm_high, nds_high
-    movw wrk_low, zpm_low
-	movw zpm_low, nds_low
+    sbiw ips_low, 1
+    sub ips_low, nds_low
+    sbc ips_high, nds_high
+    movw wrk_low, ips_low
+	movw ips_low, nds_low
     rjmp 20f
 10:
     ; end of buffer
-    ldi zpm_low, lo8(TIB)
-    ldi zpm_high, hi8(TIB)
+    ldi ips_low, lo8(TIB)
+    ldi ips_high, hi8(TIB)
     clr wrk_low
     clr wrk_high
 20:
     ; update TOIN
-    sts TOIN+0, zpm_low
-    sts TOIN+1, zpm_high
-	WOOP
+    sts TOIN+0, ips_low
+    sts TOIN+1, ips_high
+    pspush wrk_low, wrk_high
+    POON
 
 ;----------------------------------------------------------------------
 ;
@@ -485,7 +467,7 @@ HEADER "(refill)", "refill"
     NOOP
 10: 
     pspull nds_low, nds_high
-    pspull zpm_low, zpm_high
+    pspull ips_low, ips_high
 
     ; keep a spc at start, so every word starts with spc, used later to make a counted string in site
     ldi tos_low, 32
@@ -538,7 +520,7 @@ HEADER "(refill)", "refill"
 
     ; back one
     dec nds_high
-    sbiw zpm_low, 1
+    sbiw ips_low, 1
     rjmp 12b    
 
 32:
@@ -614,7 +596,7 @@ HEADER "(refill)", "refill"
     rjmp 12b
 
 48: 
-    ; skip comments
+   ; skip comments
     tst tos_low
     brne 12b
     tst tos_high
@@ -649,7 +631,8 @@ HEADER "(refill)", "refill"
     ; save counter
     mov wrk_low, wrk_high
     clr wrk_high
-	WOOP
+    pspush wrk_low, wrk_high
+    POON
 
 ;----------------------------------------------------------------------
 ;
@@ -670,15 +653,15 @@ HEADER "(find)", "find"
     rspush psp_low, psp_high
     
     ; prepare loop    
-    lds zpm_low, (LAST+0)
-    lds zpm_high, (LAST+1)
+    lds ips_low, (LAST+0)
+    lds ips_high, (LAST+1)
     
     ; push for first loop
-    pspush zpm_low, zpm_high
+    pspush ips_low, ips_high
 
 10: 
     ; load link 
-    pspull zpm_low, zpm_high
+    pspull ips_low, ips_high
 
     ; load contents
     pmload wrk_low, wrk_high
@@ -749,7 +732,7 @@ HEADER "(find)", "find"
     ; push CFA, (xt)
     ; if need LFA just subtract tos
 	;
-    pspush zpm_low, zpm_high
+    pspush ips_low, ips_high
 
     ; return flags
     clr wrk_low
@@ -759,24 +742,29 @@ HEADER "(find)", "find"
 22:
 	; immediate (1)
 	inc wrk_low
-	WOOP
+	rjmp 99f
 24:
 	; common (-1)
 	dec wrk_low
-	WOOP
+    rjmp 99f
 
 30: 
     ; not found (0)
     ; restore psp
     rspull psp_low, psp_high
+    
     ; restore address
     movw wrk_low, nds_low
     pspush wrk_low, wrk_high
+    
     ; set flag false
     clr wrk_low
     clr wrk_low
+99: 
     ; save results
-	WOOP
+    pspush wrk_low, wrk_high
+    POON
+
 
 ;----------------------------------------------------------------------
 ; ok ( mul mut -- d )
@@ -811,7 +799,8 @@ HEADER "(basemul)", "basemul"
 	pspush tos_low, tos_high	
 	mov wrk_low, wrk_high
 	clr wrk_high
-	WOOP
+	pspush wrk_low, wrk_high	
+	POON
 
 ;----------------------------------------------------------------------
 ;
@@ -855,7 +844,8 @@ HEADER "(basediv)", "basediv"
 	; push quotient
     pspush tos_low, tos_high
     ; push remainder
-	WOOP
+    pspush wrk_low, wrk_high        
+	POON
 
 ;----------------------------------------------------------------------
 ;    ok ( -- ) 
@@ -863,10 +853,10 @@ HEADER "(basediv)", "basediv"
 HEADER "]", "isexecute"
     NOOP
     ; 
-    lds wrk_low, STATE+0
-    cbr wrk_low, BIT_COMPILE
+    lds tos_high, STATE+0
+    clr tos_high
 states:
-    sts STATE, wrk_low
+    sts STATE, tos_high
     POON
 
 ;----------------------------------------------------------------------
@@ -875,8 +865,8 @@ states:
 HEADER "[", "iscompile"
     NOOP
     ; 
-    lds wrk_low, STATE+0
-    sbr wrk_low, BIT_COMPILE
+    lds tos_high, STATE+0
+    inc tos_high
     rjmp states
 
 ;----------------------------------------------------------------------
@@ -885,8 +875,8 @@ HEADER "[", "iscompile"
 HEADER "(postpone)", "ispostpone"
     NOOP
     ; clear postpone
-    lds wrk_low, STATE+0
-    sbr wrk_low, BIT_POSTONE 
+    lds tos_high, STATE+0
+    sbr tos_high, S_POSTONE ; must not be bit 0
     rjmp states
     
 ;----------------------------------------------------------------------
@@ -895,15 +885,15 @@ HEADER "(postpone)", "ispostpone"
 HEADER "(nopostpone)", "nopostpone"
     NOOP
     ; clear postpone
-    lds wrk_low, STATE+0
-    cbr wrk_low, BIT_POSTONE 
+    lds tos_high, STATE+0
+    cbr tos_high, S_POSTONE ; must not be bit 0
     rjmp states
     
 ;----------------------------------------------------------------------
 ;    ok ( xt f -- ) 
 ;
 ;    f flag  1 immediate, -1 common
-;	 state = 0 execute, 1 compile,  3 postone
+;	 state = 1 compile, 0 execute, 2 postone
 ;
 HEADER  "(eval)", "evaluate"
     NOOP
@@ -925,7 +915,7 @@ HEADER  "(eval)", "evaluate"
 
     ; ever compile
     ; clear postpone
-    cbr tos_high, BIT_POSTONE ; must not be bit 0
+    cbr tos_high, S_POSTONE ; must not be bit 0
     sts STATE+0, tos_high
     rjmp 16f    
     
@@ -963,9 +953,9 @@ HEADER "(number)", "number"
     NOOP
 
 	; pull address from
-    pspull zpm_low, zpm_high
+    pspull ips_low, ips_high
 	; keep it
-    pspush zpm_low, zpm_high
+    pspush ips_low, ips_high
 
   	clr _zero_
 	; clear result
@@ -1074,50 +1064,33 @@ HEADER "(number)", "number"
 
 80:
 	; discards addr
-	pspull zpm_low, zpm_high
+	pspull ips_low, ips_high
 
 	; push value
 	pspush tos_low, tos_high
 
 100:
 	; push digits
-	WOOP
+	pspush wrk_low, wrk_high
+    POON
 
 ;----------------------------------------------------------------------
 ;
-; 	nok ( --- a2 u ) 
+; ok ( --- a2 u ) 
 HEADER ".\"", "dotquote"
     NOOP
+; what do ????
 	POON	
     
 ;----------------------------------------------------------------------
-; 	ok ( a u -- ) 
-;
-;	called after parse ;)
-;
-HEADER    "<BUILDS", "builds"
-    NOOP
-	POON
-
-;----------------------------------------------------------------------
-;    ok ( a u -- ) 
-;
-;	called after parse ;)
-;
-HEADER    "DOES>", "does"
-    NOOP
-	POON
-
-;----------------------------------------------------------------------
-;    ok ( a u -- ) 
-;
+;    ok ( c-add u -- ) 
 ;	called after parse ;)
 ;
 HEADER    "(create)", "create"
     NOOP
-    ; sram buffer
-    lds zpm_low, THIS+0
-    lds zpm_high, THIS+1
+    ; copy from psp to sram buffer
+    lds ips_low, THIS+0
+    lds ips_high, THIS+1
 
 	; save link 
 	lds wrk_low, LAST+0
@@ -1129,11 +1102,7 @@ HEADER    "(create)", "create"
 	pspull tos_low, tos_high
 	st Z+, tos_low
 
-	; if odd
-	sbrc tos_low, 0
-	inc tos_low
-
-	; keep size
+	; save size
 	mov tos_high, tos_low
 
 	; get address
@@ -1153,61 +1122,39 @@ HEADER    "(create)", "create"
 	; load psp
 	rspull psp_low, psp_high
 
-	; LAST and HERE are update as SEMI is executed
-	; but if is out of a : ; ?
-	; if is a  execute ?
-/*
-
-; Recall that words defined by CREATE  
-; return the address of the next free dictionary 
-; location at the time they werecreated.
-
-	; point to next free cell
-	; push dp to stack
-    lds wrk_low, HERE+0
-    lds wrk_high, HERE+1
-	; add link
-	adiw wrk_low, 2
-	; add size 
-    add wrk_low, tos_low
-    adc wrk_low, tos_high
-	; 
-	pspush wrk_low, wrk_high
-	
-	OR just use: create HERE 
-*/
 	; updates
 	rjmp line_void
 
+    POON
+
 ;----------------------------------------------------------------------
 ;
-; ok ( w --- ) 
+; ok ( --- a2 u ) 
 HEADER "(comma)", "comma"
     NOOP
     ; copy from psp to sram buffer
-    lds zpm_low, THIS+0
-    lds zpm_high, THIS+1
+    lds ips_low, THIS+0
+    lds ips_high, THIS+1
 
     pspull wrk_low, wrk_high
     st Z+, wrk_low
     st Z+, wrk_high
 
-	clr tos_high
 	clr tos_low
+	clr tos_high
 
 line_void:
-
 10:
     ; update this 
-    sts THIS+0, zpm_low
-    sts THIS+1, zpm_high
+    sts THIS+0, ips_low
+    sts THIS+1, ips_high
 
 	; SRAM hold bottom of free ram
     ; verify free ram
     lds wrk_low, SRAM+0
     lds wrk_high, SRAM+1
-    cp wrk_high, zpm_high
-    cpc wrk_low, zpm_low
+    cp wrk_high, ips_high
+    cpc wrk_low, ips_low
     brlt 20f
 
     ; no more free ram    
@@ -1220,7 +1167,6 @@ line_void:
     lds wrk_high, HERE+1
     add wrk_low, tos_low
     adc wrk_low, tos_high
-	; point to next free cell
 	adiw wrk_low, 2
     sts HERE+0, wrk_low
     sts HERE+1, wrk_high
@@ -1246,20 +1192,20 @@ line_void:
 HEADER "(flash)", "flash"
 
     ; where it is ?    
-    lds    zpm_low, HERE+0
-    lds zpm_high, HERE+1
+    lds    ips_low, HERE+0
+    lds ips_high, HERE+1
 
     ; save fraction
-    mov wrk_low, zpm_low
+    mov wrk_low, ips_low
     andi wrk_low, lo8(pagesize) ; pagesize must be less than 256, in bytes
 
     ; make absolute
-    andi zpm_low,  lo8(pagemask)
-    andi zpm_high, hi8(pagemask)
+    andi ips_low,  lo8(pagemask)
+    andi ips_high, hi8(pagemask)
     
     ; save page
-    sts KEEP+0, zpm_low
-    sts KEEP+1, zpm_high
+    sts KEEP+0, ips_low
+    sts KEEP+1, ips_high
 
     ; preserve stack
     rspush psp_low, psp_high
@@ -1269,8 +1215,8 @@ HEADER "(flash)", "flash"
     ldi psp_high, hi8(LINE)
 
     ; adjust address for lpm
-    lsr zpm_low
-    rol zpm_high
+    lsr ips_low
+    rol ips_high
 2:
     lpm _work_, Z+
     st X+, _work_
@@ -1313,24 +1259,26 @@ HEADER "(flush)", "flush"
     lds tos_high, THIS+1
 
     ; to page
-    lds zpm_low, KEEP+0
-    lds zpm_high, KEEP+1
+    lds ips_low, KEEP+0
+    lds ips_high, KEEP+1
 
-    andi zpm_low,  lo8(pagemask)
-    andi zpm_high, hi8(pagemask)
+    andi ips_low,  lo8(pagemask)
+    andi ips_high, hi8(pagemask)
 
-    movw nds_low, zpm_low
+    movw nds_low, ips_low
 
 10:
     ;  next page 
-    movw zpm_low, nds_low
+    movw ips_low, nds_low
+
+; zzzz must include code to protect NRWW and core forth
 
     ; erase page
-    ldi _work_, (1<<PGERS) | (1<<SPMEN)
+    ldi tmp_low, (1<<PGERS) | (1<<SPMEN)
     rcall do_spm
 
     ; re-enable the RWW section
-    ;ldi _work_, (1<<RWWSRE) | (1<<SPMEN)
+    ;ldi tmp_low, (1<<RWWSRE) | (1<<SPMEN)
     ;rcall do_spm
 
     ; one page loop
@@ -1340,26 +1288,26 @@ HEADER "(flush)", "flush"
     ; fill page flash from sram buffer
     ld r0, X+
     ld r1, X+
-    ldi _work_, (1<<SPMEN)
+    ldi tmp_low, (1<<SPMEN)
     rcall do_spm
-    adiw zpm_low, 2
+    adiw ips_low, 2
     dec wrk_low
     dec wrk_low
     brne 20b
 
     ; save next page
-    movw wrk_low, zpm_low
+    movw wrk_low, ips_low
 
 30:
     ; load page 
-    movw zpm_low, nds_low
+    movw ips_low, nds_low
 
     ; write page
-    ldi _work_, (1<<PGWRT) | (1<<SPMEN)
+    ldi tmp_low, (1<<PGWRT) | (1<<SPMEN)
     rcall do_spm
 
     ; re-enable the RWW section
-    ;ldi _work_, (1<<RWWSRE) | (1<<SPMEN)
+    ;ldi tmp_low, (1<<RWWSRE) | (1<<SPMEN)
     ;rcall do_spm
 
 40:
@@ -1385,51 +1333,4 @@ HEADER "(flush)", "flush"
 HEADER "(quit)", "quit"
 	NOOP
 	POON
-
-;----------------------------------------------------------------------
-;
-; ok comma
-HEADER ":", "colon"
-	.word iscompile, flash, HERE, AT ; for LAST link
-	.word create, HERE, SWAP, ENDS
-
-
-;----------------------------------------------------------------------
-;
-; ok semmi
-HEADER ";", "semmi"
-	.word isexecute, flush, updateep, ENDS
-
-;----------------------------------------------------------------------
-;
-; ok 
-;	updates the eprom permanent pointers, keeping things between reboots 
-;   last is link to last word
-;   here is the next free address in flash
-;   were is the next free address in sram
-;       keep in mind that all variables must be at sram
-;
-HEADER "(updateep)", "updateep"
-	NOOP
-	.word LAST, TO, hereto, lastto, ENDS
-
-
-;----------------------------------------------------------------------
-;
-; ok 
-;	
-HEADER "CREATE", "CREATE"
-	NOOP
-	.word create, HERE, ENDS
-
-;----------------------------------------------------------------------
-; ok variable
-;	ZZZZZ must check init sram and limits
-;
-HEADER "(variable)", "variable"
-	.word (sram), DUP, AT 
-	.word DUP, create, comma 
-	.word DUP, ZERO, SWAP, TO 
-	.word TWOMINUS, SWAP, TO
-	.word updateep, ENDS
 

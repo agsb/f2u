@@ -1,24 +1,24 @@
 ;----------------------------------------------------------------------
 ;
-;    MUST use gnu cpp 
-;    use with .S (upper S) or
-;    use with -x assembler-with-cpp
+;   MUST use gnu cpp 
+;   use with .S (upper S) or
+;	use with -x assembler-with-cpp
 ;
-; can't use alias 
+; 	can't use alias 
 ;----------------------------------------------------------------------
 ;
 ; all defines, equs, macros are defined in this file
 ;
-; r1:r0 reserved and used in self instructions, as spm, mul, des etc
+; r1:r0 reserved and used in self atmega8 instructions, as spm, mul, des etc
 ;
 
-; reserved fo interrupt timer0 
+; reserved for interrupt timer0 
 
 ; counter for timer0
 #define tmr_low r2
 #define tmr_high r3
 
-; offset for timer0
+; offset for adjust timer0
 #define offs_low r4
 
 ; sreg reserved
@@ -29,8 +29,8 @@
 #define _zero_ r17
 
 ; Z generic pointer for access sram and flash memory
-#define ips_low r30
-#define ips_high r31
+#define zpm_low r30
+#define zpm_high r31
 
 ; Y return stack pointer for access sram
 #define rsp_low r28
@@ -52,11 +52,7 @@
 #define tos_low r20
 #define tos_high r21
 
-; this could be done using a sram address between 0x40 and 0xbf, 
-; or 0x0060, 0x0061 using LD and ST but we have spare registers
-; and movw is small and clear
-
-; Instruction pointer register for branch and link return
+; instruction pointer register for branch and link return
 #define ipr_low r18
 #define ipr_high r19
 
@@ -64,7 +60,7 @@
 ;
 ; version information
 ;
-.equ version, 0x0100
+.equ version, 10 ; 0.00.10
 
 ;----------------------------------------------------------------------
 ;
@@ -142,15 +138,15 @@ is_\label:
 
 ;----------------------------------------------------------------------
 ;    load from program memory (flash)
-;    input address in bytes, output address in bytes   
 ;    only works with TWO lpm !!!
+;	 Z address in bytes!
 .macro pmload low, high
-    lsl ips_low
-    rol ips_high
+    lsl zpm_low
+    rol zpm_high
     lpm \low, Z+
     lpm \high, Z+
-    ror ips_high
-    ror ips_low
+    ror zpm_high
+    ror zpm_low
 .endm
 
 ;----------------------------------------------------------------------
@@ -190,8 +186,36 @@ is_\label:
 .endm
 
 ;----------------------------------------------------------------------
+; all primitives must start with NOOP and end with POON
+;	a  nop (0x0000) is used as a null reference, and marks all primitives
+;	as they are really a branch and link mark
+;
+; many primitives saves work register at end, 
+;	then for save bytes, ends with WOOP, 
+;	that goes to _pushw, that goes to POON 
+;
+
+.macro NOOP
+    nop
+.endm
+
+.macro WOOP
+	rjmp _pushw
+.endm
+
+.macro POON
+    rjmp _link
+.endm
+
+;----------------------------------------------------------------------
 ;    sizes
 ;
+; atmega8 have flash memory of 128 pages of 64 bytes
+	SPM_SIZE = 64
+
+; pad buffer for flush flash
+	PAD_SIZE = SPM_SIZE
+
 ; "Column 72 means Continue", 72 always \0
 ;   Readability is good
     TIB_SIZE = 72
@@ -207,20 +231,21 @@ is_\label:
 ;    eeprom used (256 words total, 248 avaliabe) 
 ;
     eeprom = 0x00
-    e_void = eeprom + 0 ; always zero
-    e_turn = eeprom + 2 ; turnkey rotine after boot
-    e_seed = eeprom + 4 ; seed for random
-    e_last = eeprom + 6 ; last link addres to dictionary 
-    e_here = eeprom + 8 ; next free flash address for dictionary
-    e_eram = eeprom + 10 ; next free sram address for variables, as stack
-    e_erom = eeprom + 12 ; next free eprom address for values, as stack
+    e_void = eeprom + 0  ; always zero
+    e_turn = eeprom + 2  ; routine after boot
+	e_rest = eeprom + 4  ; routine before warm reset
+    e_seed = eeprom + 6  ; seed for random
+    e_last = eeprom + 8  ; last link addres to dictionary 
+    e_here = eeprom + 10 ; next free flash address for dictionary
+    e_sram = eeprom + 12 ; next free sram address for variables, as stack
+    e_erom = eeprom + 14 ; next free eprom address for values, as stack
     
 ;----------------------------------------------------------------------
-;    flags 
-;   words can be 1 to 16 chars lenght, 
+;   words can be 1 to 15 chars lenght, 
 ;   almost over for normal english words http://norvig.com/mayzner.html
 ;
-; IMMEDIATE, COMPILE, HIDEN, TOGGLE
+;   flags 
+;   IMMEDIATE, COMPILE, HIDEN, TOGGLE
 ;
     F_IMMEDIATE = 0x80
     F_COMPILE_ONLY = 0x40
@@ -272,7 +297,7 @@ is_\label:
     CELL_SIZE = 2
 
 ;---------------------------------------------------------------------
-;    status register from error codes forth 2012
+; status register from error codes forth 2012
 
     NO_ERROR = 0
     INVALID_MEMORY = -9
@@ -289,12 +314,11 @@ is_\label:
  LF_    =   0x0a
  BS_    =   0x08
  TAB_   =   0x09
- BL_   =   0x20
+ BL_    =   0x20
  ESC_   =   0x1B
 
 ;---------------------------------------------------------------------
-; from avr manual, does not change for atmega8
-;
+; from avr manual, for atmega8, do not change 
     __SREG__ = 0x3f
     __SP_H__ = 0x3e
     __SP_L__ = 0x3d
@@ -315,22 +339,24 @@ is_\label:
     BIT_ZERO = 1
 
     SRAM_START = 0x060  ; SRAM from AVR manual
-    SRAM_END = 0x45F    ; SRAM from AVR manual
+    SRAM_END =   0x45F  ; SRAM from AVR manual
     RAMEND = SRAM_END
 
-    FLASH_RWW = 0x0000
+    FLASH_RWW  = 0x0000
     FLASH_NRWW = 0x1800 
-    FLASH_END = 0x1FFF 
+    FLASH_END  = 0x1FFF 
 
     FLASH_STOP = FLASH_NRWW
 
     SPM_PAGESIZE = 64    
+
 	E2PAGESIZE = 4
 
 #define EEEND 0x1FF
 #define FLASHEND 0x1FFF
 
     pagesize = (SPM_PAGESIZE - 1)
+
     pagemask = (~pagesize)
    
 

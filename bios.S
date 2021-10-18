@@ -241,7 +241,7 @@ WATCHDOG_SET:
 ;----------------------------------------------------------------------
 ; init usart, from avr-gcc public code, io ports as constants
 ;
-;    defaults to 9600, 8N1, no control
+;   defaults to 9600, 8N1, no control
 ;
 USART_SET:
     clr wrk_low

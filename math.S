@@ -11,7 +11,7 @@ HEADER "HASH", "HASH"
     ldi nds_low, lo8(djbHASH)
     ldi nds_high, hi8(djbHASH)
     pspull wrk_low, wrk_high
-    pspull ips_low, ips_high
+    pspull zpm_low, zpm_high
     ; get a char
 1:    srload tos_low
     add nds_low, tos_low
@@ -297,9 +297,9 @@ d16s_6:
 HEADER "utoa", "utoa" 
     NOOP
 
-    ldi ips_low, lo8(PIC)
-    ldi ips_high, hi8(PIC)
-    movw nds_low, ips_low
+    ldi zpm_low, lo8(PIC)
+    ldi zpm_high, hi8(PIC)
+    movw nds_low, zpm_low
     pspull wrk_low, wrk_high
     
 itoa:
