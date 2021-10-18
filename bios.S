@@ -69,12 +69,13 @@ TIM0_OVF:
     cli
 ;    increase counter and also clear R1
     clc
-; must correct do not use r0 or r1
+; must correct do not use r0 or r1 elsewhere
     clr r1
     inc r1
     add r2, r1
     dec r1
     adc r3, r1
+
 ;    offset counter 256 - 125 = 131
 ;    but was 10 clocks till out, 
 ;    then 131 + 10 = 141
@@ -130,7 +131,7 @@ must be less for 40oC
 ; EEPROM_write: ( u w -- )
 ; address is one of 0 to 511 ( 128 pages of 4 bytes )
 ;
-HEADER "weep", "weep"
+HEADER "(weep)", "weep"
 	NOOP
 	pspull wrk_low, wrk_high
 	pspull tos_low, tos_high
@@ -168,7 +169,7 @@ EEPROM_write:
 ; EEPROM_read: ( w -- u )
 ; address is one of 0 to 511 ( 128 pages of 4 bytes )
 ;
-HEADER "reep", "reep"
+HEADER "(reep)", "reep"
 	NOOP
 	pspull wrk_low, wrk_high
 	clr _work_
@@ -201,10 +202,6 @@ BOOT:
 ; disable interrupts
     cli
 
-; clear timer0 counter
-    clr r2
-    clr r3
-
 ;----------------------------------------------------------------------
 ; init timer0, with internal clock 8MHz, from gcc public code, io ports as constants
 ;
@@ -225,6 +222,10 @@ TIMER0_SET:
     in r16, 0x39
     ori r16, (1 << 0) 
     out 0x39, r16
+
+; clear timer0 counter
+    clr r2
+    clr r3
 
 ;----------------------------------------------------------------------
 ; init watch dog, from avr-gcc public code, io ports as constants

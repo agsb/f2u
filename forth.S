@@ -1,7 +1,7 @@
 /*
  *  DISCLAIMER"
  *
- *  Copyright © 2020, Alvaro Barcellos,
+ *  Copyright © 2020, Alvaro Gomes Sobral Barcellos,
  *
  *  Permission is hereby granted, free of charge, to any person obtaining
  *  a copy of this software and associated documentation files (the
@@ -39,32 +39,6 @@
 
 ;----------------------------------------------------------------------
 
-24/05/2021
-    
-    Done comma, flash, flush for solve sram//flash
-
-    implemented postpone as a flag to always compile next word only, solves compile and [compile]
-    
-    matriz of interpret now is:
-
-                            state 1        state 0        postone 1
-         common word        compile        execute        compile
-      immediate word        execute        execute        compile
-    
-    why not same for  ', [']
-
-19/05/2021
-
-    Rewrite for plain use of sram as buffer for flash, 
-
-02/05/2021
-
-    Rewrite again using sectorforth as minimal design
-
-18/04/2021
-
-    Rewrite all from u2f*, using a new minimal forth engine as LAST word 
-
 */
 
 ;
@@ -80,91 +54,110 @@
 
 ;----------------------------------------------------------------------
 ;
-; this is the forth engine,
+; this is the forth inner engine,
 ;
-; any twig must end with a reference to LAST
+; a compound word, aka twig, must end with a reference to ENDS
 ;
-; any leaf must start with NOOP and ends with POON
+; a primitive work, aka leaf, must start with NOOP and ends with POON
 ;
-; the size byte must be masked by  or 0xF0
+; the size byte must be masked by or 0xF0
 ;
-; instruction pointer r31:r30 as Z 
+; memory pointer r31:r30 as Z 
 ; return stack pointer r29:r28 as Y
 ; working register r25:r24 as W
+; instruction pointer r18:r19
 ; scratch register r0
 ;
-; only LPM access flash ? YES!
+; Can only LPM to access flash memory ? YES!
 ;
 ; all constants in flash
 ; all variables in sdram
 ;
+;
+; all leaf must start with NOOP and end with POON
+;
+.macro NOOP
+    nop
+.endm
+
+.macro POON
+    rjmp _link
+.endm
+
 ;----------------------------------------------------------------------
 .section .text
 .org 0x100
 .global forth
 forth:
-;;----------------------------------------------------------------------
+;----------------------------------------------------------------------
 ; inner interpreter,
+; it is also a primitive word
 ;
 HEADER "ENDS", "ENDS"
 ; does nothing and mark instructions code
     NOOP
 
-; pull ip from rsp
+; pull ips from rsp
 _exit:             
     rspull ips_low, ips_high
 
-; load w with contents of cell at ip  
+; load w with contents of cell at ips 
 _next:            
-    pmload wrk_low, wrk_high
+    pmload wrk_low, wrk_high ; also increments ips
 
-; if zero then is a exec 
-    cp wrk_low, wrk_high
-    brbs BIT_ZERO, _exec
+; if not zero then is a compound word, aka a twig, go to _enter
+    ;*** must test one for zero reference aka NULL
+    cpi wrk_low, 0
+    brne _enter
+    cpi wrk_high, 0
+    brne _enter
+
+; else branch and link, for exec it 
+_branch:
+.ifdef TRAMPOLIM
+; used for indirect contents, as in a list of references
+    pmload wrk_low, wrk_high ;  also increments ips
+    movw ips_low, wrk_low ; points to this reference
+.endif
+    
+    movw wrk_low, ips_low   ; copy this reference
+    addw wrk, +2            ; point to next reference
+    movw ipr_low, wrk_low   ; keep this reference
+    ijmp
+
+_link:
+    movw ips_low, ipr_low ; points to next reference
+    rjmp _next
 
 ; else is a reference
 _enter:            
-    rspush ips_low, ips_high
-	mov ips_low, wrk_low
+    rspush ips_low, ips_high ; push next reference
+	movw ips_low, wrk_low ; point to this reference
     rjmp _next
-
-; then exec it 
-_exec:
-
-.ifdef TRAMPOLIM
-    pmload wrk_low, wrk_high
-    movw ips_low, wrk_low
-.endif
-
-    ijmp
 
 ;----------------------------------------------------------------------
 ; 
 ; using no cached
 ; (1st, 2nd, 3rd, 4th, ...)
 ;
+; all operations are done in W (r24:r25) as acumulator
+; and it must be pushed when need else is scratch.
+;
 ;----------------------------------------------------------------------
 ;**********************************************************************
 ;
 ;    init of minimal words
-;
-.macro pushw
-.ifndef EXTENDED
-	rjmp _push
-.else
-    pspush wrk_low, wrk_high
-    POON
-.endif
-.endm
+;----------------------------------------------------------------------
 
 ;----------------------------------------------------------------------
-;ok ( w1 w2 -- w2 AND w1 )
+;ok ( -- 0 )
+; also a shortcut for false and push acumulator W
 HEADER "0", "ZERO"
     NOOP
 _ffalse:
     clr wrk_low
     clr wrk_high
-_push:
+_pushw:
     pspush wrk_low, wrk_high
     POON
 
@@ -173,12 +166,14 @@ _push:
 HEADER "0=", "ZEROEQU"
     NOOP
     pspull wrk_low, wrk_high
-    cp wrk_high, wrk_low
-    brbc BIT_ZERO, _ffalse
+    cpi wrk_low, 0
+    brne _ffalse 
+    cpi wrk_high, 0
+    brne _ffalse
 _ftrue:
     ser wrk_low
     ser wrk_high
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ; ok ! to (x a -- )
@@ -197,24 +192,24 @@ HEADER "@", "AT"
     pspull ips_low, ips_high
     srload wrk_low
     srload wrk_high
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ; ok ( -- rsp)
 HEADER "RP@", "RPAT"
     NOOP
     movw wrk_low, rsp_low
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ; ok ( -- psp )
 HEADER "SP@", "SPAT"
     NOOP
     movw wrk_low, psp_low
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
-;ok ( w1 w2 -- w2 AND w1 )
+;ok ( w1 w2 -- w2 NAND w1 )
 HEADER "NAND", "NAND"
     NOOP
     pspull wrk_low, wrk_high
@@ -223,10 +218,10 @@ HEADER "NAND", "NAND"
     and wrk_low, tos_low
     com wrk_high
     com wrk_low
-    pushw
+    rjmp _pushw
 
 ;----------------------------------------------------------------------
-;ok ( w1 w2 -- w2 AND w1 )
+;ok ( w1 w2 -- w2 + w1 )
 HEADER "+", "PLUS"
     NOOP
     pspull wrk_low, wrk_high
@@ -234,7 +229,7 @@ HEADER "+", "PLUS"
     clc
     add wrk_low, tos_low
     adc wrk_high, tos_high
-    pushw
+    rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;    end of minimal words
@@ -246,7 +241,7 @@ HEADER "TIB", "tib_"
     NOOP
     ldi wrk_low, lo8(TIB)
     ldi wrk_high, hi8(TIB)
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;ok 
@@ -254,7 +249,7 @@ HEADER ">IN", "toin_"
     NOOP
     ldi wrk_low, lo8(TOIN)
     ldi wrk_high, hi8(TOIN)
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;ok 
@@ -262,7 +257,15 @@ HEADER "HERE", "here_"
     NOOP
     ldi wrk_low, lo8(HERE)
     ldi wrk_high, hi8(HERE)
-	pushw
+	rjmp _pushw
+
+;----------------------------------------------------------------------
+;ok 
+HEADER "WERE", "were_"
+    NOOP
+    ldi wrk_low, lo8(WERE)
+    ldi wrk_high, hi8(WERE)
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;ok 
@@ -270,7 +273,7 @@ HEADER "LAST", "last_"
     NOOP
     ldi wrk_low, lo8(LAST)
     ldi wrk_high, hi8(LAST)
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;ok 
@@ -278,7 +281,7 @@ HEADER "BASE", "base_"
     NOOP
     ldi wrk_low, lo8(BASE)
     ldi wrk_high, hi8(BASE)
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;ok 
@@ -286,7 +289,7 @@ HEADER "STATE", "state_"
     NOOP
     ldi wrk_low, lo8(STATE)
     ldi wrk_high, hi8(STATE)
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;ok 
@@ -294,7 +297,7 @@ HEADER "BL", "BL"
     NOOP
     ldi wrk_low, 32
     clr wrk_high
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;----------------------------------------------------------------------
@@ -303,7 +306,7 @@ HEADER "(sram)", "sram"
     NOOP
     ldi wrk_low, lo8(SRAM)
     ldi wrk_high, hi8(SRAM)
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;ok 
@@ -311,7 +314,7 @@ HEADER "(erom)", "erom"
     NOOP
     ldi wrk_low, lo8(EROM)
     ldi wrk_high, hi8(EROM)
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;----------------------------------------------------------------------
@@ -325,7 +328,7 @@ HEADER "key", "key_"
     rjmp 1b
     in wrk_low, 0x0c
     clr wrk_high
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;
@@ -347,7 +350,7 @@ HEADER "emit", "emit_"
 HEADER "millis", "millis_"
     NOOP
     movw wrk_low, tmr_low
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ; does reset
@@ -414,7 +417,7 @@ HEADER "(doval)", "doval"
     adiw wrk_low, 2
     rspush wrk_low, wrk_high
     pmload wrk_low, wrk_high
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;
@@ -429,7 +432,7 @@ HEADER "(doref)", "doref"
     adiw wrk_low, 2
     rspush wrk_low, wrk_high
     movw wrk_low, ips_low    
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;
@@ -487,7 +490,7 @@ HEADER "(parse)", "parse"
     ; update TOIN
     sts TOIN+0, ips_low
     sts TOIN+1, ips_high
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;
@@ -664,7 +667,7 @@ HEADER "(refill)", "refill"
     ; save counter
     mov wrk_low, wrk_high
     clr wrk_high
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;
@@ -774,11 +777,11 @@ HEADER "(find)", "find"
 22:
 	; immediate (1)
 	inc wrk_low
-	pushw
+	rjmp _pushw
 24:
 	; common (-1)
 	dec wrk_low
-	pushw
+	rjmp _pushw
 
 30: 
     ; not found (0)
@@ -791,7 +794,7 @@ HEADER "(find)", "find"
     clr wrk_low
     clr wrk_low
     ; save results
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ; ok ( mul mut -- d )
@@ -826,7 +829,7 @@ HEADER "(basemul)", "basemul"
 	pspush tos_low, tos_high	
 	mov wrk_low, wrk_high
 	clr wrk_high
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;
@@ -870,7 +873,7 @@ HEADER "(basediv)", "basediv"
 	; push quotient
     pspush tos_low, tos_high
     ; push remainder
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;    ok ( -- ) 
@@ -1096,7 +1099,7 @@ HEADER "(number)", "number"
 
 100:
 	; push digits
-	pushw
+	rjmp _pushw
 
 ;----------------------------------------------------------------------
 ;
@@ -1418,7 +1421,12 @@ HEADER ";", "semmi"
 ;----------------------------------------------------------------------
 ;
 ; ok 
-;	
+;	updates the eprom permanent pointers, keeping things between reboots 
+;   last is link to last word
+;   here is the next free address in flash
+;   were is the next free address in sram
+;       keep in mind that all variables must be at sram
+;
 HEADER "(updateep)", "updateep"
 	NOOP
 	.word LAST, TO, hereto, lastto, ENDS

@@ -13,10 +13,21 @@ VOID:	.word 0
 NULL:	.word 0
 .equ	LINE, .
 
+/*
+eeprom = 0x00
+    e_void = eeprom + 0 ; always zero
+    e_turn = eeprom + 2 ; turnkey rotine after boot
+    e_seed = eeprom + 4 ; seed for random
+    e_last = eeprom + 6 ; last link addres to dictionary 
+    e_here = eeprom + 8 ; next free flash address for dictionary
+    e_eram = eeprom + 10 ; next free sram address for variables, as stack
+    e_erom = eeprom + 12 ; next free eprom address for values, as stack
+*/
+
 .equ free_sram, SRAM - 0x60
-.equ	SRAM, TIB - 20
-.equ	EROM, TIB - 18
-.equ	SEED, TIB - 16
+.equ	SRAM, TIB - 20  ; address to next free sram
+.equ	EROM, TIB - 18  ; address to next free erom
+.equ	SEED, TIB - 16  ; random seed
 .equ	THIS, TIB - 14	; pointer to next in line
 .equ	TOIN, TIB - 12	; pointer to next in tib
 .equ	KEEP, TIB - 10	; keep real here till update line
@@ -50,10 +61,10 @@ NULL:	.word 0
 
 
 /*
-1 	1st 	first
-2 	2nd 	second
-3 	3rd 	third
-4 	4th 	fourth
+1 	1st 	fst,    first  
+2 	2nd 	snd,    second
+3 	3rd 	thd,    third
+4 	4th 	fth,    fourth
 */
 
 
