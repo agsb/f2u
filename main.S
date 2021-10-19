@@ -3,17 +3,6 @@
 ;
 ;---------------------------------------------------------------------
 
-/*
-eeprom = 0x00
-    e_void = eeprom + 0 ; always zero
-    e_turn = eeprom + 2 ; turnkey rotine after boot
-    e_seed = eeprom + 4 ; seed for random
-    e_last = eeprom + 6 ; last link addres to dictionary 
-    e_here = eeprom + 8 ; next free flash address for dictionary
-    e_sram = eeprom + 10 ; next free sram address for variables, as stack
-    e_prom = eeprom + 12 ; next free eprom address for values, as stack
-*/
-
 ;---------------------------------------------------------------------
 ; sram mapped as: 	internal mapped 0x000 to 0x05F, free use 0x060 to 0x45F
 ; flash mapped as:  bios 0x000 to 0x45F, forth 0x460 to 0xCFFF, boot 0xCFFF to 0x1FFF
@@ -29,7 +18,7 @@ TURN:	.word 0		; routine to run after boot
 REST:	.word 0		; routine to run before reset
 LAST:	.word 0		; reference to latest word in dictionary
 HERE:	.word 0		; next free cell in flash dictionary
-SRAM:	.word 0		; next free cell in static ram < END
+SRAM:	.word 0		; next free cell in static ram ~ 740
 PROM:	.word 0		; next free cell in eeprom < 512
 
 ; those are volatile

@@ -15,6 +15,7 @@ For the AVR Atmega8, by Harvard architeture, memory is separed in 512 bytes eepr
 2. Flash memory layout
 
     0x000 to 0x1fff 128 program memory, as pages of 64 bytes
+    some at end will be reserved for optiboot and forth, for NRWW area
 
 # Memory Model
 

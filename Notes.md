@@ -1,11 +1,12 @@
- Notes about this
+# Notes about this
 
 *still not operational*
 
 *still lots of english errors, please correct me*
 
-**15/10/2021**
+## 15/10/2021
 
+rewrite of MemoryModel, with buffers, constants, variables, stacks, etc
 
 start to review of EPROM, SRAM, FLASH uses, memory maps, and easy variables allocation;
 
@@ -13,12 +14,11 @@ start to review of dual buffer, sram to flash, flash to sram, flush sizes and ho
 
 note to self: Need better understand those .md format codes.
 
-note to self: HATE any word that ends with a comma (,) or dot (.) else comma (,) and (.).
+note to self: I disagree any word that ends with a comma (,) or dot (.) else comma (,) and (.).
 
 todo: CREATE, <BUILDS, DOES>, 
 
-
-**14/10/2021**
+## 14/10/2021
 
 "Finally I understood that Charles Moore invents both BL and BX instructions in late 1970's", or not really maybe.
 
@@ -38,12 +38,35 @@ refactoring macros and memory reserved constants and variables.
 
 refactoring eprom use for load and save addresses for turnkey, seed, last, here, eram and erom 
 
-words can be 1 to 16 chars lenght, almost over for normal english words http://norvig.com/mayzner.html
+words can be 1 to 15 chars lenght, almost over for normal english words http://norvig.com/mayzner.html
 
 todo: someday, must unify call "data or parameter or argument" stack in all texts.
 
+## 10/06/2021 
 
-**25/05/2021**
+The basic functional words are done, as minimal set for parse, find, evaluate, number, create, does;
+    
+Controls
+
+a)  testing top of stack:
+
+*standart implementation*
+(if ... else ... then ...), forward jumps, (1)
+(begin ... again), inconditional backward jump, (2)
+(begin ... until), conditional backward jump, (2)
+
+*non-standart implementation* trying!
+(while ... repeat), conditional forward jump and inconditional  backward jump, (3)
+(while ... again), maybe ?
+att: *repeat jumps to while*, both independent of begin.
+
+b) testing values on return stack *not for now* 
+why not variables I, J, K ? I dont like using return stack for loops.
+(do ... leave ... loop), counter backward jump, test at loop
+(for ... next), counter backward jump, test at for
+
+
+## 25/05/2021
 
 "Another way to look at the problem is to state that the language of the standard does not match any Forth implementations except cmForth and Gforth. "  http://www.mpeforth.com/arena/SpecialWords3.pdf
 
@@ -52,40 +75,31 @@ My solution for the flash-sram dilema is implement a buffer where all compiled g
 about postpone, compile, execute, :
 postone implemented as a new status in the STATE variable, valid only for the next word, in which any word must be compiled, then outer interpret works as:
   
-        state of interpret:       COMPILE   EXECUTE   POSTPONE
-        at common word does       compile   execute   compile
-        at immediate word does    execute   execute   compile
+    state of interpret:       COMPILE   EXECUTE   POSTPONE
+    at common word does       compile   execute   compile
+    at immediate word does    execute   execute   compile
     
     
-24/05/2021
+## 24/05/2021
     
-    Done comma, flash, flush for solve sram//flash, not full tested
+Done comma, flash, flush for solve sram//flash, not tested
 
-    implemented postpone as a flag to always compile next word only, solves compile and [compile], etc
-    
-    matriz of interpret now is:
+implemented postpone as a flag to always compile next word only, solves compile and [compile], etc
 
-                            state 1        state 0        postone 1
-         common word        compile        execute        compile
-      immediate word        execute        execute        compile
-    
-    why not same for  ', [']
+## 19/05/2021
 
-19/05/2021
+Rewrite for plain use of sram as buffer for flash, trying.
 
-    Rewrite for plain use of sram as buffer for flash, 
+## 02/05/2021
 
-02/05/2021
+Rewrite again using sectorforth as minimal design
 
-    Rewrite again using sectorforth as minimal design
+## 18/04/2021
 
-18/04/2021
-
-    Rewrite all from u2f*, using a new minimal forth engine as LAST word 
-
+Rewrite all from u2f*, using a new minimal forth engine as LAST word 
 
     
-**12/05/2021**
+## 12/05/2021
 
 For simplicity all programming of flash memory is made with common tools and the boot monitor is MiniCore, with optiboot of 512 bytes. 
 
@@ -93,7 +107,28 @@ Optiboot version 8.0 does program flash memory, as do_spm, modified from <avr/bo
 
 For use do_spm, need a routine to read a page from flash into sram, update bytes at sram, then write a page from sram into flash, using do_spm. Maybe keep ever the "next" page (64 bytes) in sram, and write when full.
 
-**pre 10/05/2021**
+Start basic assembler for parse, find, evaluate, number, create, does;
+  
+Defined specific functions for flash memory. All changes at dictionary are done in a buffer sram. 
+
+Created routines, a *flash* for init the buffer, from flash page of HERE, and a *flush* for copy to flash update
+
+## 08/04/2021** resumes from 2020
+  
+The inner interpreter is done and is very small and effcient;
+
+The primitive words are done, as minimal set from forth plus some extras;
+
+But I'm at easter egg of forth:
+I have sources of words as ": word ~~~ ;" and I need a forth done to compile or
+I have sources of words compiled with some forth and need use same forth engine;
+
+Then sectorforth (https://github.com/cesarblum/sectorforth) comes to simplifly all, and I restart again.
+
+The optiboot v8.0 could do program flash memory, as do_spm, so will use it as boot loader.
+
+
+## pre 10/05/2021
 
 AVR Atmegas have a harvard architeture them flash program memory (flash) and static ram (sram) memory have different spaces. To access anything at flash must use lpm instruction, which only do words address, because all instructions are 16bits words. A atmega8 with 8k flash have really 4k words and access must do shifts to transform indirect references;
 
@@ -132,8 +167,10 @@ ForthArduino_1.pdf, http://forth.org/OffeteStore/2159_328eforth.zip
 
 ** ENGINES **
 
-Codes and Parameters
-  the code field holds "what to do" for the inner interpreter and in classic forth can be one of: 
+### Codes and Parameters
+
+the code field holds "what to do" for the inner interpreter and in classic forth can be one of: 
+    
      _nest, push instruction point into return
      _unest, pull instruction point from return
      _exec, jump to next cell 
@@ -145,17 +182,19 @@ Codes and Parameters
      _dolit, copy next cell to data, advance two cells
      _pushrs, pullrs, _pushds, _pullds, in return stack or data stack
      
-    im most forths those are specific inline opcodes 
+im most forths those are specific inline opcodes 
     
-    Since f2u intents a concept of immutable dictionary without inline code, the inner engine only see cells as references with one exception, if a cell reference is 0x0 then next cell is a reference to a leaf, to be executed.
-    this makes possible no need of CODE in dictionary but costs a comparation and a test at each reference, about 2 cycles in a AVR. the dictionary then is like:
+Since f2u intents a concept of immutable dictionary without inline code, the inner engine only see cells as references with one exception, if a cell reference is 0x0 then next cell is a reference to a leaf, to be executed.
+
+this makes possible no need of CODE in dictionary but costs a comparation and a test at each reference, about 2 cycles in a AVR. the dictionary then is like:
     
-    a leaf 0x0000, reference for a primitive.
-    a twig reference, reference, ..., reference, _inner_
-    yes, _inner_ is a reference to the forth inner engine that does all work,
+a leaf 0x0000, reference for a primitive.
+a twig reference, reference, ..., reference, _inner_
+yes, _inner_ is a reference to the forth inner engine that does all work,
     
-    the dictionary order does not matter, but is more easy for future ports that all primitives precede all compounds;
-    then to port for other MCU or CPU, just rewrote the engine and primitives, change the references of primitives at dictionary and done.
+the dictionary order does not matter, but is more easy for future ports that all primitives precede all compounds;
+
+then to port for other MCU or CPU, just rewrote the engine and primitives, change the references of primitives at dictionary and done.
     
       boot+bios+forth+more where 
       boot, setup at boot or reset; 
@@ -167,3 +206,4 @@ Codes and Parameters
 in https://github.com/cesarblum/sectorforth a revival of https://groups.google.com/g/comp.lang.forth/c/NS2icrCj1jQ
 
 in https://guides.github.com/features/mastering-markdown/
+

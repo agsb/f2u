@@ -232,9 +232,9 @@ is_\label:
 ;
     eeprom = 0x00
     e_void = eeprom + 0  ; always zero
-    e_turn = eeprom + 2  ; routine after boot
-	e_rest = eeprom + 4  ; routine before warm reset
-    e_seed = eeprom + 6  ; seed for random
+    e_seed = eeprom + 2  ; seed for random
+    e_turn = eeprom + 4  ; routine after boot
+	e_rest = eeprom + 6  ; routine before reset
     e_last = eeprom + 8  ; last link addres to dictionary 
     e_here = eeprom + 10 ; next free flash address for dictionary
     e_sram = eeprom + 12 ; next free sram address for variables, as stack
