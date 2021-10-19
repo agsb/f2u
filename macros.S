@@ -358,8 +358,6 @@ is_\label:
     pagesize = (SPM_PAGESIZE - 1)
 
     pagemask = (~pagesize)
-   
-
 
 /* Constants */
 #define RAMSTART         (0x60)
@@ -371,6 +369,5 @@ is_\label:
 
 #define SPM_PAGESIZE        64
 #define FLASHEND         0x1FFF
-
 
 

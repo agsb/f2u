@@ -42,7 +42,7 @@ KEEP:	.byte 0		; actual page of flash memory, HERE/64
 TIB0:	.byte TIB_SIZE	; terminal input buffer
 PAD0:	.byte PAD_SIZE 	; scratch pad for compile to flash
 PIC0:	.byte PIC_SIZE	; picture numeric format buff
-USE0:	.word .			; start or user free sram
+USE0:	.word 0 		; start or user free sram
 
 .equ free_sram, END - USE0
 
