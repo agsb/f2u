@@ -33,7 +33,7 @@ PAD0:	.byte PAD_SIZE 	; scratch pad for compile to flash
 PIC0:	.byte PIC_SIZE	; picture numeric format buff
 USE0:	.word 0 		; start or user free sram
 
-.equ free_sram, END - USE0
+;.equ free_sram, END - FREE
 
 .equ	END, PSP - STACK_SIZE
 .equ	PSP, RSP - STACK_SIZE
@@ -46,8 +46,8 @@ USE0:	.word 0 		; start or user free sram
 .p2align 1, 0x00
 #include "forth.S"
 
-.p2align 1, 0x00
-#include "more.S"
+; .p2align 1, 0x00
+; #include "more.S"
 
 .p2align 1, 0x00
 #include "math.S"

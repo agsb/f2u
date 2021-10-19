@@ -13,7 +13,8 @@ HEADER "HASH", "HASH"
     pspull wrk_low, wrk_high
     pspull zpm_low, zpm_high
     ; get a char
-1:    srload tos_low
+1:    
+	srload tos_low
     add nds_low, tos_low
     adc nds_high, _zero_
     lsl nds_low
@@ -26,10 +27,12 @@ HEADER "HASH", "HASH"
     rol nds_high
     lsl nds_low
     rol nds_high
-    ; decrease counter
+    
+; decrease counter
     sbiw wrk_low, 1
     brge 1b
-2:  pspush nds_low, nds_high
+2:  
+	pspush nds_low, nds_high
     POON
 
 ;----------------------------------------------------------------------

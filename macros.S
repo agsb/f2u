@@ -64,7 +64,7 @@
 
 ;----------------------------------------------------------------------
 ;
-;    adapted from amforth-6.9
+;  trick adapted from amforth-6.9
 ;
 .macro STRINGS string
 ;    .word DOSLIT
@@ -82,14 +82,16 @@
 ;----------------------------------------------------------------------
 ;
 ; header of leaf word in dictionary
+;	flags must be 0x80, 0x40, 0x20, 0x10
+;	size  must be 1 to 15
 ;
-.macro HEADER name, label
+.macro HEADER name, label, flags
 is_\label:
     .p2align 1, 0x00
 7:    
     .word _link_
     .set _link_, 7b
-    .byte 9f - 8f
+    .byte \flags + (9f - 8f)
 8:    
     .ascii "\name"
 9:    
