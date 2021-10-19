@@ -2,7 +2,6 @@
  *  DISCLAIMER"
  *
  *  Copyright © 2020, Alvaro Gomes Sobral Barcellos,
- *
  *  Permission is hereby granted, free of charge, to any person obtaining
  *  a copy of this software and associated documentation files (the
  *  "Software"), to deal in the Software without restriction, including
@@ -22,411 +21,9 @@
  *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  *
 */
-
-/*
 ;
-;	Small Forth for ATmega8
+; those tests are using br* must be at 64 range, so reorder can fail
 ;
-;---------------------------------------------------------------------
-; dictionary structure
-;	
-;	cell size is a word of 16 bits
-;
- .word  link    link to previous
- .byte  size    sizeof name OR flags
- .ascii "name" name, plus a pad byte with BL (0x32) if size is odd
- .word  param,  many
-
-;----------------------------------------------------------------------
-
-*/
-
-;
-; classics
-;
-    .NOLIST
-
-    .LIST
-
-;----------------------------------------------------------------------
-; start of dictionary
-;
-
-;----------------------------------------------------------------------
-;
-; this is the forth inner engine,
-;
-; a compound word, aka twig, must end with a reference to ENDS
-;
-; a primitive work, aka leaf, must start with NOOP and ends with POON
-;
-; the size byte must be masked by or 0xF0
-;
-; memory pointer r31:r30 as Z 
-; return stack pointer r29:r28 as Y
-; working register r25:r24 as W
-; instruction pointer r18:r19
-; scratch register r0
-;
-; Can only LPM to access flash memory ? YES!
-;
-; all constants in flash
-; all variables in sdram
-;
-
-;----------------------------------------------------------------------
-.section .text
-.org 0x100
-.global forth
-forth:
-;----------------------------------------------------------------------
-; inner interpreter,
-; it is also a primitive word
-;
-HEADER "ENDS", "ENDS"
-; does nothing and mark instructions code
-    NOOP
-
-; pull ips from rsp
-_exit:             
-    rspull zpm_low, zpm_high
-
-; load w with contents of cell at ips 
-_next:            
-    pmload wrk_low, wrk_high ; also increments zpm
-
-; if not zero then is a compound word, aka a twig, go to _enter
-    ;*** must test one for zero reference aka NULL
-	
-    cpi wrk_low, 0
-    brne _enter
-    cpi wrk_high, 0
-    brne _enter
-
-; else branch and link, for exec it 
-_branch:
-    movw wrk_low, zpm_low   ; copy this reference
-    adiw wrk_low, 2         ; point to next reference
-    movw ipr_low, wrk_low   ; keep this reference
-    ijmp
-
-_link:
-    movw zpm_low, ipr_low ; points to next reference
-    rjmp _next
-
-; else is a reference
-_enter:            
-    rspush zpm_low, zpm_high ; push next reference
-	movw zpm_low, wrk_low ; point to this reference
-    rjmp _next
-
-;----------------------------------------------------------------------
-; 
-; using no cached
-; (1st, 2nd, 3rd, 4th, ...)
-;
-; all operations are done in W (r24:r25) as acumulator
-; and it must be pushed when need else is scratch.
-;
-;----------------------------------------------------------------------
-;**********************************************************************
-;
-;    init of minimal words
-;----------------------------------------------------------------------
-
-;----------------------------------------------------------------------
-;ok ( -- 0 )
-; also a shortcut for false and push acumulator W, used in many words
-HEADER "0", "ZERO"
-    NOOP
-_ffalse:
-    clr wrk_low
-    clr wrk_high
-_pushw:
-    pspush wrk_low, wrk_high
-    POON
-
-;----------------------------------------------------------------------
-; ok 0=
-HEADER "0=", "ZEROEQU"
-    NOOP
-    pspull wrk_low, wrk_high
-    cpi wrk_low, 0
-    brne _ffalse 
-    cpi wrk_high, 0
-    brne _ffalse
-_ftrue:
-    ser wrk_low
-    ser wrk_high
-	WOOP
-
-;----------------------------------------------------------------------
-; ok ! to (x a -- )
-; only in sram
-HEADER "!", "TO"
-    NOOP
-    pspull zpm_low, zpm_high
-    pspull wrk_low, wrk_high
-    srsave wrk_low
-    srsave wrk_high
-    POON
-
-;----------------------------------------------------------------------
-; ok @ at ( a -- w )
-; only in sram
-HEADER "@", "AT"
-    NOOP
-    pspull zpm_low, zpm_high
-    srload wrk_low
-    srload wrk_high
-	WOOP
-
-;----------------------------------------------------------------------
-; ok ( -- rsp)
-HEADER "RS@", "RPAT"
-    NOOP
-    movw wrk_low, rsp_low
-	WOOP
-
-;----------------------------------------------------------------------
-; ok ( -- psp )
-HEADER "PS@", "SPAT"
-    NOOP
-    movw wrk_low, psp_low
-	WOOP
-
-;----------------------------------------------------------------------
-;ok ( w1 w2 -- w2 NAND w1 )
-HEADER "NAND", "NAND"
-    NOOP
-    pspull wrk_low, wrk_high
-    pspull tos_low, tos_high
-    and wrk_high, tos_high
-    and wrk_low, tos_low
-    com wrk_high
-    com wrk_low
-    WOOP
-
-;----------------------------------------------------------------------
-;ok ( w1 w2 -- w2 + w1 )
-HEADER "+", "PLUS"
-    NOOP
-    pspull wrk_low, wrk_high
-    pspull tos_low, tos_high
-    clc
-    add wrk_low, tos_low
-    adc wrk_high, tos_high
-    WOOP
-
-;----------------------------------------------------------------------
-;    end of minimal words
-;**********************************************************************
-
-;----------------------------------------------------------------------
-;	load variable
-
-;----------------------------------------------------------------------
-;ok 
-HEADER "TIB", "tib_"
-    NOOP
-    ldi wrk_low, lo8(TIB0)
-    ldi wrk_high, hi8(TIB0)
-	WOOP
-
-;----------------------------------------------------------------------
-;ok 
-HEADER "HERE", "here_"
-    NOOP
-    ldi wrk_low, lo8(HERE)
-    ldi wrk_high, hi8(HERE)
-	WOOP
-
-;----------------------------------------------------------------------
-;ok 
-HEADER "LATEST", "last_"
-    NOOP
-    ldi wrk_low, lo8(LAST)
-    ldi wrk_high, hi8(LAST)
-	WOOP
-
-;----------------------------------------------------------------------
-;ok 
-HEADER "STATE", "state_"
-    NOOP
-    ldi wrk_low, lo8(STAT)
-    ldi wrk_high, hi8(STAT)
-	WOOP
-
-;----------------------------------------------------------------------
-;ok 
-HEADER "BASE", "base_"
-    NOOP
-    ldi wrk_low, lo8(BASE)
-    ldi wrk_high, hi8(BASE)
-	WOOP
-
-;----------------------------------------------------------------------
-;ok 
-HEADER "BL", "BL"
-    NOOP
-    ldi wrk_low, 32
-    clr wrk_high
-	WOOP
-
-;----------------------------------------------------------------------
-;----------------------------------------------------------------------
-;ok 
-HEADER "(sram)", "sram"
-    NOOP
-    ldi wrk_low, lo8(SRAM)
-    ldi wrk_high, hi8(SRAM)
-	WOOP
-
-;----------------------------------------------------------------------
-;ok 
-HEADER "(erom)", "erom"
-    NOOP
-    ldi wrk_low, lo8(PROM)
-    ldi wrk_high, hi8(PROM)
-	WOOP
-
-;----------------------------------------------------------------------
-;----------------------------------------------------------------------
-;
-; beware, it blocks! test if can receive a char
-;
-HEADER "key", "key_"
-    NOOP
-1:  
-    sbis 0x0b, 7
-    rjmp 1b
-2:
-    in wrk_low, 0x0c
-    clr wrk_high
-	WOOP
-
-;----------------------------------------------------------------------
-; it blocks! test if can receive a char, or return FALSE
-;
-HEADER "key?", "qkey_"
-    NOOP
-3:
-	sbis 0x0b, 7
-	rjmp _ffalse
-	rjmp 2b
-
-;----------------------------------------------------------------------
-;
-; beware, it blocks! test if can send a char 
-;
-HEADER "emit", "emit_"
-    NOOP
-1:  
-    sbis 0x0b, 5
-    rjmp 1b
-2:
-    pspull wrk_low, wrk_high
-    out 0x0c, wrk_low
-    POON
-
-;----------------------------------------------------------------------
-; test if can send a char, or return FALSE 
-;
-HEADER "emit?", "qemit_"
-    NOOP
-3:  
-    sbis 0x0b, 5
-    rjmp _ffalse
-    rjmp 2b
-
-;----------------------------------------------------------------------
-;
-; ok push timer counter
-;
-HEADER "millis", "millis_"
-    NOOP
-    movw wrk_low, tmr_low
-	WOOP
-
-;----------------------------------------------------------------------
-; does reset
-;
-HEADER "BYE", "BYE"
-    NOOP
-    rjmp RESET
-    POON
-
-;----------------------------------------------------------------------
-;
-HEADER "COLD", "COLD"
-    NOOP
-; restart return stack
-    ldi rsp_low, lo8(RSP)
-    ldi rsp_high, hi8(RSP)
-; restart parameter stack
-    ldi psp_low, lo8(PSP)
-    ldi psp_high, hi8(PSP)
-; preload to WARM
-    ; next word
-    ldi zpm_low, lo8(WARM)
-    ldi zpm_high, hi8(WARM)
-    rspush zpm_low, zpm_high
-    POON
-
-;----------------------------------------------------------------------
-; fake
-HEADER  "WARM", "WARM"
-    NOOP
-    ; verify error code
-    ; resets etc
-    POON
-
-;----------------------------------------------------------------------
-;
-; ok ( --- ) 
-; tricky 
-; iBUGGED ZZZZ NOT REALLY 
-; all new word starts at THIS=0, 1 and 2 bytes is link, 3 byte is size+flags
-HEADER "(immediate)", "immediate"
-    NOOP
-    ldi zpm_low, lo8(LINE)
-    ldi zpm_high, hi8(LINE)
-    adiw zpm_low, 3
-    srload wrk_low
-    ori wrk_low, F_IMMEDIATE
-    sbiw zpm_low, 1
-    srsave wrk_low
-    POON
-    
-;----------------------------------------------------------------------
-;
-; ok ( --- w ) 
-;
-; push the contents of next to stack, updates next
-; only for flash
-; push the value pointed by next into stack
-HEADER "(doval)", "doval"
-    NOOP
-	movw zpm_low, ipr_low
-    pmload wrk_low, wrk_high
-	movw ipr_low, zpm_low
-	WOOP
-
-;----------------------------------------------------------------------
-;
-; ok ( --- a )
-;
-; push the reference of next to stack, updates next
-; only for flash
-; push next to stack
-HEADER "(doref)", "doref"
-    NOOP
-	movw zpm_low, ipr_low
-	movw wrk_low, zpm_low
-	adiw zpm_low, 2
-	movw ipr_low, zpm_low
-	WOOP
-
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- 0 | -1)
 HEADER "=", "EQUAL"
@@ -475,6 +72,7 @@ HEADER ">", "GTHAN"
 ; ok ( -- -1 )
 HEADER "TRUE", "FTRUE"
 	NOOP
+;	rjmp _iftrue
 _iftrue:
     ser wrk_low
     ser wrk_high
@@ -484,6 +82,7 @@ _iftrue:
 ;ok ( -- 0 )
 HEADER "FALSE", "FFALSE"
 	NOOP
+;	rjmp _iffalse
 _iffalse:
 	clr wrk_low
 	clr wrk_high
@@ -607,48 +206,36 @@ HEADER "ROT", "ROT"
 
 ;----------------------------------------------------------------------
 ; ok ( w -- 0 | w w )
-; dup if tos not zero
-;
 HEADER "?DUP", "ZDUP"
 	NOOP
 	pspull wrk_low, wrk_high
-	cpi wrk_low, 0
-	brne 1f
-	cpi wrk_high, 0
-	brne 1f
-	WOOP
-1:
+	cp wrk_low, wrk_high
+	brbs BIT_ZERO, 1f
 	pspush wrk_low, wrk_high
+1:	
 	WOOP
 
 ;----------------------------------------------------------------------
 ;ok ( u -- )
-; branch IF tos IS zero
-;
+;	F18A	T=0
 HEADER "?BRANCH", "QBRANCH"
 	NOOP
 	pspull wrk_low, wrk_high
-	cpi wrk_low, 0
-	brne 1f
-	cpi wrk_high, 0
-	brne 1f
-; goto branch
-	rjmp 2f 
-; skip next
-1:
-	movw wrk_low, ipr_low
-	adiw wrk_low, 2
-	movw ipr_low, wrk_low
+	cp wrk_low, wrk_high
+	brbs BIT_ZERO, 1f
+	rspull wrk_low, wrk_high
+	adiw wrk_low, CELL_SIZE
+	rspush wrk_low, wrk_high
+1:	
 	POON
 
 ;----------------------------------------------------------------------
 ;ok ( branch next reference )
 HEADER "BRANCH", "BRANCH"
 	NOOP
-2:
-	movw zpm_low, ipr_low
+    rspull zpm_low, zpm_high
     pmload wrk_low, wrk_high
-    movw ipr_low, wrk_low
+    rspush wrk_low, wrk_high
 	POON
 
 ;----------------------------------------------------------------------
