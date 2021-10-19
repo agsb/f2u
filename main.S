@@ -22,8 +22,8 @@ SRAM:	.word 0		; next free cell in static ram ~ 740
 PROM:	.word 0		; next free cell in eeprom < 512
 
 ; those are volatile
-BASE:	.byte 0		; numeric radix for convertion
-STAT:	.byte 0		; state of interpreter, 0 interprete, 1 compile, 2 postpone
+STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile, 2 postpone
+BASE:	.word 0		; numeric radix for convertion
 TOIN:	.byte 0		; next free char in terminal input buffer
 THIS:	.byte 0		; next free cell in PAD for flash flush
 KEEP:	.byte 0		; actual page of flash memory, HERE/64 

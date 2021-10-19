@@ -53,7 +53,7 @@ note: last stack is for extra libraries, not for forth
     
     PAD     scratch pad , 64 bytes
     
-    HLD     reserved for numeric convertion, 16 bytes
+    PIC     picture numeric convertion, 16 bytes
 
     Notes:
     
@@ -61,28 +61,26 @@ note: last stack is for extra libraries, not for forth
     
     PAD is for buffer compile words and flush to flash
     
-    HLD if for use in numeric format
+    PIC is for use in numeric formating
 
 ### 2. Variables non volatile, cells that need be periodic saved to eeprom
 
     void    always zero, 2 bytes
     
+    seed    seed for ramdom routine, 2 bytes
+
     turn    routine to run after boot, 2 bytes
+
+    rest    routine to run before reset, 2 bytes
     
     latest  last entry in dictionary, 2 bytes
-    
-    seed    seed for ramdom routine, 2 bytes
     
     dp      next free cell in flash memory, 2 bytes
     
     up      next free cell in sram memory, 2 bytes
     
     ep      next free cell in eeprom, 2 bytes
-
-    last    next free cell at flash, for flush
-
-    temp    temporary use
-
+   
 ### 3. variables volatiles, use as half cells
 
     state   state of interpreter, 1 byte
