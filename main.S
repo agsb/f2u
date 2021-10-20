@@ -24,6 +24,11 @@ PROM:	.word 0		; next free cell in eeprom < 512
 ; those are volatile
 STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile, 2 postpone
 BASE:	.word 0		; numeric radix for convertion
+
+PAGE:	.word 0
+LINE:	.word 0
+
+CURS:	.byte 0
 TOIN:	.byte 0		; next free char in terminal input buffer
 THIS:	.byte 0		; next free cell in PAD for flash flush
 KEEP:	.byte 0		; actual page of flash memory, HERE/64 
