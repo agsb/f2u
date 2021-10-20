@@ -300,8 +300,8 @@ d16s_6:
 HEADER "utoa", "utoa" 
     NOOP
 
-    ldi zpm_low, lo8(PIC0)
-    ldi zpm_high, hi8(PIC0)
+    ldi zpm_low, lo8(PIC)
+    ldi zpm_high, hi8(PIC)
     movw nds_low, zpm_low
     pspull wrk_low, wrk_high
     

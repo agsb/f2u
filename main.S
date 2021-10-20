@@ -33,13 +33,18 @@ TOIN:	.byte 0		; next free char in terminal input buffer
 THIS:	.byte 0		; next free cell in PAD for flash flush
 KEEP:	.byte 0		; actual page of flash memory, HERE/64 
 
+/*
 TIB0:	.byte TIB_SIZE	; terminal input buffer
 PAD0:	.byte PAD_SIZE 	; scratch pad for compile to flash
 PIC0:	.byte PIC_SIZE	; picture numeric format buff
 USE0:	.word 0 		; start or user free sram
+*/
 
 ;.equ free_sram, END - FREE
 
+.equ	TIB, PAD - TIB_SIZE
+.equ	PAD, PIC - PAD_SIZE
+.equ	PIC, END - PIC_SIZE
 .equ	END, PSP - STACK_SIZE
 .equ	PSP, RSP - STACK_SIZE
 .equ	RSP, SPZ - STACK_SIZE
@@ -51,8 +56,8 @@ USE0:	.word 0 		; start or user free sram
 .p2align 1, 0x00
 #include "forth.S"
 
-; .p2align 1, 0x00
-; #include "more.S"
+.p2align 1, 0x00
+#include "inside.S"
 
 .p2align 1, 0x00
 #include "math.S"

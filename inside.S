@@ -445,10 +445,10 @@ HEADER "(basediv)", "basediv"
 ;    set bit_compile in STATE to zero
 HEADER "]", "isexecute"
     NOOP
-    lds wrk_low, STATE+0
+    lds wrk_low, STAT+0
     cbr wrk_low, BIT_COMPILE
 states:
-    sts STATE, wrk_low
+    sts STAT, wrk_low
     POON
 
 ;----------------------------------------------------------------------
@@ -456,7 +456,7 @@ states:
 ;    set bit_compile in STATE to one
 HEADER "[", "iscompile"
     NOOP
-    lds wrk_low, STATE+0
+    lds wrk_low, STAT+0
     sbr wrk_low, BIT_COMPILE
     rjmp states
 
@@ -466,7 +466,7 @@ HEADER "[", "iscompile"
 HEADER "(nopostpone)", "nopostpone"
     NOOP
     ; clear postpone
-    lds wrk_low, STATE+0
+    lds wrk_low, STAT+0
     cbr wrk_low, BIT_POSTONE 
     rjmp states
     
@@ -476,7 +476,7 @@ HEADER "(nopostpone)", "nopostpone"
 HEADER "(postpone)", "ispostpone"
     NOOP
     ; clear postpone
-    lds wrk_low, STATE+0
+    lds wrk_low, STAT+0
     sbr wrk_low, BIT_POSTONE 
     rjmp states
     
@@ -494,7 +494,7 @@ HEADER  "(eval)", "evaluate"
 
 10:
     ; load state
-    lds tos_low, STATE+0
+    lds tos_low, STAT+0
 
     ; ever execute 
 	cpi tos_low, 0
@@ -507,7 +507,7 @@ HEADER  "(eval)", "evaluate"
     ; ever compile
     ; clear postpone
     cbr tos_high, BIT_POSTONE ; must not be bit 0
-    sts STATE+0, tos_high
+    sts STAT+0, tos_high
     rjmp 16f    
     
 14:
