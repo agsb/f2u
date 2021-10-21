@@ -21,7 +21,7 @@
  *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
  *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  *
-*/
+ */
 
 /*
 ;
@@ -98,7 +98,7 @@ _next:
     pmload wrk_low, wrk_high ; also increments zpm
 
 ; if not zero then is a compound word, aka a twig, go to _enter
-    ;*** must test one for zero reference aka NULL
+    ;*** must test for NULL
     
     cpi wrk_low, 0
     brne _enter
@@ -129,6 +129,7 @@ _enter:
 ;
 ; all operations are done in W (r24:r25) as acumulator
 ; and it must be pushed when need else is scratch.
+; may use temporary Tos (r22:r23) and Nos (r20:r21) 
 ;
 ;----------------------------------------------------------------------
 ;**********************************************************************
@@ -138,7 +139,7 @@ _enter:
 
 ;----------------------------------------------------------------------
 ; ok ( -- 0 )
-; also a shortcut for false and push acumulator W, used in many words
+; also a shortcut for false and push W into acumulator, used in many words
 HEADER "0", "ZERO"
     NOOP
 _ffalse:
@@ -150,13 +151,13 @@ _pushw:
 
 ;----------------------------------------------------------------------
 ; ok 0=
+;
 HEADER "0=", "ZEROEQU"
     NOOP
     pspull wrk_low, wrk_high
-    cpi wrk_low, 0
+	or wrk_low, wrk_high
+	cpi wrk_low, 0
     brne _ffalse 
-    cpi wrk_high, 0
-    brne _ffalse
 _ftrue:
     ser wrk_low
     ser wrk_high
@@ -185,6 +186,7 @@ HEADER "@", "AT"
 
 ;----------------------------------------------------------------------
 ; ok ( -- rsp)
+;
 HEADER "RS@", "RPAT"
     NOOP
     movw wrk_low, rsp_low
@@ -192,13 +194,15 @@ HEADER "RS@", "RPAT"
 
 ;----------------------------------------------------------------------
 ; ok ( -- psp )
+;
 HEADER "PS@", "SPAT"
     NOOP
     movw wrk_low, psp_low
     WOOP
 
 ;----------------------------------------------------------------------
-;ok ( w1 w2 -- w2 NAND w1 )
+; ok ( w1 w2 -- w2 NAND w1 )
+;
 HEADER "NAND", "NAND"
     NOOP
     pspull wrk_low, wrk_high
@@ -210,7 +214,7 @@ HEADER "NAND", "NAND"
     WOOP
 
 ;----------------------------------------------------------------------
-;ok ( w1 w2 -- w2 + w1 )
+; ok ( w1 w2 -- w2 + w1 )
 HEADER "+", "PLUS"
     NOOP
     pspull wrk_low, wrk_high
@@ -225,10 +229,11 @@ HEADER "+", "PLUS"
 ;**********************************************************************
 
 ;----------------------------------------------------------------------
-;    load variable
+;    load variables
 
 ;----------------------------------------------------------------------
-;ok 
+; ok ( -- w)
+;
 HEADER "TIB", "tib_"
     NOOP
     ldi wrk_low, lo8(TIB)
@@ -236,7 +241,8 @@ HEADER "TIB", "tib_"
     WOOP
 
 ;----------------------------------------------------------------------
-;ok 
+; ok ( -- w)
+;
 HEADER "HERE", "here_"
     NOOP
     ldi wrk_low, lo8(HERE)
@@ -244,7 +250,8 @@ HEADER "HERE", "here_"
     WOOP
 
 ;----------------------------------------------------------------------
-;ok 
+; ok ( -- w)
+;
 HEADER "LATEST", "last_"
     NOOP
     ldi wrk_low, lo8(LAST)
@@ -252,7 +259,8 @@ HEADER "LATEST", "last_"
     WOOP
 
 ;----------------------------------------------------------------------
-;ok 
+; ok ( -- w)
+;
 HEADER "STATE", "state_"
     NOOP
     ldi wrk_low, lo8(STAT)
@@ -260,7 +268,8 @@ HEADER "STATE", "state_"
     WOOP
 
 ;----------------------------------------------------------------------
-;ok 
+; ok ( -- w)
+;
 HEADER "BASE", "base_"
     NOOP
     ldi wrk_low, lo8(BASE)
@@ -268,16 +277,8 @@ HEADER "BASE", "base_"
     WOOP
 
 ;----------------------------------------------------------------------
-;ok 
-HEADER "BL", "BL"
-    NOOP
-    ldi wrk_low, 32
-    clr wrk_high
-    WOOP
-
-;----------------------------------------------------------------------
-;----------------------------------------------------------------------
-;ok 
+; ok ( -- w)
+;
 HEADER "(sram)", "sram"
     NOOP
     ldi wrk_low, lo8(SRAM)
@@ -285,7 +286,8 @@ HEADER "(sram)", "sram"
     WOOP
 
 ;----------------------------------------------------------------------
-;ok 
+; ok ( -- w)
+;
 HEADER "(erom)", "erom"
     NOOP
     ldi wrk_low, lo8(PROM)
@@ -293,8 +295,8 @@ HEADER "(erom)", "erom"
     WOOP
 
 ;----------------------------------------------------------------------
-;----------------------------------------------------------------------
 ;
+; ok ( -- w)
 ; beware, it blocks! test if can receive a char
 ;
 HEADER "key", "key_"
@@ -308,7 +310,8 @@ HEADER "key", "key_"
     WOOP
 
 ;----------------------------------------------------------------------
-; it blocks! test if can receive a char, or return FALSE
+; ok ( -- 0 | w)
+; test if can receive a char, or return FALSE
 ;
 HEADER "key?", "qkey_"
     NOOP
@@ -318,7 +321,7 @@ HEADER "key?", "qkey_"
     rjmp 2b
 
 ;----------------------------------------------------------------------
-;
+; ok ( w -- )
 ; beware, it blocks! test if can send a char 
 ;
 HEADER "emit", "emit_"
@@ -332,6 +335,7 @@ HEADER "emit", "emit_"
     POON
 
 ;----------------------------------------------------------------------
+; ok ( w -- w 0)
 ; test if can send a char, or return FALSE 
 ;
 HEADER "emit?", "qemit_"
@@ -342,9 +346,9 @@ HEADER "emit?", "qemit_"
     rjmp 2b
 
 ;----------------------------------------------------------------------
+; ok ( -- w)
+; push timer counter
 ;
-; ok push timer counter
-; zzzz verify registers 
 HEADER "millis", "millis_"
     NOOP
     movw wrk_low, tmr_low
@@ -368,7 +372,7 @@ HEADER "COLD", "COLD"
 ; restart parameter stack
     ldi psp_low, lo8(PSP)
     ldi psp_high, hi8(PSP)
-; zzzz toin etc ????
+; restart buffers etc????
 ; preload to WARM
     ; next word
     ldi zpm_low, lo8(WARM)
@@ -377,7 +381,6 @@ HEADER "COLD", "COLD"
     POON
 
 ;----------------------------------------------------------------------
-; fake
 ;
 HEADER  "WARM", "WARM"
     NOOP
@@ -387,7 +390,7 @@ HEADER  "WARM", "WARM"
 
 ;----------------------------------------------------------------------
 ;
-; ok ( --- ) 
+; ( --- ) 
 ; tricky 
 ; iBUGGED ZZZZ NOT REALLY 
 ; all new word starts at THIS=0, 1 and 2 bytes is link, 3 byte is size+flags
@@ -405,11 +408,11 @@ HEADER "(immediate)", "immediate"
 ;----------------------------------------------------------------------
 ;
 ; ok ( --- w ) 
-;
-; push the contents of next to stack, updates next
+; ????
+; push the value pointed by next to stack, updates next
 ; only for flash
 ; push the value pointed by next into stack
-HEADER "(doval)", "doval"
+HEADER "(dovar)", "doref"
     NOOP
     movw zpm_low, ipr_low
     pmload wrk_low, wrk_high
@@ -418,12 +421,12 @@ HEADER "(doval)", "doval"
 
 ;----------------------------------------------------------------------
 ;
-; ok ( --- a )
-;
-; push the reference of next to stack, updates next
+; ok ( --- w )
+; ????
+; push the value of next to stack, updates next
 ; only for flash
 ; push next to stack
-HEADER "(doref)", "doref"
+HEADER "(docon)", "doval"
     NOOP
     movw zpm_low, ipr_low
     movw wrk_low, zpm_low
@@ -433,6 +436,7 @@ HEADER "(doref)", "doref"
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- 0 | -1)
+;
 HEADER "=", "EQUAL"
     NOOP
     pspull wrk_low, wrk_high
@@ -444,6 +448,8 @@ HEADER "=", "EQUAL"
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- 0 | -1)
+;
+;
 HEADER "<>", "NOTEQUAL"
     NOOP
     pspull wrk_low, wrk_high
@@ -455,6 +461,8 @@ HEADER "<>", "NOTEQUAL"
 
 ;----------------------------------------------------------------------
 ; nok ( w1 w2 -- 0 | -1 )
+;
+;
 HEADER "<", "LTHAN"
     NOOP
     pspull wrk_low, wrk_high
@@ -466,6 +474,7 @@ HEADER "<", "LTHAN"
 
 ;----------------------------------------------------------------------
 ; nok ( w1 w2 -- 0 | -1 )
+;
 HEADER ">", "GTHAN"
     NOOP
     pspull wrk_low, wrk_high
@@ -477,6 +486,7 @@ HEADER ">", "GTHAN"
 
 ;----------------------------------------------------------------------
 ; ok ( -- -1 )
+;
 HEADER "TRUE", "FTRUE"
     NOOP
 _iftrue:
@@ -485,7 +495,8 @@ _iftrue:
     WOOP
 
 ;----------------------------------------------------------------------
-;ok ( -- 0 )
+; ok ( -- 0 )
+;
 HEADER "FALSE", "FFALSE"
     NOOP
 _iffalse:
@@ -495,6 +506,7 @@ _iffalse:
 
 ;----------------------------------------------------------------------
 ;  ok 0>    must be signed
+;
 HEADER "0>", "ZEROGT"
     NOOP
     pspull wrk_low, wrk_high
@@ -504,6 +516,7 @@ HEADER "0>", "ZEROGT"
 
 ;----------------------------------------------------------------------
 ;  ok 0<
+;
 HEADER "0<", "ZEROLT"
     NOOP
     pspull wrk_low, wrk_high
@@ -552,6 +565,13 @@ HEADER "PS!", "SPTO"
     pspull wrk_low, wrk_high
     movw psp_low, wrk_low
     POON
+
+;----------------------------------------------------------------------
+; ok ( w -- ) 
+HEADER "P@", "SAT"
+    NOOP
+	movw wrk_low, psp_low
+    WOOP
 
 ;----------------------------------------------------------------------
 ; ok ( -- w )
@@ -626,7 +646,7 @@ HEADER "?DUP", "ZDUP"
     WOOP
 
 ;----------------------------------------------------------------------
-;ok ( u -- )
+; ok ( u -- )
 ; branch IF tos IS zero
 ;
 HEADER "?BRANCH", "QBRANCH"
@@ -646,7 +666,8 @@ HEADER "?BRANCH", "QBRANCH"
     POON
 
 ;----------------------------------------------------------------------
-;ok ( branch next reference )
+; ok ( branch next reference )
+;
 HEADER "BRANCH", "BRANCH"
     NOOP
 2:
@@ -656,7 +677,8 @@ HEADER "BRANCH", "BRANCH"
     POON
 
 ;----------------------------------------------------------------------
-;ok ( branch next reference )
+; ok ( branch next reference )
+;
 HEADER "EXEC", "EXEC"
     NOOP
     pspull wrk_low, wrk_high
@@ -665,6 +687,7 @@ HEADER "EXEC", "EXEC"
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- w2-w1 )
+;
 HEADER "-", "MINUS" 
     NOOP
     pspull wrk_low, wrk_high
@@ -675,7 +698,8 @@ HEADER "-", "MINUS"
     WOOP
 
 ;----------------------------------------------------------------------
-;ok ( w1 w2 -- w2 AND w1 )
+; ok ( w1 w2 -- w2 AND w1 )
+;
 HEADER "AND", "AND"
     NOOP
     pspull wrk_low, wrk_high
@@ -685,7 +709,8 @@ HEADER "AND", "AND"
     WOOP
 
 ;----------------------------------------------------------------------
-;ok ( w1 w2 -- w2 OR w1 )
+; ok ( w1 w2 -- w2 OR w1 )
+;
 HEADER "OR", "OR"
     NOOP
     pspull wrk_low, wrk_high
@@ -695,7 +720,8 @@ HEADER "OR", "OR"
     WOOP
 
 ;----------------------------------------------------------------------
-;ok ( w1 w2 -- w2 XOR w1 )
+; ok ( w1 w2 -- w2 XOR w1 )
+;
 HEADER "XOR", "XOR"
     NOOP
     pspull wrk_low, wrk_high
@@ -705,9 +731,11 @@ HEADER "XOR", "XOR"
     WOOP
 
 ;----------------------------------------------------------------------
-;ok ( w -- w * 2 ) same as shift left << 1, unsigned
+; ok ( w -- w * 2 ) same as shift left << 1, unsigned
+;
 HEADER "2*", "SHL"
     NOOP
+_shl:
     pspull wrk_low, wrk_high
     clc
     lsl   wrk_low
@@ -715,43 +743,46 @@ HEADER "2*", "SHL"
     WOOP
 
 ;----------------------------------------------------------------------
-;ok ( w -- w / 2 ) same as shift right >> 1, unsigned
+; ok ( w -- w / 2 ) same as shift right >> 1, unsigned
+;
 HEADER "2/", "SHR"
     NOOP
+_shr:
     pspull wrk_low, wrk_high
     clc
-    lsr   wrk_low
-    ror   wrk_high
+    lsr wrk_low
+    ror wrk_high
     WOOP
 
 ;----------------------------------------------------------------------
-;ok ( w -- w * 2 ) same as shift left << 1, signed
+; ok ( w -- w * 2 ) same as shift left << 1, signed
+;
 HEADER "2*A", "SHLA"
     NOOP
     pspull wrk_low, wrk_high
     clc
     bst wrk_high, 7
-    cbr    wrk_high, 7
-    lsl   wrk_low
-    rol   wrk_high
+    cbr wrk_high, 7
+    lsl wrk_low
+    rol wrk_high
     bld wrk_high, 7
     WOOP
 
 ;----------------------------------------------------------------------
-;ok ( w -- w / 2 ) same as shift right >> 1, signed
+; ok ( w -- w / 2 ) same as shift right >> 1, signed
 HEADER "2/A", "SHRA"
     NOOP
     pspull wrk_low, wrk_high
     clc
     bst wrk_high, 7
-    cbr    wrk_high, 7
-    lsr   wrk_low
-    ror   wrk_high
+    cbr wrk_high, 7
+    lsr wrk_low
+    ror wrk_high
     bld wrk_high, 7
     WOOP
 
 ;----------------------------------------------------------------------
-;ok ( nAnB -- nBnA ) swap bytes in a word
+; ok ( nAnB -- nBnA ) swap bytes in a word
 HEADER "><", "ENDIAN"
     NOOP
     pspull wrk_high, wrk_low
@@ -828,9 +859,8 @@ _abs:
     WOOP
 
 ;----------------------------------------------------------------------
-;
+; ok ???? ( a1 u1 a2 u2 -- flag)
 ; compare bytes from source++ to destination++, decrease count--
-; ( a1 u1 a2 u2 -- flag)
 ;
 HEADER "COMPARE", "COMPARE"
     NOOP
@@ -897,6 +927,7 @@ HEADER "COMPARE", "COMPARE"
     WOOP
 
 ;----------------------------------------------------------------------
+; ok ???? ( u w w -- )
 ;
 ; MOVE copy cells from source++ to destination++, decrease count--
 HEADER "MOVE", "MOVE"
@@ -944,7 +975,9 @@ HEADER "MOVE", "MOVE"
 
 
 ;----------------------------------------------------------------------
+; ok ( w -- w )
 ;  data space pointer align to CELL, atmega is always
+
 HEADER "ALIGN", "ALLIGN"
     NOOP
     pspull wrk_low, wrk_high
@@ -953,8 +986,8 @@ HEADER "ALIGN", "ALLIGN"
     WOOP
 
 ;----------------------------------------------------------------------
-;
-; ok CELL is 2 ; size of a cell
+; ok ( -- CELL ) 
+; CELL is 2 ; size of a cell
 ;
 HEADER "CELL", "CELLSZ"
     NOOP
@@ -963,8 +996,8 @@ HEADER "CELL", "CELLSZ"
     WOOP
 
 ;----------------------------------------------------------------------
-;
-; ok CELL is 2, multiply by 2, easy way
+; ok ( w -- w * CELL  )
+; CELL is 2, multiply by 2, easy way
 ;
 HEADER "CELLS", "CELLS"
     NOOP
@@ -972,7 +1005,7 @@ HEADER "CELLS", "CELLS"
 
 ;----------------------------------------------------------------------
 ;
-; ok 
+; ok ( w -- w + CELL )
 ;
 HEADER "CELL+", "CELLPLUS"
     NOOP
@@ -982,7 +1015,7 @@ HEADER "CELL+", "CELLPLUS"
 
 ;----------------------------------------------------------------------
 ;
-; ok 
+; ok ( w -- w - CELL )
 ;
 HEADER "CELL-", "CELLMINUS"
     NOOP
@@ -992,7 +1025,7 @@ HEADER "CELL-", "CELLMINUS"
 
 ;----------------------------------------------------------------------
 ;
-; ok 
+; ok ( w -- w + 1 )
 ;
 HEADER "1+", "ONEPLUS"
     NOOP
@@ -1002,7 +1035,7 @@ HEADER "1+", "ONEPLUS"
 
 ;----------------------------------------------------------------------
 ;
-; ok 
+; ok ( w -- w - 1 )
 ;
 HEADER "1-", "ONEMINUS"
     NOOP
@@ -1012,7 +1045,7 @@ HEADER "1-", "ONEMINUS"
 
 ;----------------------------------------------------------------------
 ;
-; ok 
+; ok ( w -- w + 2 )
 ;
 HEADER "2+", "TWOPLUS"
     NOOP
@@ -1022,7 +1055,7 @@ HEADER "2+", "TWOPLUS"
 
 ;----------------------------------------------------------------------
 ;
-; ok 
+; ok ( w -- w - 2 )
 ;
 HEADER "2-", "TWOMINUS"
     NOOP
@@ -1032,7 +1065,7 @@ HEADER "2-", "TWOMINUS"
 
 ;----------------------------------------------------------------------
 ;
-; ok 
+; ok ( u w -- ) 
 ;
 HEADER "+!", "PLUSTO"
     NOOP

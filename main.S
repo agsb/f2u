@@ -1,12 +1,34 @@
-;
+/*
+ *  DISCLAIMER"
+ *
+ *  Copyright © 2020, Alvaro Gomes Sobral Barcellos,
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining
+ *  a copy of this software and associated documentation files (the
+ *  "Software"), to deal in the Software without restriction, including
+ *  without limitation the rights to use, copy, modify, merge, publish,
+ *  distribute, sublicense, and/or sell copies of the Software, and to
+ *  permit persons to whom the Software is furnished to do so, subject to
+ *  the following conditions"
+ *
+ *  The above copyright notice and this permission notice shall be
+ *  included in all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ *
+ */
+
+;---------------------------------------------------------------------
 ; atmega8 avr
 ;
-;---------------------------------------------------------------------
-
-;---------------------------------------------------------------------
 ; sram mapped as: 	internal mapped 0x000 to 0x05F, free use 0x060 to 0x45F
 ; flash mapped as:  bios 0x000 to 0x45F, forth 0x460 to 0xCFFF, boot 0xCFFF to 0x1FFF
-
+;---------------------------------------------------------------------
 #include "macros.S"
 
 .section data
@@ -33,15 +55,7 @@ TOIN:	.byte 0		; next free char in terminal input buffer
 THIS:	.byte 0		; next free cell in PAD for flash flush
 KEEP:	.byte 0		; actual page of flash memory, HERE/64 
 
-/*
-TIB0:	.byte TIB_SIZE	; terminal input buffer
-PAD0:	.byte PAD_SIZE 	; scratch pad for compile to flash
-PIC0:	.byte PIC_SIZE	; picture numeric format buff
-USE0:	.word 0 		; start or user free sram
-*/
-
-;.equ free_sram, END - FREE
-
+.equ 	FREE, .
 .equ	TIB, PAD - TIB_SIZE
 .equ	PAD, PIC - PAD_SIZE
 .equ	PIC, END - PIC_SIZE
@@ -49,6 +63,8 @@ USE0:	.word 0 		; start or user free sram
 .equ	PSP, RSP - STACK_SIZE
 .equ	RSP, SPZ - STACK_SIZE
 .equ	SPZ, RAMEND		
+
+.equ free_sram, TIB - FREE
 
 .p2align 1, 0x00
 #include "bios.S"
