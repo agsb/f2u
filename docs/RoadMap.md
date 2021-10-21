@@ -4,8 +4,9 @@ RoadMap.md
 
 Topics for routines that must exists
 
-## BIOS
+# BIOS
 
+```
 _reset
 
 _usart_send
@@ -43,40 +44,38 @@ _watchdog_tick
 _boot_setup
 
 _rest_setup
-
-
-## Forth insides
+```
+# Forth insides
 
 Those must exist for Forth REPL work
+```
+ COLD
+ WARM
+ BYE
+ QUIT
+ WORD
+ ACCEPT
+ PARSE
+ FIND
+ COMPILE
+ EXECUTE
+ POSTPONE
+ ABORT
+ EVAL
+ WORD?
+ NUMBER?
+```` 
+# functional routines
 
-COLD
-WARM
-BYE
-QUIT
-ACCEPT
-FILL
-PARSE
-FIND
-COMPILE
-EXECUTE
-POSTPONE
-ABORT
-EVAL
-WORD?
-NUMBER?
+- _accept*   fills terminal input buffer until a CR/CC, also process comments and control convertions
 
-## functional routines
+- _word*   takes a word from terminal input buffer
 
-*_fill*   fills terminal input buffer until a CR/CC, also process comments and control convertions
+- _parse*  parses contents of terminal input buffer
 
-*_word*   takes a word from terminal input buffer
+- _find*   search dictionary for a word
 
-*_parse*  parses contents of terminal input buffer
+- _number? verify and converts a number to a value and push into parameter stack
 
-*_find*   search dictionary for a word
-
-*_number? verify and converts a number to a value and push into parameter stack
-
-*_word? verify and search a word and push the reference into parameter stack
-
+- _word? verify and search a word and push the reference into parameter stack
 

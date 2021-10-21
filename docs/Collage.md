@@ -1,10 +1,14 @@
 Collage.md
 
-# definitions of words taken around random reads of forth groups
+# Collage
 
-> 
-http://computer-programming-forum.com/22-forth/fc123450c480e39c.htm
-Ulrich Hoffmann,
+## ideas and definitions of words taken around random reads of forth groups
+
+"May the Forth be with you."
+
+---
+
+> http://computer-programming-forum.com/22-forth/fc123450c480e39c.htm Ulrich Hoffmann,
 
 \ DEFER and IS -------------------------------------------------------
 
@@ -25,7 +29,8 @@ P.S. For even more ANSI compatibility you can use the ANSI-CORE&CORE-EXT
 layer for F-PC (http://www.informatik.uni-kiel.de/~uho/ansi.seq).
 
 
-> https://home.hccnet.nl/a.w.m.van.der.horst/forthlecture5.html
+---
+> # https://home.hccnet.nl/a.w.m.van.der.horst/forthlecture5.html Albert van der Horst
 
    - An annihilator is a word that only deletes an item from the stack.
 Examples are DROP 2DROP NIP RDROP.
@@ -35,3 +40,6 @@ Examples are SWAP 2SWAP ROT.
 
    - A duplicator copies an item from the stack.  Examples are DUP OVER
 2DUP.
+
+(my) Also: A generator puts an item into stack
+---

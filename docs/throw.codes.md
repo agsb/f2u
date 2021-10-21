@@ -1,6 +1,6 @@
 
-# forth 2012, throw-catch codes, http://lars.nocrew.org/forth2012/exception.html. 2021/10/15
-
+# THROW codes
+forth 2012, throw-catch codes, (2021/10/15) <http://lars.nocrew.org/forth2012/exception.html> 
 
     -1	ABORT
     -2	ABORT"
@@ -81,4 +81,3 @@
     -77	Malformed xchar
     -78	SUBSTITUTE
     -79	REPLACES
-
