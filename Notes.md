@@ -4,6 +4,19 @@
 
 *still lots of english errors, please correct me*
 
+## 20/10/2021
+
+Added flags to HEADER macro, adds flags to size byte. 
+
+Some clean up of --Readme.md--
+
+Refactoring all primitives for use instruction register (r18:r19) as instruction pointer for next reference. Also trim-out and saves bytes.
+
+Still flash and sram modify not well solved.
+
+Done a double-checked of basic words.
+
+
 ## 15/10/2021
 
 rewrite of MemoryModel, with buffers, constants, variables, stacks, etc
