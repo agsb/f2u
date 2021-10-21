@@ -1,63 +1,111 @@
 
+/*
+ *  DISCLAIMER"
+ *
+ *  Copyright © 2020, Alvaro Gomes Sobral Barcellos,
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining
+ *  a copy of this software and associated documentation files (the
+ *  "Software"), to deal in the Software without restriction, including
+ *  without limitation the rights to use, copy, modify, merge, publish,
+ *  distribute, sublicense, and/or sell copies of the Software, and to
+ *  permit persons to whom the Software is furnished to do so, subject to
+ *  the following conditions"
+ *
+ *  The above copyright notice and this permission notice shall be
+ *  included in all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ *
+ */
+
+;----------------------------------------------------------------------
+; why use MARK and RESOLVE ? For have hooks :)
+;----------------------------------------------------------------------
+;
+; ok <MARK
+HEADER, "<MARK", "LMARK", F_IMMEDIATE
+	.word HERE, ENDS
+;----------------------------------------------------------------------
+;
+; ok <RESOLVE
+HEADER, "<RESOLVE", "LRESOLVE", F_IMMEDIATE
+	.word COMMA, ENDS
+;----------------------------------------------------------------------
+;
+; ok >MARK
+HEADER, ">MARK", "GMARK", F_IMMEDIATE
+	.word HERE, DOLIT, 0, COMMA, ENDS
+;----------------------------------------------------------------------
+;
+; ok >RESOLVE
+HEADER, ">RESOLVE", "GRESOLVE", F_IMMEDIATE
+	.word HERE, SWAP, TO, ENDS
 ;----------------------------------------------------------------------
 ;
 ; ok BEGIN
 HEADER, "BEGIN", "BEGIN", F_IMMEDIATE
-	.word HERE ENDS
+	.word LMARK, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok AGAIN
 HEADER, "AGAIN", "AGAIN", F_IMMEDIATE
-	.word ENDS
+	.word COMPI, BRANCH, LRESOLVE, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok UNTIL
 HEADER, "UNTIL", "UNTIL", F_IMMEDIATE
-	.word ENDS
+	.word COMPI, ZBRANCH, LRESOLVE, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok IF
 HEADER, "IF", "IF", F_IMMEDIATE
-	.word ENDS
-
-;----------------------------------------------------------------------
-;
-; ok ELSE
-HEADER, "ELSE", "ELSE", F_IMMEDIATE
-	.word ENDS
+	.word COMPI, ZBRANCH, GMARK, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok THEN
 HEADER, "THEN", "THEN", F_IMMEDIATE
-	.word ENDS
+	.word GRESOLVE, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok ELSE
+HEADER, "ELSE", "ELSE", F_IMMEDIATE
+	.word AHEAD, SWAP, THEN, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok AFT
 HEADER, "AFT", "AFT", F_IMMEDIATE
-	.word ENDS
+	.word DROP, AHEAD, BEGIN, SWAP, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok AHEAD
 HEADER, "AHEAD", "AHEAD", F_IMMEDIATE
-	.word ENDS
+	.word COMPI, BRANCH, GMARK, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok WHILE
 HEADER, "WHILE", "WHILE", F_IMMEDIATE
-	.word ENDS
+	.word IF, SWAP, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok REPEAT
 HEADER, "REPEAT", "REPEAT", F_IMMEDIATE
-	.word ENDS
+
+	.word AGAIN, HERE, SWAP, STORE, ENDS
 
 ;----------------------------------------------------------------------
 ;
