@@ -2,7 +2,7 @@ MemoryModel.md
 
 # Memory Layout 
 
-For the AVR Atmega8, by Harvard architeture, memory is separed in 512 bytes eeprom, 1024 bytes static ram, 4096 words flash. Consider a byte as 8 bits and a word as 16 bits. A cell is a 16 bits word.
+For the AVR Atmega8, by Harvard architeture, memory is separed in 512 bytes eeprom, 1024 bytes static ram, 4096 words flash. Consider a byte is 8 bits and a word is 16 bits. A cell is a 16 bits word.
 
 1. Static ram layout
     
@@ -14,8 +14,7 @@ For the AVR Atmega8, by Harvard architeture, memory is separed in 512 bytes eepr
 
 2. Flash memory layout
 
-    0x000 to 0x1fff 128 program memory, as pages of 64 bytes
-    some at end will be reserved for optiboot and forth, for NRWW area
+    0x000 to 0x1fff 128 program memory, as pages of 64 bytes, some at end will be reserved for optiboot and forth, for NRWW area
 
 # Memory Model
 
