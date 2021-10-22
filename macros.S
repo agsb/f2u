@@ -35,24 +35,28 @@
 ;
 ; all defines, equs, macros are defined in this file
 ;
+;----------------------------------------------------------------------
+;
+;	about registers 
+;
 ; r1:r0 reserved and used in self atmega8 instructions, as spm, mul, des etc
 ;
 
-; reserved for interrupt timer0 
+; generic scratch 
+#define _work_ r2
 
-; counter for timer0
-#define tmr_low r2
-#define tmr_high r3
+; always zero, keep by interrupt
+#define _zero_ r3
 
-; offset for adjust timer0
-#define offs_low r4
+; sreg keep in interrupts
+#define _sreg_ r4
 
-; sreg reserved
-#define sreg_low r5
+; offset for adjust timer0 interrupt counter
+#define _offs_ r5
 
-; generic use
-#define _work_ r16
-#define _zero_ r17
+; ticks counter for timer0 at 1 ms
+#define ticks_low r6
+#define ticks_high r7
 
 ; Z generic pointer for access sram and flash memory
 #define zpm_low r30
@@ -242,7 +246,7 @@ is_\label:
 	SPM_SIZE = 64
 
 ; pad buffer for flush flash
-	PAD_SIZE = SPM_SIZE
+	FIB_SIZE = SPM_SIZE
 
 ; "Column 72 means Continue", 72 always \0
 ;   Readability is good
@@ -335,15 +339,23 @@ is_\label:
 
 ;---------------------------------------------------------------------
 ; Flow Control
+; assumes that all line edit is done at remote!
+; no backspace, no delete, no moving cursor, just a static line.
+; works as a screen or block, just receives a line till a CR or CR LF
+; uses ESC, XON, XOFF, for control 
+;
  XON_   =   0x11
  XOFF_  =   0x13
 
  CR_    =   0x0d
  LF_    =   0x0a
- BS_    =   0x08
- TAB_   =   0x09
- BL_    =   0x20
  ESC_   =   0x1B
+ BL_    =   0x20
+ 
+/*
+	BS_    =   0x08
+ 	TAB_   =   0x09
+*/
 
 ;---------------------------------------------------------------------
 ; from avr manual, for atmega8, do not change 
@@ -371,31 +383,18 @@ is_\label:
     RAMEND = SRAM_END
 
     FLASH_RWW  = 0x0000
-    FLASH_NRWW = 0x1800 
+    FLASH_NRWW = 0x1E00	; using optiboot in 512 bytes !!!!
     FLASH_END  = 0x1FFF 
 
-    FLASH_STOP = FLASH_NRWW
+    FLASH_STOP = FLASH_NRWW - 1
+
+	E2P_PAGESIZE = 4
+	E2P_END = 0x1FF
 
     SPM_PAGESIZE = 64    
-
-	E2PAGESIZE = 4
-
-#define EEEND 0x1FF
-#define FLASHEND 0x1FFF
 
     pagesize = (SPM_PAGESIZE - 1)
 
     pagemask = (~pagesize)
-
-/* Constants */
-#define RAMSTART         (0x60)
-#define RAMEND           (0x45F)
-#define XRAMEND          RAMEND
-
-#define E2END            0x1FF
-#define E2PAGESIZE           4
-
-#define SPM_PAGESIZE        64
-#define FLASHEND         0x1FFF
 
 

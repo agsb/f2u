@@ -77,39 +77,46 @@ RESET:
 
 ;----------------------------------------------------------------------
 ;
-;    timer0 prescale 
-;    for 8 MHz, prescale 64, offset 131, results about 1 ms
-;    64 * 125 = 8000 ; 
-;    256 - 125 = 131 ; offset
-;    miliseconds
-;    r3:r2 counter each 1ms
-;    r4 offset to prescale
-;    r5 save SREG
+;	do not use r0 and r1 are scratch registers used in spm, mul, des, etc
 ;
-;	 r0 and r1 are scratch registers used in spm, mul, des, etc
+;	generic:
+;    r2 _work_, how knows ?
+;	 r3 _zero_, always zero
+;    r4 _sreg_, saved SREG
+; 	 
+;	for timer0:
+;    	r5 _offs_, offset to prescale
+;    	r6 ticks_low,  counter each 1ms low byte
+;	 	r7 ticks_high, counter each 1ms high byte
+;
+;   timer0 prescale 
+;   for 8 MHz, prescale 64, offset 131, results about 1 ms
+;   64 * 125 = 8000 ; 
+;   256 - 125 = 131 ; offset for miliseconds
+;
 ;
 TIM0_OVF:
 ;    save flags
-    in r5, __SREG__
+    in _sreg_, __SREG__
 ;    disable interrups
     cli
-;    increase counter and also clear R1
+;    increase counter and also clear 
     clc
 ; must correct do not use r0 or r1 elsewhere
-    clr r1
-    inc r1
-    add r2, r1
-    dec r1
-    adc r3, r1
+    clr _zero_
+    inc _zero_
+    add ticks_low, _zero_
+    dec _zero_
+    adc ticks_high, _zero_
 
 ;    offset counter 256 - 125 = 131
 ;    but was 10 clocks till out, 
 ;    then 131 + 10 = 141
-    out 0x32, r4
+    out 0x32, _offs_
 ;    reset watch dog
     wdr
 ;    load flags and return
-    out __SREG__, r5
+    out __SREG__, _sreg_
 ;    enable interrups
     sei
     reti

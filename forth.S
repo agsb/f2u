@@ -279,7 +279,7 @@ HEADER "BASE", "base_"
 ;----------------------------------------------------------------------
 ; ok ( -- w)
 ;
-HEADER "(sram)", "sram"
+HEADER "(sram)", "sram_"
     NOOP
     ldi wrk_low, lo8(SRAM)
     ldi wrk_high, hi8(SRAM)
@@ -288,10 +288,10 @@ HEADER "(sram)", "sram"
 ;----------------------------------------------------------------------
 ; ok ( -- w)
 ;
-HEADER "(erom)", "erom"
+HEADER "(erom)", "erom_"
     NOOP
-    ldi wrk_low, lo8(PROM)
-    ldi wrk_high, hi8(PROM)
+    ldi wrk_low, lo8(EROM)
+    ldi wrk_high, hi8(EROM)
     WOOP
 
 ;----------------------------------------------------------------------
@@ -351,7 +351,7 @@ HEADER "emit?", "qemit_"
 ;
 HEADER "millis", "millis_"
     NOOP
-    movw wrk_low, tmr_low
+    movw wrk_low, ticks_low
     WOOP
 
 ;----------------------------------------------------------------------

@@ -25,18 +25,26 @@
  */
 
 ;
-;	those are to stay at NRWW flash memory of atmega8
+;    those are to stay at NRWW flash memory of atmega8
 ;
 .org FLASH_NRWW
 .align 2
 ;
 ; spm instruction uses:
 ; r31:r30 address in bytes, r1:r0 data, 
-; uses register _work_ as command and scratch
+; uses register r2 as command and scratch
+; uses register r4 as keeper of SREG
 ;
+#ifndef _WORK_
+	_work_ = r2
+	_sreg_ = r4
+#endif
+
 do_spm:
-     sts SPMCR, _work_
-     spm
+	in _sreg_, __SREG__
+	cli
+    sts SPMCR, _work_
+    spm
 
 10:
 ;   wait spm done
@@ -46,16 +54,17 @@ do_spm:
 
 ; if erase or write, force enable RWW section 
 
-	andi _work_, (1<<PGERS) | (1<<PGWRT)
-	breq 10f
+    andi _work_, (1<<PGERS) | (1<<PGWRT)
+    breq 10f
 
 ; enable rww 
-  	ldi _work_, (1<<RWWSRE) | (1<<SPMEN)
-	sts SPMCR, _work_
-	spm 
-
+    ldi _work_, (1<<RWWSRE) | (1<<SPMEN)
+    sts SPMCR, _work_
+    spm 
 10:
-	ret
+	out __SREG__, _sreg_
+	sei
+    ret
 
 .equ free_nrww, .
 
