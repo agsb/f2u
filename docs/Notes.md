@@ -12,9 +12,13 @@
 
 - remap registers use and restrict r0::r7
 
-- decided not use spm routine from optiboot, doing a extra void C function.
-
 - start compound words file, from avalible sources of forth 
+
+- simplifly use of terminal input buffer, by assume that all line edit is done at remote. Just a static line. Works as a screen or block, just receives a line till a CR or LF or CR LF. Still accept BS, ESC, for minimal edit and could use XON, XOFF, handshake control.
+
+- refactoring all flush flash stuff to use optiboot, version 8.2, routine do_spm, bulletproof for do not reinvent wheel.
+
+- the use do_spm is hack inside standart call to a C function from gcc compiler, then a rcall is used. Nice have a SP and stack availabe. 
 # 15/10/2021
 
 - rewrite of MemoryModel, with buffers, constants, variables, stacks, etc
