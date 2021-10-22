@@ -41,7 +41,7 @@ REST:	.word 0		; routine to run before reset
 LAST:	.word 0		; reference to latest word in dictionary
 HERE:	.word 0		; next free cell in flash dictionary
 SRAM:	.word 0		; next free cell in static ram ~ 740
-PROM:	.word 0		; next free cell in eeprom < 512
+EROM:	.word 0		; next free cell in eeprom < 512
 
 ; those are volatile
 STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile, 2 postpone
@@ -52,19 +52,19 @@ LINE:	.word 0
 
 CURS:	.byte 0
 TOIN:	.byte 0		; next free char in terminal input buffer
-THIS:	.byte 0		; next free cell in PAD for flash flush
+THIS:	.byte 0		; next free cell in FIB for flash flush
 KEEP:	.byte 0		; actual page of flash memory, HERE/64 
 
 .equ 	FREE, .
-.equ	TIB, PAD - TIB_SIZE
-.equ	PAD, PIC - PAD_SIZE
+.equ	TIB, FIB - TIB_SIZE
+.equ	FIB, PIC - FIB_SIZE
 .equ	PIC, END - PIC_SIZE
 .equ	END, PSP - STACK_SIZE
 .equ	PSP, RSP - STACK_SIZE
 .equ	RSP, SPZ - STACK_SIZE
 .equ	SPZ, RAMEND		
 
-.equ free_sram, TIB - FREE
+;.equ free_sram, TIB - FREE
 
 .p2align 1, 0x00
 #include "bios.S"
@@ -78,11 +78,10 @@ KEEP:	.byte 0		; actual page of flash memory, HERE/64
 .p2align 1, 0x00
 #include "math.S"
 
-.equ free_flash, .
-
 .p2align 1, 0x00
-#include "nrww.S"
+#include "newff.S"
 
+.equ free_flash, .
 
 /*
 1 	1st 	fst,    first  
@@ -90,6 +89,5 @@ KEEP:	.byte 0		; actual page of flash memory, HERE/64
 3 	3rd 	thd,    third
 4 	4th 	fth,    fourth
 */
-
 
 
