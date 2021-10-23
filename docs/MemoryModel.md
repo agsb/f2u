@@ -6,31 +6,39 @@ For the AVR Atmega8, by Harvard architeture, memory is separed in 512 bytes eepr
 
 1. Static ram layout
     
-    0x000 to 0x01f  registers r0 to r31
-    
-    0x020 to 0x05f  i/o memory mapped
-    
-    0x060 to 0x45f  free ram
+    - 0x000 to 0x01f  registers r0 to r31
+
+    - 0x020 to 0x05f  i/o memory mapped
+
+    - 0x060 to 0x45f  free ram
 
 2. Flash memory layout
 
-    0x000 to 0x1fff 128 program memory, as pages of 64 bytes, some at end will be reserved for optiboot and forth, for NRWW area
+    - 0x000 to 0x1fff 128 program memory, as pages of 64 bytes, 
+    
+    - 0x000 to 0x1dff RWWM read, erase, write flash memory
+    
+    - 0x1e00 to0x1fff NRWW read only boot area, where optiboot resides
 
+3. Optiboot 
+
+    0x1e00 optiboot main, handles boot and flash updates
+    0x1fb0 do_spm routine for update flash memory
 # Memory Model
 
 the sram are mapped as:
 
     grows downwards:
 
-    0x060   forth variables, 12 cells
+    0x060   forth variables, 16 cells
 
-    0x078   start of terminal input buffer, 72 bytes
+    0x07c   start of user ram, 740 bytes
 
-    0x0C0   start of scratch pad buffer, 32 cells
+    0x35b   start of terminal input buffer, 72 bytes
+
+    0x3a3   start of flash internal buffer, 32 cells
     
-    0x100   start of user ram, 740 bytes
-
-    0x3e3   start of hold buffer, 16 bytes
+    0x3e3   start of picture numeric buffer, 16
 
     grows upwards:
 
@@ -50,7 +58,7 @@ note: last stack is for extra libraries, not for forth
 
     TIB     terminal input buffer, 72 bytes
     
-    PAD     scratch pad , 64 bytes
+    FIB     flash internal buffer, 64 bytes
     
     PIC     picture numeric convertion, 16 bytes
 
@@ -58,7 +66,7 @@ note: last stack is for extra libraries, not for forth
     
     TIB is less than Forth standart, but as "column 72 is continue", is enough;
     
-    PAD is for buffer compile words and flush to flash
+    FIB is for buffer compile words and flush to flash
     
     PIC is for use in numeric formating
 
@@ -70,30 +78,28 @@ note: last stack is for extra libraries, not for forth
 
     turn    routine to run after boot, 2 bytes
 
-    rest    routine to run before reset, 2 bytes
+    rest    routine to run before rest, 2 bytes
     
-    latest  last entry in dictionary, 2 bytes
+    last    last entry in dictionary, 2 bytes
+
+    here    next free cell in flash memory, 2 bytes
     
-    dp      next free cell in flash memory, 2 bytes
+    sram    next free cell in sram memory, 2 bytes
     
-    up      next free cell in sram memory, 2 bytes
-    
-    ep      next free cell in eeprom, 2 bytes
+    erom    next free cell in eeprom, 2 bytes
    
 ### 3. variables volatiles, use as half cells
 
-    state   state of interpreter, 1 byte
+    state   state of interpreter, 2 byte
     
-    base    numeric radix, 1 byte
+    base    numeric radix, 2 byte
+
+    keep    hold  while update flash, 2 bytes
     
     tibc    cursor in TIB as offset, 1 byte, also >IN
     
-    hldc    cursor in HLD as offset, 1 byte
-    
-    padc    cursor in PAD as offset, 1 byte
-    
-    fmpg    page of flash memory to update, 1 byte
-
+    fibc    cursor in FIB as offset, 1 byte
+        
 ### 4. Stacks
 
     SP      reserved for mcu stack, 36 bytes
@@ -112,9 +118,9 @@ note: last stack is for extra libraries, not for forth
     
     TIB0    top of terminal input buffer
     
-    PAD0    top of scratch pad buffer
+    FIB0    top of scratch pad buffer
     
-    HLD0    top of numeric format buffer
+    PIC0    top of numeric format buffer
     
     DP0     next cell at flash memory
     
@@ -132,9 +138,9 @@ note: last stack is for extra libraries, not for forth
     
     TIBZ    size of TIB (72 bytes)
     
-    PADZ    size of PAD (64 bytes)
+    FIBZ    size of PAD (64 bytes)
     
-    HLDZ    size of HLD (16 bytes)
+    PICZ    size of HLD (16 bytes)
     
     VERS    version (2 bytes) from 0.00.00 to 6.55.36 as release.version.revision
 
