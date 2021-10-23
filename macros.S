@@ -342,15 +342,19 @@ is_\label:
 ; assumes that all line edit is done at remote!
 ; no backspace, no delete, no moving cursor, just a static line.
 ; works as a screen or block, just receives a line till a CR or CR LF
-; uses ESC, XON, XOFF, for control 
+; uses BS, ESC, CAN, XON, XOFF, for control 
 ;
- XON_   =   0x11
- XOFF_  =   0x13
+ XON_   =   0x11	; ascii DC1 ^Q
+ XOFF_  =   0x13	; ascii DC3 ^S
 
- CR_    =   0x0d
- LF_    =   0x0a
- ESC_   =   0x1B
- BL_    =   0x20
+ CR_    =   0x0d	; ascci carriage return ^M
+ LF_    =   0x0a	; ascii line feed ^J
+
+ CAN_	= 	0x18	; ascii cancel ^C
+ ESC_   =   0x1B	; ascii escape ^[
+
+ BS_	=   0x08	; ascii backspace ^H
+ BL_    =   0x20	; ascii space 
  
 /*
 	BS_    =   0x08
