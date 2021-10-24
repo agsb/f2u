@@ -1,5 +1,51 @@
 # FORTH ENGINES
 
+# dictionary
+
+Example of dictionary structure (adapted from jonasforth.S)
+---
+```
+defword:  ; one reference DOCOL to all compound words
+   
++---------+---+---+---+---+---+---+---+---+----------+------------+------------+-------+
+| LINK    | 6 | D | O | U | B | L | E | 0 | DOCOL    | DUP        | +          | EXIT  |
++---------+---+---+---+---+---+---+---+---+----------+--|---------+------------+-------+
+           len                         pad              |
+                                                        +--->  points to codeword of DUP
+defcode:  ; one macro NEXT to all primitives  
+                             
++---------+---+---+---+---+--------------+--------------+------------+
+| LINK    | 3 | D | U | P | pull w, ps++ | push --ps, w | macro NEXT |
++---------+---+---+---+---+--------------+--------------+------------+
+
+OBS: classic format
+```
+
+in this:
+---
+```
+defword:  ; no docol, minus one reference per compound word
+
+         len                         pad
++-------+---+---+---+---+---+---+---+---+-----------------+
+| LINK  | 6 | D | O | U | B | L | E | 0 | DUP | + | ENDS  |     
++-------+---+---+---+---+---+---+---+---+-----+---+-------+
+
+defcode:  ; with NULL, one reference per primitive word
+
++-------+---+---+---+---+-----+--------------+---------------+-------------+----------+
+| LINK  | 3 | D | U | P | 0x0 | pull w, ps++ |  push --ps, w |push --ps, w | jmp link |
++-------+---+---+---+---+-----+--------------+---------------+-------------+----------+
+
++-------+---+---+-----+--------------+--------------+----------+--------------+----------+
+| LINK  | 1 | + | 0x0 | pull w, ps++ | pull t, ps++ | add w, t | push --ps, w | jmp link |
++-------+---+---+-----+--------------+--------------+----------+--------------+----------+
+
+OBS: 0x0 in codeword for all primitives, non-zero as codeword for all compounds
+
+```
+
+
 Some comparations of implementations of Forth.
 All use concepts as next, nest aka docolon, unnest aka semmis and exit.
 
@@ -274,11 +320,11 @@ there is no significant overhead between those variants, but second form is a wa
 
 ### ; considerations
 
-    efficient code;
-    twig and leaf are dicionary is CPU independent;
+    efficient code as cost of speed;
+    twigs are dicionary is CPU independent;
     leaf (could) do references of trampolim table;
     all twig words have only a payload at last references;
-    all leaf words have a payload as, starts with NOP and ends with a jump;
+    all leaf words have a payload by starts with NULL and ends with a jump;
 
 ### Codes and Parameters
 
