@@ -4,78 +4,103 @@ RoadMap.md
 
 Topics for routines that must exists
 
-# BIOS
+Must implements tail recursion ?
 
-```
-_reset
+## BIOS
 
-_usart_send
+> _reset
 
-_usart_receive
+> _usart_send
 
-_i2c_send
+> _usart_receive
 
-_i2c_receive
+> _i2c_send
 
-_spi_send
+> _i2c_receive
 
-_spi_receive
+> _spi_send
 
-_e2prom_page_load
+> _spi_receive
 
-_e2prom_page_save
+> _e2prom_page_load
 
-_flash_page_load
+> _e2prom_page_save
 
-_flash_page_save
+> _flash_page_load
 
-_gpio_write
+> _flash_page_save
 
-_gpio_read
+> _gpio_write
 
-_clock_setup
+> _gpio_read
 
-_watchdog_setup
+> _clock_setup
 
-_clock_tick
+> _watchdog_setup
 
-_watchdog_tick
+> _clock_tick
 
-_boot_setup
+> _watchdog_tick
 
-_rest_setup
-```
-# Forth insides
+> _boot_setup
+    
+> _rest_setup
+
+## Forth insides
 
 Those must exist for Forth REPL work
-```
- COLD
- WARM
- BYE
- QUIT
- WORD
- ACCEPT
- PARSE
- FIND
- COMPILE
- EXECUTE
- POSTPONE
- ABORT
- EVAL
- WORD?
- NUMBER?
-```` 
-# functional routines
 
-- _accept*   fills terminal input buffer until a CR/CC, also process comments and control convertions
+> COLD
 
-- _word*   takes a word from terminal input buffer
+> WARM
 
-- _parse*  parses contents of terminal input buffer
+> BYE
 
-- _find*   search dictionary for a word
+> QUIT
 
-- _number? verify and converts a number to a value and push into parameter stack
+> WORD
 
-- _word? verify and search a word and push the reference into parameter stack
+> ACCEPT
+
+> PARSE
+
+> FIND
+
+> COMPILE
+
+> EXECUTE
+
+> POSTPONE
+
+> ABORT
+
+> EVAL
+
+> WORD?
+
+> NUMBER?
+
+## Controls
+
+> BEGIN AGAIN UNTIL
+
+> IF ELSE THEN
+
+> WHILE REPEAT
+
+> FOR NEXT
+## Functional routines
+
+> _accept*   fills terminal input buffer until a CR/CC, also process comments and control convertions
+
+> _word*   takes a word from terminal input buffer
+
+> _parse*  parses contents of terminal input buffer
+
+> _find*   search dictionary for a word
+
+> _number? verify and converts a number to a value 
+and push into parameter stack
+
+> _word? verify and search a word and push the reference into parameter stack
 

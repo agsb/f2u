@@ -4,6 +4,16 @@
 
 *still lots of english errors, please correct me*
 
+# 26/10/2021
+
+- Change C! and C@, as really one byte in low register and high register goes zero.
+
+- Emulated [branch and link], [call and return], indirect thread code working.
+
+- meta compiler and cross compiler, can run inside a emulator ?
+
+- to simplifly implementations for other MCU or CPU, maybe use a Trampoline with primitives. the Forth dictionary starts down a table of jumps to primitive routines, incurrs one step more. primitives will be 0x0, 0xidx, and idx is a index for table. All dictionary will be clean of code ! Also implementations will do "interrupt vector", "bios routines", "primitives routines", then a trampline table, and somewhere (fixed?) all forth dictionaries. Eg. a DUP will be always a 0x0 followed by 0x05, index to jump to 5th address of trampoline table. All references could be rellocable of position independent.
+
 # 21/10/2021
 
 - created a docs directory for all md files and examples.
@@ -16,7 +26,7 @@
 
 - simplifly use of terminal input buffer, by assume that all line edit is done at remote. Just a static line. Works as a screen or block, just receives a line till a CR or LF or CR LF. Still accept BS, ESC, for minimal edit and could use XON, XOFF, handshake control.
 
-- refactoring all flush flash stuff to use optiboot, version 8.2, routine do_spm, bulletproof for do not reinvent wheel.
+- refactoring all flush flash stuff to use optiboot, <https://github.com/Optiboot/optiboot> version 8.2, routine do_spm, bulletproof for do not reinvent wheel.
 
 - the use do_spm is hack inside standart call to a C function from gcc compiler, then a rcall is used. Nice have a SP and stack availabe. 
 # 15/10/2021

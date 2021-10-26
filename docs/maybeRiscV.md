@@ -6,7 +6,7 @@ Using same ideias from f2u for atmega8
 and exerpts from forth implementations for ARM
 amforth.S
 
-RisV registers (pointed by Lars, lbforth)
+Linux free RisV registers (pointed by Lars, lbforth)
 
 X20 as Ir, instruction register for BL BR
 X21 as Sr, parameter stack pointer
