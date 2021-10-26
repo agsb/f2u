@@ -1,54 +1,35 @@
 
-#   excerps from internet
 
-#   https://www.forth.com/starting-forth/5-fixed-point-arithmetic/
+# Rational fractions
 
-#   http://wilsonminesco.com/16bitMathTables/RationalApprox.html
+From excerps from internet
+> https://www.forth.com/starting-forth/5-fixed-point-arithmetic/
 
-#    All errors less than 10^-7
+> http://wilsonminesco.com/16bitMathTables/RationalApprox.html
 
-_rPI:
-.word 355, 113       ; π = 3.141 ... 355 / 113       8.5 x 10-8
-_rEULER:
-.word 28667, 10546   ; e = 2.718 ... 28667 / 10546   5.5 x 10-9
-_rSQRTWO:
-.word 19601, 13860   ; √2 = 1.414 ... 19601 / 13860   1.5 x 10-9
-_rSQRTRI:
-.word 18817, 10864   ; √3 = 1.732 ... 18817 / 10864   1.1 x 10-9
-_RSQRTEN:
-.word 22936, 7253    ; √10 = 3.162 ... 22936 / 7253    5.7 x 10-9
-_RMUSIC:
-.word 26797, 25293   ; 12√2  = 1.059463 ... 26797/25293     -1.7E-9
-_rLNTWO:
-.word 7050, 10171    ; ln(2)  = 0.6931472 ... 7050/10171     +3.8E-9
-_rLNTEN:
-.word 12381, 5377    ; ln(10) = 2.302585 ... 12381/5377      -3.6E-9
-_rLOGTWO:
-.word 4004, 13301    ; log(2) = .301029995 ... 4004/13301     +6.9E-9
-_rILNTEN:
-.word 5377, 12381    ; log(e) = 1.0/ln(10)
-_rILNTWO:
-.word 10171, 7050    ; lp(e) = 1.0/ln(2)
-_rILOGTWO:
-.word 13301, 4004    ; lp(10) = 1.0/log(2)
-_rCMIN:
-.word 127, 50        ; CMIN    cm/in           127/50
-_rINCM:
-.word 50, 127        ; INCM    in/cm           50/127
-_rMTFT:
-.word 1250, 381      ; MBYFT   m/ft            1250/381
-_rFTMT:
-.word 381, 1250      ; FTBYM   ft/m            381/1250
-_rMSKH:
-.word 18, 5          ; MSBYKS  m/s to km/h     18/5
-_rGRAV:
-.word 37087, 3792    ; GRAV    gm/s2           37087/3792
-_rPHI:
-.word 28657, 17711   ; PHI     goldem          28657/17711
-_rFINE:
-.word 100, 13704     ; FINER   alpha           100/13704
-_rEMC:
-.word 24559, 8192    ; EMC2    c uni.          24559/8192
-_rFRAC:
-.word 1228, 263      ; feigenbaum constant
+All errors less than 10^-7
 
+ | name | dividend | divisor | rational for |
+ |:-----|---------:|--------:|:-------------|
+ | _rPI:  |    355 | 113      | ; π = 3.141  |
+ | _rEULER:  |    28667 | 10546  | ; e = 2.718  |
+ | _rSQRTWO:  |    19601 | 13860  | ; √2 = 1.414  |
+ | _rSQRTRI:  |    18817 | 10864  | ; √3 = 1.732  |
+ | _rSQRTEN:  |    22936 | 7253   | ; √10 = 3.162  |
+ | _rMUSIC:  |    26797 | 25293  | ; 12√2  = 1.059 |
+ | _rLNTWO:  |    7050 | 10171   | ; ln(2)  = 0.6931  |
+ | _rLNTEN:  |    12381 | 5377   | ; ln(10) = 2.302  |
+ | _rLOGTWO:  |    4004 | 13301   | ; log(2) = 0.3010  |
+ | _rILNTEN:  |    5377 | 12381   | ; log(e) = 1.0/ln(10) |
+ | _rILNTWO:  |    10171 | 7050   | ; lp(e) = 1.0/ln(2) |
+ | _rILOGTWO:  |    13301 | 4004   | ; lp(10) = 1.0/log(2) |
+ | _rCMIN:  |    127 | 50       | ; convert cm to in  |
+ | _rINCM:  |    50 | 127       | ; convert in to cm  |
+ | _rMTFT:  |    1250 | 381     | ; convert m to ft   |
+ | _rFTMT:  |    381 | 1250     | ; convert ft to m   |
+ | _rMSKH:  |    18 | 5         | ; convert m/s to km/h   |
+ | _rGRAV:  |    37087 | 3792   | ; GRAV gm/s2    |
+ | _rPHI:  |    28657 | 17711  | ; PHI goldem ratio   |
+ | _rFINE:  |    100 | 13704    | ; FINER   alpha  |
+ | _rEMC:  |    24559 | 8192   | ; EMC2    c uni.    |
+ | _rFRAC:  |    1228 | 263     | ; feigenbaum constant |
