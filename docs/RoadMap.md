@@ -4,6 +4,8 @@ RoadMap.md
 
 Topics for routines that must exists
 
+Must implements tail recursion ?
+
 ## BIOS
 
 > _reset

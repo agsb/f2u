@@ -90,18 +90,28 @@ _in my opinion, is the best and ideal solution per cpu, at cost of size and port
 
 *Impossible to use, this implementation uses far more memory than a Atmega8 have.*
 
-# 2. In amforth for AVR family, <http://amforth.sourceforge.net/>  
+# 2. In amforth for AVR family, <https://github.com/lowfatcomputing/amforth-all/> <http://amforth.sourceforge.net/>  
 
-(who, when, why) ?
+"AmForth is an interactive 16-bit Forth for Atmel ATmega microcontrollers.
+It does not need additional hard or software. It works completely on
+the controller (no cross-compiler)."
+"Amforth is influenced by (early versions of) avrforth"
 
-; the interpreter, XH:XL is Instruction pointer, ZH:ZL is program memory pointer, WH:WL is working register, Tmp1:Tmp0 is a scratch temporary
+The interpreter code excerpt from version 5.2, 05/04/2013, Matthias Trute, Erich Wälde et alli.
+
+; XH:XL is Instruction pointer, 
+; ZH:ZL is program memory pointer, 
+; WH:WL is working register, 
+; Tmp1:Tmp0 is a scratch temporary
+
 ```asm
+
 DO_COLON: ; 8
       push XL
       push XH
       movw XL, WL
       adiw XL, 1
-      
+
 DO_NEXT:  ; 12
       movw ZL, XL
       lsl ZL
@@ -117,18 +127,18 @@ DO_EXECUTE:   ; 14
       lpm Tmp0, Z+
       lpm Tmp1, Z+
       movw ZL, Tmp0
-      ijmp Z
-      
-DO_EXIT:  ; 6, X_EXIT
+      ijmp 
+
+DO_EXIT:  ; 6
       pop XH
       pop XL
       rjmp DO_NEXT
-```
+
 ; the dicionary, inside PFA
 ```
-    leaf ==>  (rjmp code0), code0, code ... , (rjmp DO_NEXT)
+    leaf ==>  (ptr of code0), code0, code ... , (rjmp DO_NEXT)
     
-    twig ==>  (code of DO_COLON), ptr ... ptr, (ptr of DO_EXIT)
+    twig ==>  (ptr of DO_COLON), ptr ... ptr, (ptr of DO_EXIT)
 ```
 ### ; considerations
 
@@ -136,9 +146,16 @@ DO_EXIT:  ; 6, X_EXIT
 
 >    *twig dictionary is CPU independent;*
 
->    all twig words have a payload as first and last references;
+>    all twig words have a payload as first (to DO_COL) and last references (to DO_EXIT);
 
->    all leaf words have a payload as self reference and last jump;
+>    all leaf words have a payload as first reference (to self) and last jump;
+
+; at start of each compound word a reference to DO_COLON
+
+; at final of each compound word a reference to DO_EXIT (XT_EXIT)
+
+; at end of all primitives a jump to DO_NEXT
+
 
 ### ; notes
 
