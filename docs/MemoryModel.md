@@ -6,19 +6,19 @@ For the AVR Atmega8, by Harvard architeture, memory is separed in 512 bytes eepr
 
 1. Static ram layout
     
-    - 0x000 to 0x01f  registers r0 to r31
+- 0x000 to 0x01f  registers r0 to r31
 
-    - 0x020 to 0x05f  i/o memory mapped
+- 0x020 to 0x05f  i/o memory mapped
 
-    - 0x060 to 0x45f  free ram
+- 0x060 to 0x45f  free ram
 
 2. Flash memory layout
 
-    - 0x000 to 0x1fff 128 program memory, as pages of 64 bytes, 
+- 0x000 to 0x1fff 128 program memory, as pages of 64 bytes, 
     
-    - 0x000 to 0x1dff RWWM read, erase, write flash memory
+- 0x000 to 0x1dff RWWM read, erase, write flash memory
     
-    - 0x1e00 to0x1fff NRWW read only boot area, where optiboot resides
+- 0x1e00 to0x1fff NRWW read only boot area, where optiboot resides
 
 3. Optiboot 
 
@@ -193,6 +193,5 @@ note: last stack is for extra libraries, not for forth
     ESC     0x1B    \e, ^[
 
     SPC     0x30    whitespace
-
 
 

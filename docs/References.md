@@ -130,7 +130,6 @@ DO_EXIT:  ; 6, X_EXIT
     
     twig ==>  (code of DO_COLON), ptr ... ptr, (ptr of DO_EXIT)
 ```
-
 ### ; considerations
 
 >    traditional and efficient code;

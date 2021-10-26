@@ -40,16 +40,16 @@ When defining words with VARIABLE, CONSTANT, DEFER, IS, TO, ASSIGN, CREATE, \<BU
 
 the code field holds "what to do" for the inner interpreter and in classic forth can be one of: 
     
-     _nest, push instruction point into return
-     _unest, pull instruction point from return
-     _exec, jump to next cell 
-     _exit, do _unest, do exec
+- _nest, push instruction point into return
+- _unest, pull instruction point from return
+- _exec, jump to next cell 
+- _exit, do _unest, do exec
   
-     _branch, _zbranch
-     _dovar, copy a address in a cell to data, 
-     _docon, copy contents of a address in cell to data,
-     _dolit, copy next cell to data, advance two cells
-     _pushrs, pullrs, _pushps, _pullps, in return stack or data stack
+- _branch, _zbranch
+- _dovar, copy a address in a cell to data, 
+- _docon, copy contents of a address in cell to data,
+- _dolit, copy next cell to data, advance two cells
+- _pushrs, _pullrs, _pushps, _pullps, in return stack or data stack
      
 In most forths those are specific inline opcodes 
 
@@ -71,8 +71,6 @@ then to port for other MCU or CPU, just rewrote the engine and primitives, chang
       forth, code for inner and primitives, 
       more, all forth dictionary immutable.
     
-
-
 
 ### ; notes
 
