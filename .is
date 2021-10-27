@@ -1,8 +1,0 @@
-
-echo "# f2u" >> READMETWO.md
-git init
-git add READMETWO.md
-git commit -m "first commit"
-git branch -M main
-git remote add origin https://github.com/agsb/f2u.git
-git push -u origin main

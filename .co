@@ -1,2 +1,0 @@
-me=${@}
-git commit -m \\" ${me} \\" . 

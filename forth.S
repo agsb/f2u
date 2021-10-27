@@ -67,7 +67,7 @@
 ; temporary tos register r23:r22
 ; temporary nds register r21:r20
 ; instruction pointer r18:r19
-; scratch register r0, r1
+; scratch register r0
 ;
 ; Can only use LPM to access flash memory ? YES!
 ;
@@ -109,8 +109,7 @@ _next:
 _branch:
     movw wrk_low, zpm_low   ; copy this reference
     adiw wrk_low, 2         ; point to next reference
-    movw ipr_low, wrk_low   ; keep this reference, 
-;   here could be a trampoline table for jumps.
+    movw ipr_low, wrk_low   ; keep this reference
     ijmp
 
 _link:
@@ -417,7 +416,8 @@ HEADER "(dovar)", "doref"
     NOOP
     movw zpm_low, ipr_low
     pmload wrk_low, wrk_high
-    movw ipr_low, zpm_low
+    movw ipr_low, zpm_low		
+	??? eforth 
     WOOP
 
 ;----------------------------------------------------------------------
@@ -427,13 +427,13 @@ HEADER "(dovar)", "doref"
 ; push the value of next to stack, updates next
 ; only for flash
 ; push next to stack
-HEADER "(docon)", "doval"
-    NOOP
-    movw zpm_low, ipr_low
-    movw wrk_low, zpm_low
-    adiw zpm_low, 2
-    movw ipr_low, zpm_low
-    WOOP
+;HEADER "(docon)", "doval"
+;    NOOP
+;    movw zpm_low, ipr_low
+;    movw wrk_low, zpm_low
+;    adiw zpm_low, 2
+;    movw ipr_low, zpm_low
+;    WOOP
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- 0 | -1)
@@ -692,7 +692,11 @@ HEADER "BRANCH", "BRANCH"
 2:
     movw zpm_low, ipr_low
     pmload wrk_low, wrk_high
-    movw ipr_low, wrk_low
+; doing offsets in bytes 
+    add ipr_low, wrk_low
+    adc ipr_high, wrk_high
+; or absolute
+;   movw ipr_low, wrk_low
     POON
 
 ;----------------------------------------------------------------------
@@ -835,27 +839,21 @@ HEADER "DOVAR", "DOVAR"
 ; pointer for a sram ref
 ;----------------------------------------------------------------------
 ; ok C! ( c a -- )
-; only in sram
+; sorry all in words
 HEADER "C!", "CTO"
     NOOP
-    pspull zpm_low, zpm_high
-    pspull wrk_low, wrk_high
-    srsave wrk_low
-    POON
+    rjmp TO
 
 ;----------------------------------------------------------------------
 ; ok C@ ( c a -- )
-; only in sram
+; sorry all in words
 HEADER "C@", "CAT"
     NOOP
-    pspull zpm_low, zpm_high
-    srload wrk_low
-    clr wrk_high
-    WOOP
+    rjmp AT
 
 ;----------------------------------------------------------------------
 ; ok INV
-HEADER "INVERT", "INVERT"
+HEADER "INV", "INV"
     NOOP
     pspull wrk_low, wrk_high
 _inv:
@@ -865,7 +863,7 @@ _inv:
 
 ;----------------------------------------------------------------------
 ; ok NEG
-HEADER "NEGATE", "NEGATE"
+HEADER "NEG", "NEG"
     NOOP
     pspull wrk_low, wrk_high
 _neg:
