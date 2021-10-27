@@ -25,87 +25,68 @@
  */
 
 ;----------------------------------------------------------------------
-; why use MARK and RESOLVE ? For have hooks :)
-;----------------------------------------------------------------------
 ;
-; ok <MARK
-HEADER, "<MARK", "LMARK", F_IMMEDIATE
-	.word HERE, ENDS
-;----------------------------------------------------------------------
-;
-; ok <RESOLVE
-HEADER, "<RESOLVE", "LRESOLVE", F_IMMEDIATE
-	.word COMMA, ENDS
-;----------------------------------------------------------------------
-;
-; ok >MARK
-HEADER, ">MARK", "GMARK", F_IMMEDIATE
-	.word HERE, DOLIT, 0, COMMA, ENDS
-;----------------------------------------------------------------------
-;
-; ok >RESOLVE
-HEADER, ">RESOLVE", "GRESOLVE", F_IMMEDIATE
-	.word HERE, SWAP, TO, ENDS
+; ok BACK
+HEADER, "BACK", "BACK", F_IMMEDIATE
+	.word HERE, SUB, COMMA, ENDS
+
 ;----------------------------------------------------------------------
 ;
 ; ok BEGIN
 HEADER, "BEGIN", "BEGIN", F_IMMEDIATE
-	.word LMARK, ENDS
+	.word HERE, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok AGAIN
 HEADER, "AGAIN", "AGAIN", F_IMMEDIATE
-	.word COMPI, BRANCH, LRESOLVE, ENDS
+	.word COMP, BRANCH, BACK, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok UNTIL
 HEADER, "UNTIL", "UNTIL", F_IMMEDIATE
-	.word COMPI, ZBRANCH, LRESOLVE, ENDS
+	.word COMP, ZBRANCH, BACK, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok IF
 HEADER, "IF", "IF", F_IMMEDIATE
-	.word COMPI, ZBRANCH, GMARK, ENDS
+	.word COMP, ZBRANCH, HERE, ZERO, COMMA, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok ENDIF
+; note: use of store if addres is not 'here'
+HEADER, "ENDIF", "ENDIF", F_IMMEDIATE
+	.word HERE, OVER, SUB, SWAP, STORE, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok THEN
 HEADER, "THEN", "THEN", F_IMMEDIATE
-	.word GRESOLVE, ENDS
+	.word ENDIF, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok ELSE
 HEADER, "ELSE", "ELSE", F_IMMEDIATE
-	.word AHEAD, SWAP, THEN, ENDS
-
-;----------------------------------------------------------------------
-;
-; ok AFT
-HEADER, "AFT", "AFT", F_IMMEDIATE
-	.word DROP, AHEAD, BEGIN, SWAP, ENDS
-
-;----------------------------------------------------------------------
-;
-; ok AHEAD
-HEADER, "AHEAD", "AHEAD", F_IMMEDIATE
-	.word COMPI, BRANCH, GMARK, ENDS
+	.word COMP, BRANCH, HERE, ZERO, COMMA, 
+	.word SWAP, ENDIF, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok WHILE
 HEADER, "WHILE", "WHILE", F_IMMEDIATE
-	.word IF, SWAP, ENDS
+	.word IF, TWOP, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok REPEAT
 HEADER, "REPEAT", "REPEAT", F_IMMEDIATE
 
-	.word AGAIN, HERE, SWAP, STORE, ENDS
+	.word TOR, TOR, AGAIN, FROMR, FROMR, 
+	.word SUB, ENDIF, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -116,14 +97,14 @@ HEADER "(quit)", "quit"
 
 ;----------------------------------------------------------------------
 ;
-; ok comma
+; ok colon ????
 HEADER ":", "colon"
 	.word iscompile, flash, HERE, AT ; for LAST link
 	.word create, HERE, SWAP, ENDS
 
 ;----------------------------------------------------------------------
 ;
-; ok semmi
+; ok semmi ????
 HEADER ";", "semmi"
 	.word isexecute, flush, updateep, ENDS
 
