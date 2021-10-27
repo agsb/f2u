@@ -1,5 +1,4 @@
 
-
 # Rational fractions
 
 From excerps from internet
@@ -7,7 +6,7 @@ From excerps from internet
 
 > http://wilsonminesco.com/16bitMathTables/RationalApprox.html
 
-All errors less than 10^-7
+PS. All errors less than 10^-7
 
  | name | dividend | divisor | rational for |
  |:-----|---------:|--------:|:-------------|
