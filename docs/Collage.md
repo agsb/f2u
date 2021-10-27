@@ -66,3 +66,76 @@ Examples are SWAP 2SWAP ROT.
 
 - (my) Also: A generator puts an item into stack
 ---
+> ## In listing of "PDP-11 FORTH      RT-11, RSX-11M, AND STAND-ALONE      JANUARY 1980", by JOHN S. JAMES
+
+## 1. Branch is offset not absolute
+``` 
+; 
+        HEAD    206,BRANCH,240,BRAN                     ; ***** BRANCH
+;  USED ONLY BY COMPILER.  FORTH BRANCH TO ADDRESS WHICH FOLLOWS.
+        ADD     (IP),IP
+        NEXT
+````
+## 2. Control words pairs are checked by values in stack. Simple and wise.
+```
+;
+;  COMPILE-TIME SYNTAX-ERROR CHECKS.
+;
+        HEAD    206,?ERROR,240,QERR,DOCOL               ; ***** ?ERROR
+        .WORD   SWAP,ZBRAN,XXN2-.,ERROR,BRAN,XXN3-.
+XXN2:   .WORD   DROP
+XXN3:   .WORD   SEMIS
+;
+        HEAD    205,?COMP,320,QCOMP,DOCOL               ; ***** ?COMP
+        .WORD   STATE,AT,ZEQU,LIT,21,QERR,SEMIS
+;
+        HEAD    205,?EXEC,303,QEXEC,DOCOL               ; ***** ?EXEC
+        .WORD   STATE,AT,LIT,22,QERR,SEMIS
+;
+        HEAD    206,?PAIRS,240,QPAIR,DOCOL              ; ***** ?PAIRS
+        .WORD   SUB,LIT,23,QERR,SEMIS
+;
+        HEAD    204,BACK,240,BACK,DOCOL                 ; ***** BACK
+        .WORD   HERE,SUB,COMMA,SEMIS
+;
+        HEAD    305,BEGIN,316,BEGIN,DOCOL               ; ***** BEGIN
+        .WORD   QCOMP,HERE,ONE,SEMIS
+;
+        HEAD    305,ENDIF,306,ENDIF,DOCOL               ; ***** ENDIF
+        .WORD   QCOMP,TWO,QPAIR,HERE,OVER,SUB,SWAP,STORE,SEMIS
+;
+        HEAD    304,THEN,240,THEN,DOCOL                 ; ***** THEN
+        .WORD   ENDIF,SEMIS
+;
+        HEAD    302,DO,240,DO,DOCOL                     ; ***** DO
+        .WORD   COMP,XDO,HERE,LIT,3,SEMIS
+;
+        HEAD    304,LOOP,240,LOOP,DOCOL                 ; ***** LOOP
+        .WORD   LIT,3,QPAIR,COMP,XLOOP,BACK,SEMIS
+;
+        HEAD    305,+LOOP,320,PLOOP,DOCOL               ; ***** +LOOP
+        .WORD   LIT,3,QPAIR,COMP,XPLOO,BACK,SEMIS
+;
+        HEAD    305,UNTIL,314,UNTIL,DOCOL               ; ***** UNTIL
+        .WORD   ONE,QPAIR,COMP,ZBRAN,BACK,SEMIS
+;
+        HEAD    303,END,304,END,DOCOL                   ; ***** END
+        .WORD   UNTIL,SEMIS
+;
+        HEAD    305,AGAIN,316,AGAIN,DOCOL               ; ***** AGAIN
+        .WORD   ONE,QPAIR,COMP,BRAN,BACK,SEMIS
+;
+        HEAD    306,REPEAT,240,REPEAT,DOCOL             ; ***** REPEAT
+        .WORD   TOR,TOR,AGAIN,FROMR,FROMR,TWO,SUB,ENDIF,SEMIS
+;
+        HEAD    302,IF,240,IF,DOCOL                     ; ***** IF
+        .WORD   COMP,ZBRAN,HERE,ZERO,COMMA,TWO,SEMIS
+;
+        HEAD    304,ELSE,240,ELSE,DOCOL                 ; ***** ELSE
+        .WORD   TWO,QPAIR,COMP,BRAN,HERE,ZERO,COMMA
+        .WORD   SWAP,TWO,ENDIF,TWO,SEMIS
+;
+        HEAD    305,WHILE,305,WHILE,DOCOL               ; ***** WHILE
+        .WORD   IF,TWOP,SEMIS
+;
+```

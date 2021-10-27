@@ -6,6 +6,8 @@
 
 # 26/10/2021
 
+- Change branch to use offsets instead of absolute addresses, as in original fig-forth
+
 - Change C! and C@, as really one byte in low register and high register goes zero.
 
 - Emulated [branch and link], [call and return], indirect thread code working.
