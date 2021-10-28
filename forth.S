@@ -135,6 +135,7 @@ _enter:
 ; may use temporary Tos (r22:r23) and Nos (r20:r21) 
 ;
 ;----------------------------------------------------------------------
+
 ;**********************************************************************
 ;
 ;    init of minimal words
@@ -233,10 +234,10 @@ HEADER "NAND", "NAND"
     NOOP
     pspull wrk_low, wrk_high
     pspull tos_low, tos_high
-    and wrk_high, tos_high
     and wrk_low, tos_low
-    com wrk_high
+    and wrk_high, tos_high
     com wrk_low
+    com wrk_high
     WOOP
 
 ;----------------------------------------------------------------------
@@ -252,11 +253,12 @@ HEADER "+", "PLUS"
 
 ;----------------------------------------------------------------------
 ;    end of minimal words
+;
 ;**********************************************************************
 
-;----------------------------------------------------------------------
+;**********************************************************************
 ;    load variables
-
+;
 ;----------------------------------------------------------------------
 ; ok ( -- w)
 ;
@@ -264,15 +266,6 @@ HEADER "TIB", "tib_"
     NOOP
     ldi wrk_low, lo8(TIB)
     ldi wrk_high, hi8(TIB)
-    WOOP
-
-;----------------------------------------------------------------------
-; ok ( -- w)
-;
-HEADER "HERE", "here_"
-    NOOP
-    ldi wrk_low, lo8(HERE)
-    ldi wrk_high, hi8(HERE)
     WOOP
 
 ;----------------------------------------------------------------------
@@ -321,9 +314,20 @@ HEADER "(erom)", "erom_"
     WOOP
 
 ;----------------------------------------------------------------------
+; ok ( -- w)
+;
+HEADER "HERE", "here_"
+    NOOP
+    ldi zpm_low, lo8(HERE)
+    ldi zpm_high, hi8(HERE)
+    srload wrk_low
+    srload wrk_high
+    WOOP
+
+;----------------------------------------------------------------------
 ;
 ; ok ( -- w)
-; beware, it blocks! test if can receive a char
+; beware, it blocks while test if can receive a char
 ;
 HEADER "key", "key_"
     NOOP
@@ -348,7 +352,7 @@ HEADER "key?", "qkey_"
 
 ;----------------------------------------------------------------------
 ; ok ( w -- )
-; beware, it blocks! test if can send a char 
+; beware, it blocks while test if can send a char 
 ;
 HEADER "emit", "emit_"
     NOOP
@@ -456,7 +460,7 @@ HEADER "(dovar)", "doref"
 ;    NOOP
 ;    movw zpm_low, ipr_low
 ;    movw wrk_low, zpm_low
-;    adiw zpm_low, 2
+;    adiw zpm_low, CELL_SIZE 	; 2
 ;    movw ipr_low, zpm_low
 ;    WOOP
 
@@ -475,7 +479,6 @@ HEADER "=", "EQUAL"
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- 0 | -1)
 ;
-;
 HEADER "<>", "NOTEQUAL"
     NOOP
     pspull wrk_low, wrk_high
@@ -486,8 +489,7 @@ HEADER "<>", "NOTEQUAL"
     rjmp _iftrue
 
 ;----------------------------------------------------------------------
-; nok ( w1 w2 -- 0 | -1 )
-;
+; ok ( w1 w2 -- 0 | -1 )
 ;
 HEADER "<", "LTHAN"
     NOOP
@@ -499,7 +501,7 @@ HEADER "<", "LTHAN"
     rjmp _iftrue
 
 ;----------------------------------------------------------------------
-; nok ( w1 w2 -- 0 | -1 )
+; ok ( w1 w2 -- 0 | -1 )
 ;
 HEADER ">", "GTHAN"
     NOOP
@@ -822,7 +824,7 @@ HEADER "DOLIT", "DOLIT"
     pmload wrk_low, wrk_high
     movw ipr_low, zpm_low
     WOOP
-
+ZZZZ
 ;----------------------------------------------------------------------
 ;  zzz doVAR ( -- w ) from sram memory to data stack
 ;
