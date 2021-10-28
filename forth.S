@@ -156,7 +156,7 @@ _pushw:
 ;----------------------------------------------------------------------
 ; ok 0=
 ;
-HEADER "0=", "ZEROEQU"
+HEADER "0=", "ZEQU"
     NOOP
     pspull wrk_low, wrk_high
     or wrk_low, wrk_high
@@ -385,112 +385,35 @@ HEADER "millis", "millis_"
     WOOP
 
 ;----------------------------------------------------------------------
-; does reset
-;
-HEADER "BYE", "BYE"
+; ok (  -- 1)
+HEADER "1", "ONE"
     NOOP
-    rjmp RESET
-    POON
-
-;----------------------------------------------------------------------
-;
-HEADER "COLD", "COLD"
-    NOOP
-; restart return stack
-    ldi rsp_low, lo8(RSP)
-    ldi rsp_high, hi8(RSP)
-; restart parameter stack
-    ldi psp_low, lo8(PSP)
-    ldi psp_high, hi8(PSP)
-; restart buffers etc????
-; preload to WARM
-    ; next word
-    ldi zpm_low, lo8(WARM)
-    ldi zpm_high, hi8(WARM)
-    rspush zpm_low, zpm_high
-    POON
-
-;----------------------------------------------------------------------
-;
-HEADER  "WARM", "WARM"
-    NOOP
-    ; verify error code
-    ; resets etc
-    POON
-
-;----------------------------------------------------------------------
-;
-; ( --- ) 
-; tricky 
-; iBUGGED ZZZZ NOT REALLY 
-; all new word starts at THIS=0, 1 and 2 bytes is link, 3 byte is size+flags
-HEADER "(immediate)", "immediate"
-    NOOP
-    ldi zpm_low, lo8(LINE)
-    ldi zpm_high, hi8(LINE)
-    adiw zpm_low, 2
-    srload wrk_low
-    ori wrk_low, F_IMMEDIATE
-    sbiw zpm_low, 1
-    srsave wrk_low
-    POON
-    
-;----------------------------------------------------------------------
-;
-; ok ( --- w ) 
-; ????
-; push the value pointed by next to stack, updates next
-; only for flash
-; push the value pointed by next into stack
-HEADER "(dovar)", "doref"
-    NOOP
-    movw zpm_low, ipr_low
-    pmload wrk_low, wrk_high
-    movw ipr_low, zpm_low		
+    clr wrk_high
+    clr wrk_low
+    inc wrk_low
     WOOP
 
 ;----------------------------------------------------------------------
-;
-; ok ( --- w )
-; ????
-; push the value of next to stack, updates next
-; only for flash
-; push next to stack
-;HEADER "(docon)", "doval"
-;    NOOP
-;    movw zpm_low, ipr_low
-;    movw wrk_low, zpm_low
-;    adiw zpm_low, CELL_SIZE 	; 2
-;    movw ipr_low, zpm_low
-;    WOOP
+; ok (  -- 2)
+HEADER "2", "TWO"
+    .word ONE, LSHT, ENDS
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- 0 | -1)
 ;
 HEADER "=", "EQUAL"
-    NOOP
-    pspull wrk_low, wrk_high
-    pspull tos_low, tos_high
-    cp wrk_low, tos_low
-    cpc wrk_high, tos_high
-    brne _iffalse
-    rjmp _iftrue
+    .word SUB, ZEQU, ENDS 
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- 0 | -1)
 ;
 HEADER "<>", "NOTEQUAL"
-    NOOP
-    pspull wrk_low, wrk_high
-    pspull tos_low, tos_high
-    cp wrk_low, tos_low
-    cpc wrk_high, tos_high
-    breq _iffalse
-    rjmp _iftrue
+    .word EQUAL, INVERT, ENDS
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- 0 | -1 )
 ;
+ZZZZ
 HEADER "<", "LTHAN"
     NOOP
     pspull wrk_low, wrk_high
@@ -504,13 +427,15 @@ HEADER "<", "LTHAN"
 ; ok ( w1 w2 -- 0 | -1 )
 ;
 HEADER ">", "GTHAN"
-    NOOP
-    pspull wrk_low, wrk_high
-    pspull tos_low, tos_high
-    cp wrk_low, tos_low
-    cpc wrk_high, tos_high
-    brcc _iffalse
-    rjmp _iftrue
+    .word SWAP, LTHAN, ENDS
+
+;    NOOP
+;    pspull wrk_low, wrk_high
+;    pspull tos_low, tos_high
+;    cp wrk_low, tos_low
+;    cpc wrk_high, tos_high
+;    brcc _iffalse
+;    rjmp _iftrue
 
 ;----------------------------------------------------------------------
 ; ok ( -- -1 )
@@ -533,24 +458,28 @@ _iffalse:
     WOOP
 
 ;----------------------------------------------------------------------
-;  ok 0>    must be signed
-;
-HEADER "0>", "ZEROGT"
-    NOOP
-    pspull wrk_low, wrk_high
-    sbiw wrk_low, 1
-    brge _iffalse
-    rjmp _iftrue
-
-;----------------------------------------------------------------------
 ;  ok 0<
 ;
 HEADER "0<", "ZEROLT"
-    NOOP
-    pspull wrk_low, wrk_high
-    sbiw wrk_low, 1
-    brge _iftrue
-    rjmp _iffalse
+    .word ZERO, SWAP, LTHAN, ENDS
+ 
+;    NOOP
+;    pspull wrk_low, wrk_high
+;    sbiw wrk_low, 1
+;    brge _iftrue
+;    rjmp _iffalse
+
+;----------------------------------------------------------------------
+;  ok 0>    must be signed
+;
+HEADER "0>", "ZEROGT"
+     .word ZERO, LTHAN, ENDS
+
+;    NOOP
+;    pspull wrk_low, wrk_high
+;    sbiw wrk_low, 1
+;    brge _iffalse
+;    rjmp _iftrue
 
 ;----------------------------------------------------------------------
 ; 
@@ -824,21 +753,7 @@ HEADER "DOLIT", "DOLIT"
     pmload wrk_low, wrk_high
     movw ipr_low, zpm_low
     WOOP
-ZZZZ
-;----------------------------------------------------------------------
-;  zzz doVAR ( -- w ) from sram memory to data stack
-;
-HEADER "DOCON", "DOCON"
-    NOOP
-    WOOP
 
-;----------------------------------------------------------------------
-;  zzz doVAR ( -- w ) from sram memory to data stack
-HEADER "DOVAR", "DOVAR"
-    NOOP
-    WOOP
-
-; pointer for a sram ref
 ;----------------------------------------------------------------------
 ; ok C! ( c a -- )
 ; sorry all in words
@@ -855,7 +770,7 @@ HEADER "C@", "CAT"
 
 ;----------------------------------------------------------------------
 ; ok INV
-HEADER "INV", "INV"
+HEADER "INVERTE", "INVERTE"
     NOOP
     pspull wrk_low, wrk_high
 _inv:
@@ -865,7 +780,7 @@ _inv:
 
 ;----------------------------------------------------------------------
 ; ok NEG
-HEADER "NEG", "NEG"
+HEADER "NEGATE", "NEGATE"
     NOOP
     pspull wrk_low, wrk_high
 _neg:
@@ -882,6 +797,126 @@ _abs:
     sbrc wrk_high, 7
     rjmp _neg
     WOOP
+
+;----------------------------------------------------------------------
+; ok ( w -- w )
+;  data space pointer align to CELL, atmega is always
+
+HEADER "ALIGN", "ALLIGN"
+    NOOP
+    pspull wrk_low, wrk_high
+    adiw wrk_low, 1
+    cbr wrk_low, 0
+    WOOP
+
+;----------------------------------------------------------------------
+; ok ( -- CELL ) 
+; CELL is 2 ; size of a cell
+;
+HEADER "CELL", "CELLSZ"
+    NOOP
+    ldi wrk_low, CELL_SIZE
+    clr wrk_high
+    WOOP
+
+;----------------------------------------------------------------------
+; ok ( w -- w * CELL  )
+; CELL is 2, multiply by 2, easy way
+;
+HEADER "CELLS", "CELLS"
+    .word LSHT, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok ( w -- w + CELL )
+;
+HEADER "CELL+", "CELLPLUS"
+    .word CELL, PLUS, ENDS
+
+;    NOOP
+;    pspull wrk_low, wrk_high
+;    adiw wrk_low, CELL_SIZE
+;    WOOP
+
+;----------------------------------------------------------------------
+;
+; ok ( w -- w - CELL )
+;
+HEADER "CELL-", "CELLMINUS"
+    .word CELL, SUBS, ENDS
+
+;    NOOP
+;    pspull wrk_low, wrk_high
+;    sbiw wrk_low, CELL_SIZE
+;    WOOP
+
+;----------------------------------------------------------------------
+;
+; ok ( w -- w + 1 )
+;
+HEADER "1+", "ONEPLUS"
+     .word ONE, PLUS, ENDS
+
+;    NOOP
+;    pspull wrk_low, wrk_high
+;    adiw wrk_low, 1
+;    WOOP
+
+;----------------------------------------------------------------------
+;
+; ok ( w -- w - 1 )
+;
+HEADER "1-", "ONEMINUS"
+     .word ONE, MINUS, ENDS
+
+;    NOOP
+;    pspull wrk_low, wrk_high
+;    sbiw wrk_low, 1
+;    WOOP
+
+;----------------------------------------------------------------------
+;
+; ok ( w -- w + 2 )
+;
+HEADER "2+", "TWOPLUS"
+     .word TWO, PLUS, ENDS
+
+;    NOOP
+;    pspull wrk_low, wrk_high
+;    adiw wrk_low, 2
+;    WOOP
+
+;----------------------------------------------------------------------
+;
+; ok ( w -- w - 2 )
+;
+HEADER "2-", "TWOMINUS"
+     .word TWO, MINUS, ENDS
+
+;    NOOP
+;    pspull wrk_low, wrk_high
+;    sbiw wrk_low, 2
+;    WOOP
+
+;----------------------------------------------------------------------
+;
+; ok ( u w -- ) 
+;
+HEADER "+!", "PLUSTO"
+    .word DUP, AT, ROT, SUM, SWAP, TO, ENDS
+
+;    NOOP
+;    pspull zpm_low, zpm_high
+;    pspull tos_low, tos_high
+;    srload wrk_low
+;    srload wrk_high
+;    clc
+;    add wrk_low, tos_low
+;    adc wrk_low, tos_low
+;    sbiw zpm_low, 2
+;    srsave wrk_low
+;    srsave wrk_high
+;    POON
 
 ;----------------------------------------------------------------------
 ; ok ???? ( a1 u1 a2 u2 -- flag)
@@ -998,111 +1033,55 @@ HEADER "MOVE", "MOVE"
     rspull psp_low, psp_high
     POON
 
-
-;----------------------------------------------------------------------
-; ok ( w -- w )
-;  data space pointer align to CELL, atmega is always
-
-HEADER "ALIGN", "ALLIGN"
-    NOOP
-    pspull wrk_low, wrk_high
-    adiw wrk_low, 1
-    cbr wrk_low, 0
-    WOOP
-
-;----------------------------------------------------------------------
-; ok ( -- CELL ) 
-; CELL is 2 ; size of a cell
-;
-HEADER "CELL", "CELLSZ"
-    NOOP
-    ldi wrk_low, CELL_SIZE
-    clr wrk_high
-    WOOP
-
-;----------------------------------------------------------------------
-; ok ( w -- w * CELL  )
-; CELL is 2, multiply by 2, easy way
-;
-HEADER "CELLS", "CELLS"
-    NOOP
-    rjmp SHL+2
-
 ;----------------------------------------------------------------------
 ;
-; ok ( w -- w + CELL )
-;
-HEADER "CELL+", "CELLPLUS"
+; ( --- ) 
+; tricky 
+; iBUGGED ZZZZ NOT REALLY 
+; all new word starts at THIS=0, 1 and 2 bytes is link, 3 byte is size+flags
+HEADER "(immediate)", "immediate"
     NOOP
-    pspull wrk_low, wrk_high
-    adiw wrk_low, CELL_SIZE
-    WOOP
-
-;----------------------------------------------------------------------
-;
-; ok ( w -- w - CELL )
-;
-HEADER "CELL-", "CELLMINUS"
-    NOOP
-    pspull wrk_low, wrk_high
-    sbiw wrk_low, CELL_SIZE
-    WOOP
-
-;----------------------------------------------------------------------
-;
-; ok ( w -- w + 1 )
-;
-HEADER "1+", "ONEPLUS"
-    NOOP
-    pspull wrk_low, wrk_high
-    adiw wrk_low, 1
-    WOOP
-
-;----------------------------------------------------------------------
-;
-; ok ( w -- w - 1 )
-;
-HEADER "1-", "ONEMINUS"
-    NOOP
-    pspull wrk_low, wrk_high
-    sbiw wrk_low, 1
-    WOOP
-
-;----------------------------------------------------------------------
-;
-; ok ( w -- w + 2 )
-;
-HEADER "2+", "TWOPLUS"
-    NOOP
-    pspull wrk_low, wrk_high
-    adiw wrk_low, 2
-    WOOP
-
-;----------------------------------------------------------------------
-;
-; ok ( w -- w - 2 )
-;
-HEADER "2-", "TWOMINUS"
-    NOOP
-    pspull wrk_low, wrk_high
-    sbiw wrk_low, 2
-    WOOP
-
-;----------------------------------------------------------------------
-;
-; ok ( u w -- ) 
-;
-HEADER "+!", "PLUSTO"
-    NOOP
-    pspull zpm_low, zpm_high
-    pspull tos_low, tos_high
+    ldi zpm_low, lo8(LINE)
+    ldi zpm_high, hi8(LINE)
+    adiw zpm_low, 2
     srload wrk_low
-    srload wrk_high
-    clc
-    add wrk_low, tos_low
-    adc wrk_low, tos_low
-    sbiw zpm_low, 2
+    ori wrk_low, F_IMMEDIATE
+    sbiw zpm_low, 1
     srsave wrk_low
-    srsave wrk_high
+    POON
+
+
+;----------------------------------------------------------------------
+; does reset
+;
+HEADER "BYE", "BYE"
+    NOOP
+    rjmp RESET
+    POON
+
+;----------------------------------------------------------------------
+;
+HEADER "COLD", "COLD"
+    NOOP
+; restart return stack
+    ldi rsp_low, lo8(RSP)
+    ldi rsp_high, hi8(RSP)
+; restart parameter stack
+    ldi psp_low, lo8(PSP)
+    ldi psp_high, hi8(PSP)
+; restart buffers etc????
+; preload to WARM
+    ; next word
+    ldi zpm_low, lo8(WARM)
+    ldi zpm_high, hi8(WARM)
+    rspush zpm_low, zpm_high
+    POON
+
+;----------------------------------------------------------------------
+;
+HEADER  "WARM", "WARM"
+    NOOP
+    ; verify error code
+    ; resets etc
     POON
 
