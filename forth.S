@@ -82,7 +82,7 @@
 .section .text
 .org 0x460
 .global forth
-forth:
+_forth_:
 ;----------------------------------------------------------------------
 ; inner interpreter,
 ; it is also a primitive word
@@ -175,8 +175,9 @@ HEADER "!", "TO"
     pspull zpm_low, zpm_high
     pspull wrk_low, wrk_high
 
-    ldi tos_high, hi8(forth)
-    cpi zpm_low, lo8(forth)
+; if above _forth_ is flash
+    ldi tos_high, hi8(_forth_)
+    cpi zpm_low, lo8(_forth_)
     cpc zpm_high, tos_high
     brge _isflash_to
 
@@ -186,7 +187,7 @@ _isram_to:
     POON
 
 _isflash_to:
-;   do flash flush, later :(
+;   do flash flush, later :( still not done
     POON
 
 ;----------------------------------------------------------------------
@@ -196,8 +197,9 @@ HEADER "@", "AT"
     NOOP
     pspull zpm_low, zpm_high
 
-    ldi tos_high, hi8(forth)
-    cpi zpm_low, lo8(forth)
+; if above _forth_ is flash
+    ldi tos_high, hi8(_forth_)
+    cpi zpm_low, lo8(_forth_)
     cpc zpm_high, tos_high
     brge _isflash_at
 
@@ -209,7 +211,6 @@ _isram_at:
 _isflash_at:
     pmload wrk_low, wrk_high
     WOOP
-
 
 ;----------------------------------------------------------------------
 ; ok ( -- rsp)
@@ -385,6 +386,26 @@ HEADER "millis", "millis_"
     WOOP
 
 ;----------------------------------------------------------------------
+; ok ( -- -1 )
+;
+HEADER "TRUE", "FTRUE"
+    NOOP
+_iftrue:
+    ser wrk_low
+    ser wrk_high
+    WOOP
+
+;----------------------------------------------------------------------
+; ok ( -- 0 )
+;
+HEADER "FALSE", "FFALSE"
+    NOOP
+_iffalse:
+    clr wrk_low
+    clr wrk_high
+    WOOP
+
+;----------------------------------------------------------------------
 ; ok (  -- 1)
 HEADER "1", "ONE"
     NOOP
@@ -413,15 +434,14 @@ HEADER "<>", "NOTEQUAL"
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- 0 | -1 )
 ;
-ZZZZ
 HEADER "<", "LTHAN"
     NOOP
     pspull wrk_low, wrk_high
     pspull tos_low, tos_high
     cp wrk_low, tos_low
     cpc wrk_high, tos_high
-    brcs _iffalse
-    rjmp _iftrue
+    brlt _iftrue
+    rjmp _iffalse
 
 ;----------------------------------------------------------------------
 ; ok ( w1 w2 -- 0 | -1 )
@@ -436,26 +456,6 @@ HEADER ">", "GTHAN"
 ;    cpc wrk_high, tos_high
 ;    brcc _iffalse
 ;    rjmp _iftrue
-
-;----------------------------------------------------------------------
-; ok ( -- -1 )
-;
-HEADER "TRUE", "FTRUE"
-    NOOP
-_iftrue:
-    ser wrk_low
-    ser wrk_high
-    WOOP
-
-;----------------------------------------------------------------------
-; ok ( -- 0 )
-;
-HEADER "FALSE", "FFALSE"
-    NOOP
-_iffalse:
-    clr wrk_low
-    clr wrk_high
-    WOOP
 
 ;----------------------------------------------------------------------
 ;  ok 0<
@@ -544,12 +544,16 @@ PULL:
 ;     F18A dup
 HEADER "DUP", "DUP"
     NOOP
-    pspull wrk_low, wrk_high
-    pspush wrk_low, wrk_high
+    ldd wrk_low, X + 0
+    ldd wrk_high, X + 1
+
+;    pspull wrk_low, wrk_high
+;    pspush wrk_low, wrk_high
+
     WOOP
 
 ;----------------------------------------------------------------------
-; ok ( w1 w2 -- w2 w1 )
+; ok ( w2 w1 -- w1 w2 )
 HEADER "SWAP", "SWAP"
     NOOP
     pspull tos_low, tos_high
@@ -558,18 +562,21 @@ HEADER "SWAP", "SWAP"
     WOOP
 
 ;----------------------------------------------------------------------
-; ok ( w1 w2 -- w1 w2 w1 )
+; ok ( w2 w1 -- w2 w1 w2 )
 ;     F18A over
 HEADER "OVER", "OVER"
     NOOP
-    pspull tos_low, tos_high
-    pspull wrk_low, wrk_high
-    pspush wrk_low, wrk_high
-    pspush tos_low, tos_high
+    ldd wrk_low, X + 2
+    ldd wrk_high, X + 3
+
+;    pspull tos_low, tos_high
+;    pspull wrk_low, wrk_high
+;    pspush wrk_low, wrk_high
+;    pspush tos_low, tos_high
     WOOP
 
 ;----------------------------------------------------------------------
-; ok ( w1 w2 w3 -- w2 w3 w1 )
+; ok ( w3 w2 w1 -- w2 w1 w3 )
 HEADER "ROT", "ROT"
     NOOP
     pspull tos_low, tos_high
@@ -602,10 +609,8 @@ HEADER "?DUP", "ZDUP"
 HEADER "?BRANCH", "QBRANCH"
     NOOP
     pspull wrk_low, wrk_high
-    cpi wrk_low, 0
-    brne 1f
-    cpi wrk_high, 0
-    brne 1f
+    or wrk_low, wrk_high
+    brbc BIT_ZERO, 1f
 ; goto branch
     rjmp 2f 
 ; skip next
@@ -618,16 +623,14 @@ HEADER "?BRANCH", "QBRANCH"
 ;----------------------------------------------------------------------
 ; ok ( branch next reference )
 ;
+; doing offsets in bytes 
 HEADER "BRANCH", "BRANCH"
     NOOP
 2:
     movw zpm_low, ipr_low
     pmload wrk_low, wrk_high
-; doing offsets in bytes 
     add ipr_low, wrk_low
     adc ipr_high, wrk_high
-; or absolute
-;   movw ipr_low, wrk_low
     POON
 
 ;----------------------------------------------------------------------
@@ -843,7 +846,7 @@ HEADER "CELL+", "CELLPLUS"
 ; ok ( w -- w - CELL )
 ;
 HEADER "CELL-", "CELLMINUS"
-    .word CELL, SUBS, ENDS
+    .word CELL, MINUS, ENDS
 
 ;    NOOP
 ;    pspull wrk_low, wrk_high
@@ -903,7 +906,7 @@ HEADER "2-", "TWOMINUS"
 ; ok ( u w -- ) 
 ;
 HEADER "+!", "PLUSTO"
-    .word DUP, AT, ROT, SUM, SWAP, TO, ENDS
+    .word SWAP, OVER, AT, PLUS, SWAP, TO, ENDS
 
 ;    NOOP
 ;    pspull zpm_low, zpm_high
