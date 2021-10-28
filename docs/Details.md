@@ -74,6 +74,13 @@ Details.md
 
 - sram memory from $060 to $45F (1024 bytes)
 
+## ISO Standarts
+
+Must conform with:
+
+- ISO/IEC 646, ISO 7-bit coded character set for information interchange.
+
+- ISO/IEC 9899, language C standart, http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf. Joke ;)
 ## Bootstrap fuses
 
 from https://www.engbedded.com/conffuse/

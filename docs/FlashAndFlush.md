@@ -19,13 +19,25 @@ Many Forths go around this limitation with schemes of mapping where dictionary i
 ## how do 
 
 Looking into Forth standarts (79, 83, ANS, 2012, FIG, etc) and implementations, (using mnemonics) there are small lists of 
+-  words that changes memory contents as MOVE, FILL; 
+- words that changes the dictionary as COMMA (,), CREATE, VARIABLE, CONSTANT, VALUE, DOTSTR (."); 
+- words that changes flag bits as IMMEDIATE, COMPILE_ONLY, SMUDGE, TOGGLE; 
 
-> words that changes memory contents as STORE (!), MOVE, FILL; 
+All those uses _store_ (!) to move a value into a memory address.
 
-> words that changes the dictionary as COMMA (,), CREATE, VARIABLE, CONSTANT, VALUE, DOTSTR (."); 
+So how _store_ would differentiate a address in flash or sram ?
 
-> words that changes flag bits as IMMEDIATE, COMPILE_ONLY, SMUDGE, TOGGLE; Only while compiling. 
+One simple form is using restrict range of address. 
 
+In a ATmega8, everthing above 0x460 is flash memory, then if Forth starts at 0x460 in flash, everthing above is dictionary.
+
+Then both @ and ! must play with address, to resolve if in flash or in sram.
+
+It also reserves a 1k byte for boot routines.
+
+This solution maybe not fully portable but works for Atmega8.
+
+> Still tons of things to play, as buffer for flash pages, incremental flush and flash, etc
 # my alternative: 
 
 - _Still not working_
