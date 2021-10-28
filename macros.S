@@ -74,13 +74,13 @@
 #define wrk_low r24
 #define wrk_high r25
 
-; fist value parameter stack
-#define nds_low r22
-#define nds_high r23
+; fist temporary
+#define tos_low r22
+#define tos_high r23
 
-; second value parameter stack
-#define tos_low r20
-#define tos_high r21
+; second value 
+#define nds_low r20
+#define nds_high r21
 
 ; instruction pointer register for branch and link return
 #define ipr_low r18
@@ -171,7 +171,7 @@ is_\label:
 ;----------------------------------------------------------------------
 ;    load from program memory (flash)
 ;    only works with TWO lpm !!!
-;	 Z address in bytes!
+;    Z address in bytes!
 .macro pmload low, high
     lsl zpm_low
     rol zpm_high
@@ -232,7 +232,7 @@ is_\label:
 .endm
 
 .macro WOOP
-	rjmp _pushw
+    rjmp _pushw
 .endm
 
 .macro POON
@@ -243,38 +243,39 @@ is_\label:
 ;    sizes
 ;
 ; atmega8 have flash memory of 128 pages of 64 bytes
-	SPM_SIZE = 64
+SPM_SIZE = 64
 
-; pad buffer for flush flash
-	FIB_SIZE = SPM_SIZE
+; buffer for flush flash
+FIB_SIZE = SPM_SIZE
 
 ; "Column 72 means Continue", 72 always \0
-;   Readability is good
-    TIB_SIZE = 72
+; Readability is good
+TIB_SIZE = 72
 
 ; small collate for numbers and words
-;   no more than 16 chars in a 16bit number system
-    PIC_SIZE = 16
+; no more than 16 chars in a 16bit number system
+PIC_SIZE = 16
 
 ; stacks 18 words deep. WISE as M00re said.
-    STACK_SIZE = 36
+STACK_SIZE = 36
 
 ;----------------------------------------------------------------------
-;    eeprom used (256 words total, 248 avaliabe) 
+;   reserved eeprom used (256 words total, 248 avaliabe) 
 ;
     eeprom = 0x00
     e_void = eeprom + 0  ; always zero
     e_seed = eeprom + 2  ; seed for random
     e_turn = eeprom + 4  ; routine after boot
-	e_rest = eeprom + 6  ; routine before reset
+    e_rest = eeprom + 6  ; routine before reset
     e_last = eeprom + 8  ; last link addres to dictionary 
     e_here = eeprom + 10 ; next free flash address for dictionary
     e_sram = eeprom + 12 ; next free sram address for variables, as stack
     e_erom = eeprom + 14 ; next free eprom address for values, as stack
+    e_free = eeprom + 16 
     
 ;----------------------------------------------------------------------
 ;   words can be 1 to 15 chars lenght, 
-;   almost over for normal english words http://norvig.com/mayzner.html
+;   almost over for normal english ~10 letters words http://norvig.com/mayzner.html
 ;
 ;   flags 
 ;   IMMEDIATE, COMPILE, HIDEN, TOGGLE
@@ -330,7 +331,7 @@ is_\label:
 
 ;---------------------------------------------------------------------
 ; status register from error codes forth 2012
-
+; minimal
     NO_ERROR = 0
     INVALID_MEMORY = -9
     OVERFLOW = -11
@@ -350,22 +351,20 @@ is_\label:
  CR_    =   0x0d	; ascci carriage return ^M
  LF_    =   0x0a	; ascii line feed ^J
 
- CAN_	= 	0x18	; ascii cancel ^C
+ CAN_	=   0x18	; ascii cancel ^C
  ESC_   =   0x1B	; ascii escape ^[
 
  BS_	=   0x08	; ascii backspace ^H
+ TAB_   =   0x09	; horizontal tab
  BL_    =   0x20	; ascii space 
- 
-/*
-	BS_    =   0x08
- 	TAB_   =   0x09
-*/
 
 ;---------------------------------------------------------------------
 ; from avr manual, for atmega8, do not change 
-    __SREG__ = 0x3f
-    __SP_H__ = 0x3e
-    __SP_L__ = 0x3d
+; reserved I/O Memory
+;
+__SREG__ = 0x3f
+__SP_H__ = 0x3e
+__SP_L__ = 0x3d
 
 /* SPMCR */
 #define SPMCR  0x37
@@ -378,27 +377,29 @@ is_\label:
 #define PGERS   1
 #define SPMEN   0
 
+BIT_CARRY = 0
+BIT_ZERO = 1
 
-    BIT_CARRY = 0
-    BIT_ZERO = 1
+SRAM_START = 0x060  ; SRAM from AVR manual
+SRAM_END =   0x45F  ; SRAM from AVR manual
 
-    SRAM_START = 0x060  ; SRAM from AVR manual
-    SRAM_END =   0x45F  ; SRAM from AVR manual
-    RAMEND = SRAM_END
+FLASH_RWW  = 0x0000
+FLASH_NRWW = 0x1E00	; using optiboot in 512 bytes !!!!
+FLASH_END  = 0x1FFF 
 
-    FLASH_RWW  = 0x0000
-    FLASH_NRWW = 0x1E00	; using optiboot in 512 bytes !!!!
-    FLASH_END  = 0x1FFF 
+FLASH_START = SRAM_END + 1	; just a offset
+FLASH_STOP = FLASH_NRWW - 1
 
-    FLASH_STOP = FLASH_NRWW - 1
+/* for eeprom use */
 
-	E2P_PAGESIZE = 4
-	E2P_END = 0x1FF
+E2P_PAGESIZE = 4
+E2P_START = 0x000
+E2P_END = 0x1FF
 
-    SPM_PAGESIZE = 64    
+/* for flash flush */
 
-    pagesize = (SPM_PAGESIZE - 1)
+SPM_PAGESIZE = 64    
+pagesize = (SPM_PAGESIZE - 1)
+pagemask = (~pagesize)
 
-    pagemask = (~pagesize)
-
-
+;----------------------------------------------------------------------

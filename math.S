@@ -368,3 +368,49 @@ itoa:
     pspush nds_low, nds_high
     POON
 
+/* 
+ * Macro to divide a 4-byte value by a 2-byte value yielding a 2-byte 
+ * quotient and 2-byte remainder. 
+ * 
+ * On entry:   _A3.._A0 contains the 4-byte dividend 
+ *             _B1.._B0 contains the 2-byte divisor 
+ * 
+ * On exit:    if there is no overflow 
+ *             _A1.._A0 contains the 2-byte quotient 
+ *             _A3.._A2 contains the 2-byte remainder 
+ * 
+ * C-callable: no 
+ * 
+ * Modifies:   _A3.._A0, _cnt 
+ * 
+ */ 
+    .macro    div32_16    _A3, _A2, _A1, _A0, _B1, _B0, _cnt 
+    ldi     \_cnt, 16 
+
+    cp      \_A2, \_B0 
+    cpc     \_A3, \_B1
+    brlo    0f
+    //overflow, do something intelligent
+    ser     \_A1
+    ser     \_A0
+    rjmp    3f
+
+0: 
+    lsl     \_A0 
+    rol     \_A1 
+    rol     \_A2 
+    rol     \_A3 
+    brcs    1f 
+    cp      \_A2, \_B0 
+    cpc     \_A3, \_B1
+    brcs    2f 
+1: 
+    sub     \_A2, \_B0 
+    sbc     \_A3, \_B1
+    ori     \_A0, 1 
+2: 
+    dec     \_cnt 
+    brne    0b 
+
+3:
+    .endm 

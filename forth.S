@@ -44,8 +44,8 @@
 ;
 ; classics
 ;
-    .NOLIST
-    .LIST
+.NOLIST
+.LIST
 
 ;----------------------------------------------------------------------
 ; start of dictionary
@@ -77,14 +77,17 @@
 ;
 
 ;----------------------------------------------------------------------
+; starts just above sram ends
+;
 .section .text
-.org 0x100
+.org 0x460
 .global forth
 forth:
 ;----------------------------------------------------------------------
 ; inner interpreter,
 ; it is also a primitive word
 ;
+; also called semis
 HEADER "ENDS", "ENDS"
 ; does nothing and mark as primitive
     NOOP
@@ -170,8 +173,19 @@ HEADER "!", "TO"
     NOOP
     pspull zpm_low, zpm_high
     pspull wrk_low, wrk_high
+
+    ldi tos_high, hi8(forth)
+    cpi zpm_low, lo8(forth)
+    cpc zpm_high, tos_high
+    brge _isflash_to
+
+_isram_to:
     srsave wrk_low
     srsave wrk_high
+    POON
+
+_isflash_to:
+;   do flash flush, later :(
     POON
 
 ;----------------------------------------------------------------------
@@ -180,9 +194,21 @@ HEADER "!", "TO"
 HEADER "@", "AT"
     NOOP
     pspull zpm_low, zpm_high
+
+    ldi tos_high, hi8(forth)
+    cpi zpm_low, lo8(forth)
+    cpc zpm_high, tos_high
+    brge _isflash_at
+
+_isram_at:
     srload wrk_low
     srload wrk_high
     WOOP
+
+_isflash_at:
+    pmload wrk_low, wrk_high
+    WOOP
+
 
 ;----------------------------------------------------------------------
 ; ok ( -- rsp)
@@ -417,7 +443,6 @@ HEADER "(dovar)", "doref"
     movw zpm_low, ipr_low
     pmload wrk_low, wrk_high
     movw ipr_low, zpm_low		
-	??? eforth 
     WOOP
 
 ;----------------------------------------------------------------------
@@ -566,31 +591,6 @@ HEADER "PS!", "SPTO"
     pspull wrk_low, wrk_high
     movw psp_low, wrk_low
     POON
-
-;----------------------------------------------------------------------
-; ok ( w -- ) 
-HEADER "P@", "SAT"
-    NOOP
-	movw wrk_low, psp_low
-    WOOP
-
-;----------------------------------------------------------------------
-; ok ( rsp -- )
-;
-HEADER "RS!", "RPAT"
-    NOOP
-    pspull wrk_low, wrk_high
-    movw rsp_low, wrk_low
-    WOOP
-
-;----------------------------------------------------------------------
-; ok ( -- psp )
-;
-HEADER "PS!", "SPTO"
-    NOOP
-    pspull wrk_low, wrk_high
-    movw psp_low, wrk_low
-    WOOP
 
 ;----------------------------------------------------------------------
 ; ok ( -- w )

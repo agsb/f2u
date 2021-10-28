@@ -26,8 +26,8 @@
 ;---------------------------------------------------------------------
 ; atmega8 avr
 ;
-; sram mapped as: 	internal mapped 0x000 to 0x05F, free use 0x060 to 0x45F
-; flash mapped as:  bios 0x000 to 0x45F, forth 0x460 to 0xCFFF, boot 0xCFFF to 0x1FFF
+; sram mapped as: internal mapped 0x000 to 0x05F, free use 0x060 to 0x45F
+; flash mapped as: bios 0x000 to 0x45F, forth 0x460 to 0x1eff, boot 0x1f00 to 0x1FFF
 ;---------------------------------------------------------------------
 #include "macros.S"
 
@@ -40,8 +40,8 @@ TURN:	.word 0		; routine to run after boot
 REST:	.word 0		; routine to run before reset
 LAST:	.word 0		; reference to latest word in dictionary
 HERE:	.word 0		; next free cell in flash dictionary
-SRAM:	.word 0		; next free cell in static ram ~ 740
-EROM:	.word 0		; next free cell in eeprom < 512
+SRAM:	.word 0		; next free cell in static ram < 740
+EROM:	.word 0		; next free cell in eeprom < 480
 
 ; those are volatile
 STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile, 2 postpone
@@ -62,7 +62,7 @@ KEEP:	.byte 0		; actual page of flash memory, HERE/64
 .equ	END, PSP - STACK_SIZE
 .equ	PSP, RSP - STACK_SIZE
 .equ	RSP, SPZ - STACK_SIZE
-.equ	SPZ, RAMEND		
+.equ	SPZ, SRAM_END		
 
 ;.equ free_sram, TIB - FREE
 
