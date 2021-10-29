@@ -317,12 +317,10 @@ HEADER "(erom)", "erom_"
 ;----------------------------------------------------------------------
 ; ok ( -- w)
 ;
-HEADER "HERE", "here_"
+HEADER "FSHM", "here_"
     NOOP
-    ldi zpm_low, lo8(HERE)
-    ldi zpm_high, hi8(HERE)
-    srload wrk_low
-    srload wrk_high
+    ldi zpm_low, lo8(FSHM)
+    ldi zpm_high, hi8(FSHM)
     WOOP
 
 ;----------------------------------------------------------------------
@@ -920,6 +918,120 @@ HEADER "+!", "PLUSTO"
 ;    srsave wrk_low
 ;    srsave wrk_high
 ;    POON
+
+;----------------------------------------------------------------------
+; ok [
+HEADER, "[", "LBRAC", 
+	.word STATE, ZERO, TO, ENDS
+
+;----------------------------------------------------------------------
+; ok ]
+HEADER, "]", "RBRAC", 
+	.word STATE, ONE, TO, ENDS
+
+;----------------------------------------------------------------------
+; ok ]
+HEADER, ":", "HIDDEN", 
+	.word LATEST, FETCH, HIDDEN, ENDS
+
+;----------------------------------------------------------------------
+; ok ]
+HEADER, ":", "COLON", 
+	.word WORD, CREATE, HIDDEN, RBRAC, ENDS
+
+;----------------------------------------------------------------------
+; ok ]
+HEADER, ";", "SEMMI", 
+	.word COMP, ENDS, HIDDEN, LBRAC, ENDS
+
+;----------------------------------------------------------------------
+; adapted from old fig-forth listings
+;----------------------------------------------------------------------
+;
+; ok HERE
+HEADER, ",", "HERE", 
+	.word FSHM, AT, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok ALLOT
+HEADER, ",", "ALLOT", 
+	.word FSHM, PLUSTO, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok COMMMA ( w -- ) 
+HEADER, ",", "COMMA", 
+	.word HERE, TO, CELL, ALLOT, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok BACK
+HEADER, "BACK", "BACK", F_IMMEDIATE
+	.word HERE, SUB, COMMA, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok BEGIN
+HEADER, "BEGIN", "BEGIN", F_IMMEDIATE
+	.word HERE, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok AGAIN
+HEADER, "AGAIN", "AGAIN", F_IMMEDIATE
+	.word COMP, BRANCH, BACK, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok UNTIL
+HEADER, "UNTIL", "UNTIL", F_IMMEDIATE
+	.word COMP, ZBRANCH, BACK, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok UNLESS
+HEADER, "UNLESS", "UNLESS", F_IMMEDIATE
+	.word INVERTE, COMP, ZBRANCH, BACK, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok IF
+HEADER, "IF", "IF", F_IMMEDIATE
+	.word COMP, ZBRANCH, HERE, ZERO, COMMA, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok ENDIF
+; note: use of store if addres is not 'here'
+HEADER, "ENDIF", "ENDIF", F_IMMEDIATE
+	.word HERE, OVER, SUB, SWAP, STORE, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok THEN
+HEADER, "THEN", "THEN", F_IMMEDIATE
+	.word ENDIF, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok ELSE
+HEADER, "ELSE", "ELSE", F_IMMEDIATE
+	.word COMP, BRANCH, HERE, ZERO, COMMA, 
+	.word SWAP, ENDIF, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok WHILE
+HEADER, "WHILE", "WHILE", F_IMMEDIATE
+	.word IF, TWOPLUS, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok REPEAT
+HEADER, "REPEAT", "REPEAT", F_IMMEDIATE
+	.word TOR, TOR, AGAIN, FROMR, FROMR, 
+	.word SUB, ENDIF, ENDS
 
 ;----------------------------------------------------------------------
 ; ok ???? ( a1 u1 a2 u2 -- flag)
