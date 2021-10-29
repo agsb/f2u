@@ -39,7 +39,7 @@ SEED:	.word 0		; seed for pseudo random
 TURN:	.word 0		; routine to run after boot
 REST:	.word 0		; routine to run before reset
 LAST:	.word 0		; reference to latest word in dictionary
-HERE:	.word 0		; next free cell in flash dictionary
+FSHM:	.word 0		; next free cell in flash dictionary
 SRAM:	.word 0		; next free cell in static ram < 740
 EROM:	.word 0		; next free cell in eeprom < 480
 

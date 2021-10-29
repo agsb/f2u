@@ -100,29 +100,28 @@ _exit:
 _next:            
     pmload wrk_low, wrk_high ; also increments zpm
 
-; if not zero then is a compound word, aka a twig, go to _enter
-    ;*** must test for NULL
-    
-    cpi wrk_low, 0
-    brne _enter
-    cpi wrk_high, 0
-    brne _enter
+; if zero (NULL) is a primitive word
+    mov _work_, wrk_low
+    or _work_, wrk_high
+    sbis _SREG_, BIT_ZERO
+    rjump _branch
 
-; else branch and link, for exec it 
+; else is a reference
+_enter:            
+    rspush zpm_low, zpm_high ; push next reference
+    movw zpm_low, wrk_low ; point to this reference
+    rjmp _next
+
+; then branch, for exec it 
 _branch:
     movw wrk_low, zpm_low   ; copy this reference
     adiw wrk_low, 2         ; point to next reference
     movw ipr_low, wrk_low   ; keep this reference
     ijmp
 
+; then link, for continue 
 _link:
     movw zpm_low, ipr_low ; points to next reference
-    rjmp _next
-
-; else is a reference
-_enter:            
-    rspush zpm_low, zpm_high ; push next reference
-    movw zpm_low, wrk_low ; point to this reference
     rjmp _next
 
 ;----------------------------------------------------------------------
@@ -160,15 +159,14 @@ HEADER "0=", "ZEQU"
     NOOP
     pspull wrk_low, wrk_high
     or wrk_low, wrk_high
-    cpi wrk_low, 0
-    brne _ffalse 
+    brbc BIT_ZERO, _ffalse
 _ftrue:
     ser wrk_low
     ser wrk_high
     WOOP
 
 ;----------------------------------------------------------------------
-; ok ! to (x a -- )
+; ok ! to (w a -- )
 ; only in sram
 HEADER "!", "TO"
     NOOP
@@ -256,6 +254,7 @@ HEADER "+", "PLUS"
 ;    end of minimal words
 ;
 ;**********************************************************************
+
 
 ;**********************************************************************
 ;    load variables
@@ -413,23 +412,6 @@ HEADER "1", "ONE"
     WOOP
 
 ;----------------------------------------------------------------------
-; ok (  -- 2)
-HEADER "2", "TWO"
-    .word ONE, LSHT, ENDS
-
-;----------------------------------------------------------------------
-; ok ( w1 w2 -- 0 | -1)
-;
-HEADER "=", "EQUAL"
-    .word SUB, ZEQU, ENDS 
-
-;----------------------------------------------------------------------
-; ok ( w1 w2 -- 0 | -1)
-;
-HEADER "<>", "NOTEQUAL"
-    .word EQUAL, INVERT, ENDS
-
-;----------------------------------------------------------------------
 ; ok ( w1 w2 -- 0 | -1 )
 ;
 HEADER "<", "LTHAN"
@@ -440,44 +422,6 @@ HEADER "<", "LTHAN"
     cpc wrk_high, tos_high
     brlt _iftrue
     rjmp _iffalse
-
-;----------------------------------------------------------------------
-; ok ( w1 w2 -- 0 | -1 )
-;
-HEADER ">", "GTHAN"
-    .word SWAP, LTHAN, ENDS
-
-;    NOOP
-;    pspull wrk_low, wrk_high
-;    pspull tos_low, tos_high
-;    cp wrk_low, tos_low
-;    cpc wrk_high, tos_high
-;    brcc _iffalse
-;    rjmp _iftrue
-
-;----------------------------------------------------------------------
-;  ok 0<
-;
-HEADER "0<", "ZEROLT"
-    .word ZERO, SWAP, LTHAN, ENDS
- 
-;    NOOP
-;    pspull wrk_low, wrk_high
-;    sbiw wrk_low, 1
-;    brge _iftrue
-;    rjmp _iffalse
-
-;----------------------------------------------------------------------
-;  ok 0>    must be signed
-;
-HEADER "0>", "ZEROGT"
-     .word ZERO, LTHAN, ENDS
-
-;    NOOP
-;    pspull wrk_low, wrk_high
-;    sbiw wrk_low, 1
-;    brge _iffalse
-;    rjmp _iftrue
 
 ;----------------------------------------------------------------------
 ; 
@@ -540,14 +484,11 @@ PULL:
 ;----------------------------------------------------------------------
 ; ok ( w -- w w)
 ;     F18A dup
+; 	could be done using ldd Rd, Y + k
 HEADER "DUP", "DUP"
     NOOP
-    ldd wrk_low, X + 0
-    ldd wrk_high, X + 1
-
-;    pspull wrk_low, wrk_high
-;    pspush wrk_low, wrk_high
-
+    pspull wrk_low, wrk_high
+    pspush wrk_low, wrk_high
     WOOP
 
 ;----------------------------------------------------------------------
@@ -561,20 +502,20 @@ HEADER "SWAP", "SWAP"
 
 ;----------------------------------------------------------------------
 ; ok ( w2 w1 -- w2 w1 w2 )
+;	could be : OVER SWAP DUP >R SWAP R> ;
 ;     F18A over
+; 	could be done using ldd Rd, Y + k
 HEADER "OVER", "OVER"
     NOOP
-    ldd wrk_low, X + 2
-    ldd wrk_high, X + 3
-
-;    pspull tos_low, tos_high
-;    pspull wrk_low, wrk_high
-;    pspush wrk_low, wrk_high
-;    pspush tos_low, tos_high
+    pspull tos_low, tos_high
+    pspull wrk_low, wrk_high
+    pspush wrk_low, wrk_high
+    pspush tos_low, nds_high
     WOOP
 
 ;----------------------------------------------------------------------
 ; ok ( w3 w2 w1 -- w2 w1 w3 )
+;	could be : ROT >R SWAP R> SWAP ;
 HEADER "ROT", "ROT"
     NOOP
     pspull tos_low, tos_high
@@ -590,14 +531,15 @@ HEADER "ROT", "ROT"
 ;
 HEADER "?DUP", "ZDUP"
     NOOP
-    pspull wrk_low, wrk_high
-    cpi wrk_low, 0
-    brne 1f
-    cpi wrk_high, 0
-    brne 1f
-    WOOP
+; copy the top
+    ldd tos_low, X + 0
+    ldd tos_high, X + 1
+    or tos_low, tos_high
+    brbc BIT_ZERO, 1f
+    POON
 1:
-    pspush wrk_low, wrk_high
+    ldd wrk_low, X + 0
+    ldd wrk_high, X + 1
     WOOP
 
 ;----------------------------------------------------------------------
@@ -723,8 +665,9 @@ HEADER "2*A", "SHLA"
     bld wrk_high, 7
     WOOP
 
-;----------------------------------------------------------------------
-; ok ( w -- w / 2 ) same as shift right >> 1, signed
+;--------------------------------------------------------------------------
+; ok ( w -- w / 2 ) same as shift right >> 1, no sense 10010111 -> 10001011
+;
 HEADER "2/A", "SHRA"
     NOOP
     pspull wrk_low, wrk_high
@@ -744,11 +687,12 @@ HEADER "><", "ENDIAN"
     WOOP
 
 ;----------------------------------------------------------------------
-;  os doLIT ( -- w ), inverse of comma
+;  os LITL ( -- w ), inverse of comma
 ;  from flash to data stack
+;  all prinmitives use branch and link, 
+;	the next is holding in ipr
 ;
-; load from flash program memory
-HEADER "DOLIT", "DOLIT"
+HEADER "LITL", "LITL"
     NOOP
     movw zpm_low, ipr_low
     pmload wrk_low, wrk_high
@@ -795,6 +739,7 @@ HEADER "ABS", "ABS"
     NOOP
     pspull wrk_low, wrk_high
 _abs:
+    
     sbrc wrk_high, 7
     rjmp _neg
     WOOP
@@ -820,6 +765,152 @@ HEADER "CELL", "CELLSZ"
     clr wrk_high
     WOOP
 
+;----------------------------------------------------------------------
+; ok ( a1 a2 u -- 0 | 1)
+; compare bytes from source++ to destination++, decrease count--
+;	returns 0 if equal (no differ)
+;
+HEADER "CSAME", "CSAME"
+    NOOP
+    ; WARNING No bound check and counter equal 0 moves nothing
+
+    ; pull lenght 
+    pspull tos_low, tos_high
+
+    ; pull address source
+    pspull zpm_low, zpm_high
+    
+    ; pull address destin
+    pspull nds_low, nds_high
+
+    ; push psp
+    rspush psp_low, psp_high
+
+    ; copy address
+    movw psp_low, nds_low
+
+    ; no offset
+
+1:  
+    movw wrk_low, tos_low
+    or tos_low, tos_high
+    brbs BIT_ZERO, 2f
+
+    subi wrk_low, 1
+    movw tos_low, wrk_low
+
+    ld wrk_low, X+
+    ld wrk_high, Z+
+    or wrk_low, wrk_high
+    brbc BIT_ZERO, 3f
+
+    ; again
+    rjmp 1b
+
+2:  
+    ; equal
+    clr wrk_low
+    clr wrk_high
+    rjmp 4f
+3:  
+    ; not equal
+    ser wrk_low
+    ser wrk_high
+4:  
+    ; pull psp
+    rspull psp_low, psp_high
+    WOOP
+
+;----------------------------------------------------------------------
+; ok ( a1 a2 u -- )
+;
+; MOVE copy bytes from source++ to destination++, decrease count--
+HEADER "CMOVE", "CMOVE"
+    NOOP
+    ; WARNING No bound check and counter equal 0 moves nothing
+
+    ; pull lenght 
+    pspull tos_low, tos_high
+
+    ; pull address source
+    pspull zpm_low, zpm_high
+    
+    ; pull address destin
+    pspull nds_low, nds_high
+
+    ; push psp
+    rspush psp_low, psp_high
+
+    ; copy address
+    movw psp_low, nds_low
+
+    ; no offset
+
+1:  
+    movw wrk_low, tos_low
+    or tos_low, tos_high
+    brbs BIT_ZERO, 2f
+
+    subi wrk_low, 1
+    movw tos_low, wrk_low
+
+    ; move a cell
+    ld _work_, X+
+    st Z+, _work_
+    
+    ; again
+    rjmp 1b
+
+2:    
+    ; pull psp
+    rspull psp_low, psp_high
+    POON
+
+;**********************************************************************
+;
+;	the follow definitions of compound words 
+;	are as already compiled into a list of references,
+;	that is a sequence of cells.
+;	No preorder because the assembler does translation
+;	of names to address (references)
+;
+;	(some adapted from old fig-forth listings)
+;
+;----------------------------------------------------------------------
+; ok (  -- 2)
+HEADER "2", "TWO"
+    .word ONE, LSHT, ENDS
+
+;----------------------------------------------------------------------
+; ok ( w1 w2 -- 0 | -1)
+;
+HEADER "=", "EQUAL"
+    .word SUB, ZEQU, ENDS 
+
+;----------------------------------------------------------------------
+; ok ( w1 w2 -- 0 | -1)
+;
+HEADER "<>", "NOTEQUAL"
+    .word EQUAL, INVERT, ENDS
+
+;----------------------------------------------------------------------
+; ok ( w1 w2 -- 0 | -1 )
+;
+HEADER ">", "GTHAN"
+    .word SWAP, LTHAN, ENDS
+
+;----------------------------------------------------------------------
+;  ok 0>    must be signed
+;
+HEADER "0>", "ZEROGT"
+     .word ZERO, LTHAN, ENDS
+
+;----------------------------------------------------------------------
+;  ok 0<
+;
+HEADER "0<", "ZEROLT"
+    .word ZERO, SWAP, LTHAN, ENDS
+ 
 ;----------------------------------------------------------------------
 ; ok ( w -- w * CELL  )
 ; CELL is 2, multiply by 2, easy way
@@ -876,21 +967,12 @@ HEADER "2-", "TWOMINUS"
 HEADER "+!", "PLUSTO"
     .word SWAP, OVER, AT, PLUS, SWAP, TO, ENDS
 
-;**********************************************************************
-;
-;	the follow definitions of compound words 
-;	are as already compiled into a list of references,
-;	that is a sequence of cells.
-;	No preorder because the assembler does translation
-;	of names to address (references)
-;	(some adapted from old fig-forth listings)
-;
 ;----------------------------------------------------------------------
 ;
 ; ok [
 ;
 HEADER, "[", "LBRAC", F_IMMEDIATE 
-	.word ZERO, STATE, TO, ENDS
+    .word ZERO, STATE, TO, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -901,53 +983,53 @@ HEADER, "]", "RBRAC",
 
 ;----------------------------------------------------------------------
 ;
-; ok ]
+; ok HIDDEN
 ;
-HEADER, ":", "HIDDEN", 
+HEADER, "HIDDEN", "HIDDEN", 
 	.word LATEST, FETCH, HIDDEN, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok HERE
 ;
-HEADER, ",", "HERE", 
+HEADER, "HERE", "HERE", 
 	.word FSHM, AT, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok ALLOT
 ;
-HEADER, ",", "ALLOT", 
+HEADER, "ALLOT", "ALLOT", 
 	.word FSHM, PLUSTO, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok COMMMA ( w -- ) 
-HEADER, ",", "COMMA", 
+HEADER, "\,", "COMMA", 
 	.word HERE, TO, CELL, ALLOT, ENDS
 
 ;----------------------------------------------------------------------
 ;
-; ok ]	this literally takes next cell and compiles into HERE
-;
+; ok ]	this takes next cell and compiles into HERE
+;	
 HEADER, "COMP", "COMP", 
-	.word LIT, COMMA, ENDS
+	.word LITL, COMMA, ENDS
 
 ;----------------------------------------------------------------------
 ; ok ]
-HEADER, ":", "COLON", 
+HEADER, "\:", "COLON", 
 	.word CREATE, HIDDEN, RBRAC, ENDS
 
 ;----------------------------------------------------------------------
 ; ok ]
-HEADER, ";", "SEMMI", 
+HEADER, "\;", "SEMMI", 
 	.word COMP, ENDS, HIDDEN, LBRAC, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok BACK
 HEADER, "BACK", "BACK", F_IMMEDIATE
-	.word HERE, SUB, COMMA, ENDS
+	.word HERE, SWAP, SUB, COMMA, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -963,7 +1045,7 @@ HEADER, "BEGIN", "BEGIN", F_IMMEDIATE
 
 ;----------------------------------------------------------------------
 ;
-; ok AGAIN
+; ok AGAIN resolves a backward branch
 HEADER, "AGAIN", "AGAIN", F_IMMEDIATE
 	.word COMP, BRANCH, BACK, ENDS
 
@@ -987,10 +1069,10 @@ HEADER, "IF", "IF", F_IMMEDIATE
 
 ;----------------------------------------------------------------------
 ;
-; ok ENDIF
+; ok ENDIF resolves a forward branch
 ; note: use of store if addres is not 'here'
 HEADER, "ENDIF", "ENDIF", F_IMMEDIATE
-	.word HERE, OVER, SUB, SWAP, TO, ENDS
+	.word DUP, HERE, SUB, SWAP, TO, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -1017,137 +1099,12 @@ HEADER, "REPEAT", "REPEAT", F_IMMEDIATE
 	.word TOR, TOR, AGAIN, FROMR, FROMR, SUB, ENDIF, ENDS
 
 ;----------------------------------------------------------------------
-; ok ???? ( a1 u1 a2 u2 -- flag)
-; compare bytes from source++ to destination++, decrease count--
-;
-HEADER "COMPARE", "COMPARE"
-    NOOP
-    ; WARNING No bound check and counter equal 0 moves nothing
-
-    ; pull lenght 
-    pspull tos_low, tos_high
-
-    ; pull address
-    pspull zpm_low, zpm_high
-    
-    ; pull lenght
-    pspull nds_low, nds_high
-
-    ; pull address
-    pspull wrk_low, wrk_high
-
-    ; push psp
-    rspush psp_low, psp_high
-
-    ; copy address
-    movw psp_low, wrk_low
-
-    ; no offset
-
-1:  
-    cp  tos_low, tos_high
-    brbs BIT_ZERO, 2f
-
-    cp  nds_low, nds_high
-    brbs BIT_ZERO, 2f
-
-    ld wrk_low, X+
-    ld wrk_high, Z+
-    cp wrk_low, wrk_high
-    brbc BIT_ZERO, 3f
-
-    subi tos_low, 1
-    sbci tos_high, 0
-
-    subi nds_low, 1
-    sbci nds_high, 0
-
-    ; again
-    rjmp 1b
-
-2:  
-    cp tos_low, nds_low
-    brbc BIT_ZERO,3f
-
-    cp tos_high, nds_high
-    brbc BIT_ZERO, 3f
-
-    clr wrk_low
-    clr wrk_high
-    rjmp 4f
-
-3:  
-    ser wrk_low
-    ser wrk_high
-
-4:  
-    rspull psp_low, psp_high
-    WOOP
-
-;----------------------------------------------------------------------
-; ok ???? ( u w w -- )
-;
-; MOVE copy cells from source++ to destination++, decrease count--
-HEADER "MOVE", "MOVE"
-    NOOP
-    ; WARNING No bound check and counter equal 0 moves nothing
-
-    ; pull origin
-    pspull tos_low, tos_high
-    
-    ; pull destination
-    pspull zpm_low, zpm_high
-
-    ; pull counter
-    pspull wrk_low, wrk_high
-
-    ; test if zero
-    cp wrk_low, wrk_high
-    brbs BIT_ZERO, 2f
-
-    ; push psp
-    rspush psp_low, psp_high
-
-    ; copy orign
-    movw psp_low, tos_low
-
-    ; no offset
-
-1:  
-      ; move a cell
-    ld _work_, X+
-    st Z+, _work_
-    ld _work_, X+
-    st Z+, _work_
-    
-    ; decrease counter
-    sbiw wrk_low, 1
-
-    ; again
-    brbc BIT_ZERO, 1b
-
-    ; pull psp
-2:    
-    rspull psp_low, psp_high
-    POON
-
-;----------------------------------------------------------------------
 ;
 ; ( --- ) 
 ; tricky 
-; iBUGGED ZZZZ NOT REALLY 
-; all new word starts at THIS=0, 1 and 2 bytes is link, 3 byte is size+flags
-HEADER "(immediate)", "immediate"
-    NOOP
-    ldi zpm_low, lo8(LINE)
-    ldi zpm_high, hi8(LINE)
-    adiw zpm_low, 2
-    srload wrk_low
-    ori wrk_low, F_IMMEDIATE
-    sbiw zpm_low, 1
-    srsave wrk_low
-    POON
-
+HEADER "IMEDIATE", "IMMEDIATE"
+    .word LATEST, AT, NFA, AT, F_IMMEDIATE, 
+ZZZZ
 
 ;----------------------------------------------------------------------
 ; does reset
