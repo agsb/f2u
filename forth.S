@@ -771,7 +771,7 @@ HEADER "C@", "CAT"
 
 ;----------------------------------------------------------------------
 ; ok INV
-HEADER "INVERTE", "INVERTE"
+HEADER "INVERT", "INVERT"
     NOOP
     pspull wrk_low, wrk_high
 _inv:
@@ -834,22 +834,12 @@ HEADER "CELLS", "CELLS"
 HEADER "CELL+", "CELLPLUS"
     .word CELL, PLUS, ENDS
 
-;    NOOP
-;    pspull wrk_low, wrk_high
-;    adiw wrk_low, CELL_SIZE
-;    WOOP
-
 ;----------------------------------------------------------------------
 ;
 ; ok ( w -- w - CELL )
 ;
 HEADER "CELL-", "CELLMINUS"
     .word CELL, MINUS, ENDS
-
-;    NOOP
-;    pspull wrk_low, wrk_high
-;    sbiw wrk_low, CELL_SIZE
-;    WOOP
 
 ;----------------------------------------------------------------------
 ;
@@ -858,22 +848,12 @@ HEADER "CELL-", "CELLMINUS"
 HEADER "1+", "ONEPLUS"
      .word ONE, PLUS, ENDS
 
-;    NOOP
-;    pspull wrk_low, wrk_high
-;    adiw wrk_low, 1
-;    WOOP
-
 ;----------------------------------------------------------------------
 ;
 ; ok ( w -- w - 1 )
 ;
 HEADER "1-", "ONEMINUS"
      .word ONE, MINUS, ENDS
-
-;    NOOP
-;    pspull wrk_low, wrk_high
-;    sbiw wrk_low, 1
-;    WOOP
 
 ;----------------------------------------------------------------------
 ;
@@ -882,22 +862,12 @@ HEADER "1-", "ONEMINUS"
 HEADER "2+", "TWOPLUS"
      .word TWO, PLUS, ENDS
 
-;    NOOP
-;    pspull wrk_low, wrk_high
-;    adiw wrk_low, 2
-;    WOOP
-
 ;----------------------------------------------------------------------
 ;
 ; ok ( w -- w - 2 )
 ;
 HEADER "2-", "TWOMINUS"
      .word TWO, MINUS, ENDS
-
-;    NOOP
-;    pspull wrk_low, wrk_high
-;    sbiw wrk_low, 2
-;    WOOP
 
 ;----------------------------------------------------------------------
 ;
@@ -906,55 +876,47 @@ HEADER "2-", "TWOMINUS"
 HEADER "+!", "PLUSTO"
     .word SWAP, OVER, AT, PLUS, SWAP, TO, ENDS
 
-;    NOOP
-;    pspull zpm_low, zpm_high
-;    pspull tos_low, tos_high
-;    srload wrk_low
-;    srload wrk_high
-;    clc
-;    add wrk_low, tos_low
-;    adc wrk_low, tos_low
-;    sbiw zpm_low, 2
-;    srsave wrk_low
-;    srsave wrk_high
-;    POON
-
+;**********************************************************************
+;
+;	the follow definitions of compound words 
+;	are as already compiled into a list of references,
+;	that is a sequence of cells.
+;	No preorder because the assembler does translation
+;	of names to address (references)
+;	(some adapted from old fig-forth listings)
+;
 ;----------------------------------------------------------------------
+;
 ; ok [
-HEADER, "[", "LBRAC", 
-	.word STATE, ZERO, TO, ENDS
+;
+HEADER, "[", "LBRAC", F_IMMEDIATE 
+	.word ZERO, STATE, TO, ENDS
 
 ;----------------------------------------------------------------------
+;
 ; ok ]
+;
 HEADER, "]", "RBRAC", 
-	.word STATE, ONE, TO, ENDS
+	.word ONE, STATE, TO, ENDS
 
 ;----------------------------------------------------------------------
+;
 ; ok ]
+;
 HEADER, ":", "HIDDEN", 
 	.word LATEST, FETCH, HIDDEN, ENDS
 
 ;----------------------------------------------------------------------
-; ok ]
-HEADER, ":", "COLON", 
-	.word WORD, CREATE, HIDDEN, RBRAC, ENDS
-
-;----------------------------------------------------------------------
-; ok ]
-HEADER, ";", "SEMMI", 
-	.word COMP, ENDS, HIDDEN, LBRAC, ENDS
-
-;----------------------------------------------------------------------
-; adapted from old fig-forth listings
-;----------------------------------------------------------------------
 ;
 ; ok HERE
+;
 HEADER, ",", "HERE", 
 	.word FSHM, AT, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok ALLOT
+;
 HEADER, ",", "ALLOT", 
 	.word FSHM, PLUSTO, ENDS
 
@@ -966,9 +928,32 @@ HEADER, ",", "COMMA",
 
 ;----------------------------------------------------------------------
 ;
+; ok ]	this literally takes next cell and compiles into HERE
+;
+HEADER, "COMP", "COMP", 
+	.word LIT, COMMA, ENDS
+
+;----------------------------------------------------------------------
+; ok ]
+HEADER, ":", "COLON", 
+	.word CREATE, HIDDEN, RBRAC, ENDS
+
+;----------------------------------------------------------------------
+; ok ]
+HEADER, ";", "SEMMI", 
+	.word COMP, ENDS, HIDDEN, LBRAC, ENDS
+
+;----------------------------------------------------------------------
+;
 ; ok BACK
 HEADER, "BACK", "BACK", F_IMMEDIATE
 	.word HERE, SUB, COMMA, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok MARK
+HEADER, "MARK", "MARK", F_IMMEDIATE
+	.word HERE, 0, COMMA, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -992,20 +977,20 @@ HEADER, "UNTIL", "UNTIL", F_IMMEDIATE
 ;
 ; ok UNLESS
 HEADER, "UNLESS", "UNLESS", F_IMMEDIATE
-	.word INVERTE, COMP, ZBRANCH, BACK, ENDS
+	.word INVERT, UNTIL, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok IF
 HEADER, "IF", "IF", F_IMMEDIATE
-	.word COMP, ZBRANCH, HERE, ZERO, COMMA, ENDS
+	.word COMP, ZBRANCH, MARK, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok ENDIF
 ; note: use of store if addres is not 'here'
 HEADER, "ENDIF", "ENDIF", F_IMMEDIATE
-	.word HERE, OVER, SUB, SWAP, STORE, ENDS
+	.word HERE, OVER, SUB, SWAP, TO, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -1017,21 +1002,19 @@ HEADER, "THEN", "THEN", F_IMMEDIATE
 ;
 ; ok ELSE
 HEADER, "ELSE", "ELSE", F_IMMEDIATE
-	.word COMP, BRANCH, HERE, ZERO, COMMA, 
-	.word SWAP, ENDIF, ENDS
+	.word COMP, BRANCH, MARK, SWAP, ENDIF, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok WHILE
 HEADER, "WHILE", "WHILE", F_IMMEDIATE
-	.word IF, TWOPLUS, ENDS
+	.word IF, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok REPEAT
 HEADER, "REPEAT", "REPEAT", F_IMMEDIATE
-	.word TOR, TOR, AGAIN, FROMR, FROMR, 
-	.word SUB, ENDIF, ENDS
+	.word TOR, TOR, AGAIN, FROMR, FROMR, SUB, ENDIF, ENDS
 
 ;----------------------------------------------------------------------
 ; ok ???? ( a1 u1 a2 u2 -- flag)
