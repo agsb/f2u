@@ -86,8 +86,8 @@ TOIN:	.word 0		; next free char in terminal input buffer
 #include "math.S"
 
 ;----------------------------------------------------------------------
-.p2align 1, 0x00
-#include "newff.S"
+;.p2align 1, 0x00
+;#include "newff.S"
 
 ;----------------------------------------------------------------------
 .equ free_flash, .

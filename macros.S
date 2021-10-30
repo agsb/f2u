@@ -374,9 +374,9 @@ E2P_END = 0x1FF
 
 /* for flash flush */
 
-SPM_PAGESIZE = 64    
+SPM_PAGE = 64    
 
-pagesize = (SPM_PAGESIZE - 1)
+pagesize = (SPM_PAGE - 1)
 pagemask = (~pagesize)
 
 ;----------------------------------------------------------------------
