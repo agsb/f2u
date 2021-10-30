@@ -49,6 +49,7 @@ OBS: 0x0 in codeword for all primitives, non-zero as codeword for all compounds
 Some comparations of implementations of Forth.
 All use concepts as next, nest aka docolon, unnest aka semmis and exit.
 
+---
 # 1. eForth for Cortex M4
 
 Dr. C.H.Ting take a optimal approach for forth engine, for a ESP32, using cpu family specific instructions (ISA) *inline into dictionary* 
@@ -90,6 +91,7 @@ _in my opinion, is the best and ideal solution per cpu, at cost of size and port
 
 *Impossible to use, this implementation uses far more memory than a Atmega8 have.*
 
+---
 # 2. In amforth for AVR family, <https://github.com/lowfatcomputing/amforth-all/> <http://amforth.sourceforge.net/>  
 
 "AmForth is an interactive 16-bit Forth for Atmel ATmega microcontrollers.
@@ -136,26 +138,24 @@ DO_EXIT:  ; 6
 
 ; the dicionary, inside PFA
 ```
-    leaf ==>  (ptr of code0), code0, code ... , (rjmp DO_NEXT)
+- leaf ==>  (ptr of code0), code0, code ... , (rjmp DO_NEXT)
     
-    twig ==>  (ptr of DO_COLON), ptr ... ptr, (ptr of DO_EXIT)
-```
+- twig ==>  (ptr of DO_COLON), ptr ... ptr, (ptr of DO_EXIT)
 ### ; considerations
 
->    traditional and efficient code;
+> traditional and efficient code;
 
->    *twig dictionary is CPU independent;*
+> *twig dictionary is CPU independent;*
 
->    all twig words have a payload as first (to DO_COL) and last references (to DO_EXIT);
+> all twig words have a payload as first (to DO_COL) and last references (to DO_EXIT);
 
->    all leaf words have a payload as first reference (to self) and last jump;
+> all leaf words have a payload as first reference (to self) and last jump;
 
-; at start of each compound word a reference to DO_COLON
+> at start of each compound word a reference to DO_COLON
 
-; at final of each compound word a reference to DO_EXIT (XT_EXIT)
+> at final of each compound word a reference to DO_EXIT (XT_EXIT)
 
-; at end of all primitives a jump to DO_NEXT
-
+> at end of all primitives a jump to DO_NEXT
 
 ### ; notes
 
@@ -163,7 +163,8 @@ DO_EXIT:  ; 6
 
 > why two "adiw WL, 1" ? Adjust Z to a even address
 
-## 3. In flashforth, <https://flashforth.com/index.html>, for avr uCs with at least 32k flash
+---
+# 3. In flashforth, <https://flashforth.com/index.html>, for avr uCs with at least 32k flash
 
       uses SP for return stack, uses Y for data stack, uses Z as address pointer
 
@@ -175,145 +176,64 @@ DO_EXIT:  ; 6
     
      Can not run into a Atmega8 with 8k flash.
 
-## 4. In this F2U implementation for ATMEGA8, 
+---
+# 4. In this F2U implementation for ATMEGA8, 
   
-there is no use of call, return, pop and push
+All primitive words use a branch and link model, with next reference keeped into reserved register to later return.
 
-there are 2 versions of inner interpreter, using AVR pseudo 16 bit registers. In all instructions, first argument are destiny register.
+All compound words use a call and return model, with next reference  pushed into and pulled from the return stack.
 
-WARNING: those inner interpreters only works for program memory (flash), due specific address flash memory squema for AVRs using lpm 
+Not using Atmega8 instructions call, return, pop and push.
 
-### _1) The inner interpreter (1) with only pull and push at return stack._
+This inner interpreters only works for program memory (flash), due specific address flash memory squema for AVRs using lpm 
+
 ```
-````;
-; inner interpreter pull/push only
-;
+;----------------------------------------------------------------------
+ ; inner interpreter,
+ ; it is also a primitive word
+ ;
+ ; also called semis
+ HEADER "ENDS", "ENDS"
+ ; does nothing and mark as primitive
+     NOOP
 
-_ends:
-  ; does nothing and mark as primitive
-  nop
+ ; pull ips from rsp
+ _exit:
+     rspull zpm_low, zpm_high
 
-_exit:
-  ; pull isp from rsp
-  ld r31, Y+
-  ld r30, Y+
+ ; load w with contents of cell at ips
+ _next:
+     pmload wrk_low, wrk_high ; also increments zpm
 
-_next:
-  ; load wrk with contents of cell at isp and auto increments isp
-  lsl z30
-  rol z31
-  lpm r24, Z+
-  lpm r25, Z+
-  ror z31
-  ror z30
+ ; if zero (NULL) is a primitive word
+     mov _work_, wrk_low
+     or _work_, wrk_high
+     sbis _SREG_, BIT_ZERO
+     rjump _branch
 
-  ; if not zero then is a reference to compound word, goto _enter 
-  cpi r24, 0
-  brne _enter
-  cpi r25, 0
-  brne _enter
+ ; else is a reference
+ _enter:
+     rspush zpm_low, zpm_high ; push next reference
+     movw zpm_low, wrk_low ; point to this reference
+     rjmp _next
 
-_exec: 
-  ; else is a primitive then branch to it
-  
-  ; if using a table to primitives as a classic gcc trampolim
-  .ifdef TRAMPOLIM
-    lsl z30
-    rol z31
-    lpm r24, Z+
-    lpm r25, Z+
-    ror r31
-    ror r30
-    movw r30, r24
-  .endif
+ ; then branch, for exec it
+ _branch:
+     movw wrk_low, zpm_low   ; copy this reference
+     adiw wrk_low, 2         ; point to next reference
+     movw ipr_low, wrk_low   ; keep this reference
+     ijmp
 
-  ijmp
-
-_enter: 
-  ; push isp into rsp
-  st -Y, r30
-  st -Y, r31
-  
-; go next it
-  movw r30, r24
-  rjmp _next
-
-; inner ends
+ ; then link, for continue
+ _link:
+     movw zpm_low, ipr_low ; points to next reference
+     rjmp _next
 ```
-    
+## Why branch and link ? 
 
-### _the inner interpreter (2) with pull and push at return stack and emulated branch and link for primitives_
-```
-```;
-; inner interpreter pull/push and branch/link
-;
+This really saves stack depth and reduce overall instruction code size by simplifly some primitives,.
 
-_ends:
-  ; does nothing and mark as primitive
-  nop
-  
-_exit:
-  ; pull isp from rsp
-  ld r31, Y+
-  ld r30, Y+
-
-_next:
-  ; load wrk with contents of cell at isp and auto increments isp
-  ; mind specific address Flash memory squema for AVRs lpm 
-  lsl z30
-  rol z31
-  lpm r24, Z+
-  lpm r25, Z+
-  ror z31
-  ror z30
-
-  ; if not zero then is a reference to compound word, goto _enter 
-  cpi r24, 0
-  brne _enter
-  cpi r25, 0
-  brne _enter
-
-_branch: 
-  ; else is a primitive then branch to it
-  
-  ; if using a table to primitives as a classic gcc trampolim
-  .ifdef TRAMPOLIM
-    lsl z30
-    rol z31
-    lpm r24, Z+
-    lpm r25, Z+
-    ror r31
-    ror r30
-    movw r30, r24
-  .endif
-
-  movw r24, r30   ; copy this reference
-  addw r24, +2    ; point to next reference
-  movw r18, r24   ; keep next reference to link
-  ijmp            ; jump to this
-
-_link:
-  movw r30, r18 ; points to next reference
-  rjmp _next
-
-_enter: 
-; push isp into rsp
-st -Y, r30
-st -Y, r31
-  
-; go next it
-movw r30, r24
-rjmp _next
-
-; inner ends
-```
-## Why two versions ? 
-
-the first form is easy and simple, use return stack for any word. Do more overhead in words and return stack grows for any word.
-
-the second form is more complex, use a exclusive instruction register for primitive words and return stack only for compounds. This really saves stack depth and reduce overall instruction code size by simplifly some primitives,.
-
-there is no significant overhead between those variants, but second form is a way easy for develoment and require less instructions in primitives.
+Using a exclusive instruction register for primitive words and return stack only for compounds. 
 
 ### into the dicionary, PFAs are (LINK+SZ+NAME+PAD?+REFERENCES)
   
@@ -343,7 +263,6 @@ there is no significant overhead between those variants, but second form is a wa
     all leaf words have a payload by starts with NULL and ends with a jump;
 
 ### Codes and Parameters
-
 
 1. I2C implementation reference at flashforth
 
