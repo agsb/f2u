@@ -32,6 +32,42 @@
 .org 0x000
 .global boot
 boot:
+
+;---------------------------------------------------------------------
+; from avr manual, for atmega8, do not change 
+; reserved I/O Memory address
+;
+__SREG__ = 0x3f
+__SP_H__ = 0x3e
+__SP_L__ = 0x3d
+
+/* USART */
+UBRRL = 0x09
+UCSRC = 0x20
+UCSRB = 0x0a
+UCSRA = 0x0b
+
+/* Watch dog */
+WDTCR = 0x21
+
+/* timer0 */
+TCNT0 = 0x32
+TCCR0 = 0x33
+TIMSK = 0x39
+
+/* SPMCR */
+SPMCR = 0x37
+
+/* SPM BITS */
+SPMIE = 7
+RWWSB = 6
+/* bit 5 reserved */
+RWWSRE = 4
+BLBSET = 3
+PGWRT = 2
+PGERS = 1
+SPMEN = 0
+
 ;----------------------------------------------------------------------
 ;
 ; classic interrup vector table
@@ -64,198 +100,98 @@ RESET:
 ; clear interrupts
     cli
 ; init _zero_ as zero
-    clr _zero_  
-    out __SREG__, _zero_ ; clear sreg
+    clr r3
+    out __SREG__, r3 ; clear sreg
 ; init real sp at end of sram
-    ldi wrk_high, hi8(SRAM_END)
-    out __SP_H__, wrk_high
-    ldi wrk_low, lo8(SRAM_END)
-    out __SP_L__, wrk_low
+    ldi r25, hi8(SRAM_END)
+    out __SP_H__, r25
+    ldi r24, lo8(SRAM_END)
+    out __SP_L__, r24
 ; enable interrupts
     sei
     rjmp BOOT
 
 ;----------------------------------------------------------------------
 ;
-;	do not use r0 and r1 are scratch registers used in spm, mul, des, etc
+;   do not use r0 and r1 are scratch registers used in spm, mul, des, etc
 ;
-;	generic:
-;    r2 _work_, how knows ?
-;	 r3 _zero_, always zero
-;    r4 _sreg_, saved SREG
-; 	 
-;	for timer0:
-;    	r5 _offs_, offset to prescale
-;    	r6 ticks_low,  counter each 1ms low byte
-;	 	r7 ticks_high, counter each 1ms high byte
+;   generic:
+;   r2 , how knows ?
+;   r3 , always zero
+;   r4 , offset to prescale
+;      
+;   for timer0:
+;   r5 , saved SREG
+;   r6 , counter each 1ms low byte
+;   r7 , counter each 1ms high byte
 ;
 ;   timer0 prescale 
 ;   for 8 MHz, prescale 64, offset 131, results about 1 ms
 ;   64 * 125 = 8000 ; 
 ;   256 - 125 = 131 ; offset for miliseconds
 ;
-;
+; interrupt routine
 TIM0_OVF:
-;    save flags
-    in _sreg_, __SREG__
-;    disable interrups
+; save flags
+    in r5, __SREG__
+; disable interrups
     cli
-;    increase counter and also clear 
+; increase counter and also clear 
     clc
-; must correct do not use r0 or r1 elsewhere
-    clr _zero_
-    inc _zero_
-    add ticks_low, _zero_
-    dec _zero_
-    adc ticks_high, _zero_
+; do not use r0 or r1 elsewhere
+    clr r3
+    inc r3
+    add ticks_low, r3
+    dec r3
+    adc ticks_high, r3
 
-;    offset counter 256 - 125 = 131
-;    but was 10 clocks till out, 
-;    then 131 + 10 = 141
-    out 0x32, _offs_
-;    reset watch dog
+; offset counter 256 - 125 = 131
+; but was 10 clocks till out, 
+; then 131 + 10 = 141
+    out TCNT0, r4
+; reset watch dog
     wdr
-;    load flags and return
-    out __SREG__, _sreg_
-;    enable interrups
+; load flags and return
+    out __SREG__, r5
+; enable interrups
     sei
     reti
 
 ;----------------------------------------------------------------------
 /*
 
-;	OSCAL calibration
-; disable interrupts
-	cli
-; load default
-	in r0, 0x66
-;  prepare loop
-	eor r3
-1:
-;  try a value
-	out 0x66, r3
-; wait for mesure
-	delay(10000); 
-; next value
-	dec r3
-	brbc 1b	
-; restore default
-	out 0x66, r0
-
-optiboot, 143 is a sample better from atmel 2555 note 
-is 168 for atmega8 theorical for 25oC at 5V
-must be less for 40oC
- CFLAGS += '-DMAX_TIME_COUNT=F_CPU>>4' '-DOSC_CAL=142' '-DNUM_LED_FLASHES=2' -DBAUD_RATE=38400
+OSCAL calibration,
+from atmel 2555 note:
+for atmega8 theorical for 25oC at 5V, value is 168.
+for optiboot, value is 143 as sample better for 38400 bauds, maybe less for 40oC
+CFLAGS += '-DMAX_TIME_COUNT=F_CPU>>4' '-DOSC_CAL=142' '-DNUM_LED_FLASHES=2' -DBAUD_RATE=38400
 */
-;----------------------------------------------------------------------
-;792486AA–AVR–02/2013 ATmega8(L)Note:1.   See “About Code Examples” on page 8
-;
-; from atmeg8 datasheet
-;
-#define EEARH	0x1F
-#define EEARL	0x1E
-#define EEDR 	0x1D
-#define EECR	0x1C
-#define EEWE    1
-#define EEMWE   2
-#define EERE    0
 
 ;----------------------------------------------------------------------
-; EEPROM_write: ( u w -- )
-; address is one of 0 to 511 ( 128 pages of 4 bytes )
-;
-HEADER "(weep)", "weep"
-	NOOP
-	pspull wrk_low, wrk_high
-	pspull tos_low, tos_high
-	clr _work_
-	inc _work_
-	inc _work_
-EEPROM_write:
-; Wait for completion of previous write
-1:
-    sbic EECR, EEWE
-    rjmp 1b
-; Set up address in address register
-    out EEARH, wrk_high
-    out EEARL, wrk_low
-; Write data to data register
-    out EEDR, tos_low
-; disable interrupts
-    cli
-; Write logical one to EEMWE
-    sbi EECR, EEMWE
-; Start eeprom write by setting EEWE
-    sbi EECR, EEWE
-; enable interrupts
-    sei
-; repeat for high byte
-	dec _work_
-	brbs 1, 2f
-	adiw wrk_low, 1
-	cp tos_low, tos_high
-	rjmp 1b
-2:
-    POON
-
-;----------------------------------------------------------------------
-; EEPROM_read: ( w -- u )
-; address is one of 0 to 511 ( 128 pages of 4 bytes )
-;
-HEADER "(reep)", "reep"
-	NOOP
-	pspull wrk_low, wrk_high
-	clr _work_
-	inc _work_
-	inc _work_
-EEPROM_read:
-; Wait for completion of previous write
-1:  
-	sbic EECR, EEWE
-    rjmp 1b
-; Set up address in address register
-    out EEARH, wrk_high
-    out EEARL, wrk_low
-; Start eeprom read by writing EERE
-    sbi EECR, EERE
-; Read data from data register
-    in tos_high, EEDR
-; repeat for high byte
-	dec _work_
-	brbs 1, 2f
-	adiw wrk_low, 1
-	mov tos_low, tos_high
-	rjmp 1b
-2:
-	pspush tos_low, tos_high
-    POON
-
-;----------------------------------------------------------------------
+; hook to init hardware
 BOOT:
-; disable interrupts
-    cli
+   cli
 
 ;----------------------------------------------------------------------
 ; init timer0, with internal clock 8MHz, from gcc public code, io ports as constants
 ;
-; preset of timer0, with internal clock 8MHz ; cycle   64 ; offset 131
+; preset of timer0, with internal clock 8MHz ; cycle 64 ; offset 131
 ; timer cycle * offset / clock = 8k/8M = 1ms
 ;
 TIMER0_SET:
 ; enable pre-escaler
-    in r16, 0x33
+    in r16, TCCR0
     ori r16, (1 << 1) | (1 << 0)
-    out 0x33, r16
+    out TCCR0, r16
 ; offset counter, so it counts 125 clocks inside the interrup routines
     ldi r16, 141
 ; preserve offset
     mov r4, r16
-    out 0x32, r16
+    out TCNT0, r16
 ; enable counter
-    in r16, 0x39
+    in r16, TIMSK
     ori r16, (1 << 0) 
-    out 0x39, r16
-
+    out TIMSK, r16
 ; clear timer0 counter
     clr r2
     clr r3
@@ -266,29 +202,29 @@ TIMER0_SET:
 ; write logical one to WDCE and WDE, set WDP2, WDP1, WDP0 to ~ 2.0 s
 ;
 WATCHDOG_SET:
-    in r16, 0x21
+    in r16, WDTCR
     ori r16, (1 << 4) | (1 << 3)
     ori r16, (1 << 2) | (1 << 1) | (1 << 0)
-    out 0x21, r16
+    out WDTCR, r16
 
 ;----------------------------------------------------------------------
-; init usart, from avr-gcc public code, io ports as constants
+; init usart, from avr-gcc public code
 ;
 ;   defaults to 9600, 8N1, no control
 ;
 USART_SET:
     clr wrk_low
-    out 0x20, wrk_low
+    out UCSRC, wrk_low
     ldi wrk_low, lo8(52)
-    out 0x9, wrk_low
-    in wrk_low, 0xa
+    out UBRRL, wrk_low
+    in wrk_low, UCSRB
     ori wrk_low, lo8(24)
-    out 0xa, wrk_low
+    out UCSRB, wrk_low
     ldi wrk_low, lo8(-114)
-    out 0x20, wrk_low
-    in wrk_low, 0x20
+    out UCSRC, wrk_low
+    in wrk_low, UCSRC
     ori wrk_low,lo8(64)
-    out 0x20, wrk_low
+    out UCSRC, wrk_low
 
 ;----------------------------------------------------------------------
 ; enable interrupts

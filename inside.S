@@ -1,5 +1,10 @@
 
 ;----------------------------------------------------------------------
+; workaround while not done
+;
+THIS = LAST
+
+;----------------------------------------------------------------------
 ;
 ; ok ( c --- a u | 0 ) 
 ;    search TIB start at TOIN for next word delimited by c or \0
@@ -12,10 +17,10 @@ HEADER "(parse)", "parse"
     ; start at 
     lds zpm_low, TOIN+0
     lds zpm_high, TOIN+1
-	; pull delimiter
-	pspull tos_low, tos_high
-	; for \0 check
-	clr tos_high
+    ; pull delimiter
+    pspull tos_low, tos_high
+    ; for \0 check
+    clr tos_high
  
 2:  
     ; skips while equal delimiter
@@ -28,7 +33,7 @@ HEADER "(parse)", "parse"
 3:  
     ; keep address
     sbiw zpm_low, 1
-	movw nds_low, zpm_low
+    movw nds_low, zpm_low
 4:  
     ; skips while not equal delimiter
     srload wrk_low
@@ -38,12 +43,12 @@ HEADER "(parse)", "parse"
     cp wrk_low, tos_low
     brne 4b
 5:  
-	; keep length
+    ; keep length
     sbiw zpm_low, 1
     sub zpm_low, nds_low
     sbc zpm_high, nds_high
     movw wrk_low, zpm_low
-	movw zpm_low, nds_low
+    movw zpm_low, nds_low
     rjmp 20f
 10:
     ; end of buffer
@@ -55,7 +60,7 @@ HEADER "(parse)", "parse"
     ; update TOIN
     sts TOIN+0, zpm_low
     sts TOIN+1, zpm_high
-	WOOP
+    WOOP
 
 ;----------------------------------------------------------------------
 ;
@@ -102,7 +107,7 @@ HEADER "(refill)", "refill"
     brge 40f
 
 30:
-    ; verify CR	\r
+    ; verify CR    \r
     cpi wrk_low, 13 ; CR
     breq 21f
 
@@ -125,12 +130,12 @@ HEADER "(refill)", "refill"
     rjmp 12b    
 
 32:
-	; verify TAB \t
+    ; verify TAB \t
     cpi wrk_low, 9
     brne 34f
 
     ; magic to 32
-	ldi wrk_low, 32
+    ldi wrk_low, 32
     rjmp 40f
     
 34:
@@ -163,14 +168,14 @@ HEADER "(refill)", "refill"
     cpi wrk_low, 32
     brne 42f
 
-;	; verify if a " \ " alone
-;	tst tos_low
-;	brne 41f
-;	dec tos_low
-;	dec tos_low
+;    ; verify if a " \ " alone
+;    tst tos_low
+;    brne 41f
+;    dec tos_low
+;    dec tos_low
 
 41:
-	; highlander it !
+    ; highlander it !
     cp wrk_low, wrk_high
     breq 12b
 
@@ -232,7 +237,7 @@ HEADER "(refill)", "refill"
     ; save counter
     mov wrk_low, wrk_high
     clr wrk_high
-	WOOP
+    WOOP
 
 ;----------------------------------------------------------------------
 ;
@@ -296,7 +301,7 @@ HEADER "(find)", "find"
     ld wrk_low, X+
     
 12:  
-	; verify first char
+    ; verify first char
     cp wrk_low, wrk_high
     brne 10b
     dec _zero_
@@ -318,7 +323,7 @@ HEADER "(find)", "find"
     dec _zero_
     breq 20f
 
-	; next chars
+    ; next chars
     rjmp 14b
 
 20:  
@@ -331,22 +336,22 @@ HEADER "(find)", "find"
 
     ; push CFA, (xt)
     ; if need LFA just subtract tos
-	;
+    ;
     pspush zpm_low, zpm_high
 
     ; return flags
     clr wrk_low
     clr wrk_high
     andi tos_high, F_IMMEDIATE
-	brne 24f
+    brne 24f
 22:
-	; immediate (1)
-	inc wrk_low
-	WOOP
+    ; immediate (1)
+    inc wrk_low
+    WOOP
 24:
-	; common (-1)
-	dec wrk_low
-	WOOP
+    ; common (-1)
+    dec wrk_low
+    WOOP
 
 30: 
     ; not found (0)
@@ -359,7 +364,7 @@ HEADER "(find)", "find"
     clr wrk_low
     clr wrk_low
     ; save results
-	WOOP
+    WOOP
 
 ;----------------------------------------------------------------------
 ; ok ( mul mut -- d )
@@ -368,33 +373,33 @@ HEADER "(find)", "find"
 ; result low word quotient in tos_high:tos_low, remainder in wrk_low
 ;
 HEADER "(basemul)", "basemul"
-	NOOP
-	; pull multiplicanrd
+    NOOP
+    ; pull multiplicanrd
     pspull nds_low, nds_high
-	; pull multiplier
+    ; pull multiplier
     pspull wrk_low, wrk_high
-	clr wrk_high
+    clr wrk_high
 ;
 ; Multiply
 ;
-	; Multiply LSB
-	mul nds_low, wrk_low 
-	; copy result to result register
-	mov tos_low, R0 
-	mov tos_high, R1
-	; Multiply MSB
-	mul nds_high, wrk_low 
-	; copy MSB result to result byte 3
-	mov wrk_high, R1 
-	; add LSB result to result byte 2
-	add tos_high, R0 
-	brcc 10f ; if not carry, jump
-	inc wrk_high
+    ; Multiply LSB
+    mul nds_low, wrk_low 
+    ; copy result to result register
+    mov tos_low, R0 
+    mov tos_high, R1
+    ; Multiply MSB
+    mul nds_high, wrk_low 
+    ; copy MSB result to result byte 3
+    mov wrk_high, R1 
+    ; add LSB result to result byte 2
+    add tos_high, R0 
+    brcc 10f ; if not carry, jump
+    inc wrk_high
 10:
-	pspush tos_low, tos_high	
-	mov wrk_low, wrk_high
-	clr wrk_high
-	WOOP
+    pspush tos_low, tos_high    
+    mov wrk_low, wrk_high
+    clr wrk_high
+    WOOP
 
 ;----------------------------------------------------------------------
 ;
@@ -403,42 +408,42 @@ HEADER "(basemul)", "basemul"
 ; quotient in tos_high:tos_low, remainder in wrk_low
 ;
 HEADER "(basediv)", "basediv"
-	NOOP
-	; pull dividend
+    NOOP
+    ; pull dividend
     pspull nds_low, nds_high
-	; pull divisor
+    ; pull divisor
     pspull tos_low, tos_high
 10:
-	; clear remainder
+    ; clear remainder
     clr wrk_low               
-	; 16 bits rounds
+    ; 16 bits rounds
     ldi wrk_high,0x10         
 20:  
-	; next dividend bit to wrk_low
+    ; next dividend bit to wrk_low
     lsl tos_low
     rol tos_high
     rol wrk_low             
-	; this should never, ever, happen
+    ; this should never, ever, happen
     brcs 30f                    
-	; trial subtraction
+    ; trial subtraction
     cp wrk_low, nds_low    
-	; not big enough
+    ; not big enough
     brcs 40f                    
 30:
-	; ok, subtract it
+    ; ok, subtract it
     sub wrk_low, nds_low      
-	; add this power of 2 to quotient
+    ; add this power of 2 to quotient
     inc tos_low               
 40:  
-	; count bit
+    ; count bit
     dec wrk_high      
-	; do until done
+    ; do until done
     brne 20b           
      
-	; push quotient
+    ; push quotient
     pspush tos_low, tos_high
     ; push remainder
-	WOOP
+    WOOP
 
 ;----------------------------------------------------------------------
 ;    ok ( -- ) 
@@ -467,7 +472,7 @@ HEADER "(nopostpone)", "nopostpone"
     NOOP
     ; clear postpone
     lds wrk_low, STAT+0
-    cbr wrk_low, BIT_POSTONE 
+    cbr wrk_low, BIT_POSTPONE 
     rjmp states
     
 ;----------------------------------------------------------------------
@@ -477,14 +482,14 @@ HEADER "(postpone)", "ispostpone"
     NOOP
     ; clear postpone
     lds wrk_low, STAT+0
-    sbr wrk_low, BIT_POSTONE 
+    sbr wrk_low, BIT_POSTPONE 
     rjmp states
     
 ;----------------------------------------------------------------------
 ;    ok ( xt f -- ) 
 ;
 ;    f flag  1 immediate, -1 common
-;	 state = 0 execute, 1 compile,  3 postone
+;     state = 0 execute, 1 compile,  3 postone
 ;
 HEADER  "(eval)", "evaluate"
     NOOP
@@ -497,16 +502,16 @@ HEADER  "(eval)", "evaluate"
     lds tos_low, STAT+0
 
     ; ever execute 
-	cpi tos_low, 0
+    cpi tos_low, 0
     breq 18f
 
-	; default check
-	cpi tos_low, 1
+    ; default check
+    cpi tos_low, 1
     breq 14f
 
     ; ever compile
     ; clear postpone
-    cbr tos_high, BIT_POSTONE ; must not be bit 0
+    cbr tos_high, BIT_POSTPONE ; must not be bit 0
     sts STAT+0, tos_high
     rjmp 16f    
     
@@ -534,147 +539,147 @@ HEADER  "(eval)", "evaluate"
 ;
 ;   not official ? (ud1 c-addr1 u1 -- ud2 c-addr2 u2)
 ;
-;	ok (a -- a 0 | ud n)	
-;	assumes a not a counted string, but ends with 32 or \0
+;    ok (a -- a 0 | ud n)    
+;    assumes a not a counted string, but ends with 32 or \0
 ;
-;	uses all but X, Y
-;	ips, wrk, tos, nds, _zero_, _work_, r0, r1
+;    uses all but X, Y
+;    ips, wrk, tos, nds, _zero_, _work_, r0, r1
 ;
 HEADER "(number)", "number"
     NOOP
 
-	; pull address from
+    ; pull address from
     pspull zpm_low, zpm_high
-	; keep it
+    ; keep it
     pspush zpm_low, zpm_high
 
-  	clr _zero_
-	; clear result
-	clr tos_low
-	clr tos_high
+      clr _zero_
+    ; clear result
+    clr tos_low
+    clr tos_high
 
-	; get actual base
+    ; get actual base
     lds wrk_low, BASE+0
 2:
-	; hold base
+    ; hold base
     mov _work_, wrk_low
 10:
     srload wrk_low
 
-	; allow first char change base
-	tst _zero_
-	brne 18f
+    ; allow first char change base
+    tst _zero_
+    brne 18f
 12:
-	; goes hexadecimal
-	cpi wrk_low, '$'
-	brne 14f
-	ldi wrk_low, 16
-	rjmp 2b
+    ; goes hexadecimal
+    cpi wrk_low, '$'
+    brne 14f
+    ldi wrk_low, 16
+    rjmp 2b
 
 14: 
-	; goes decimal
-	cpi wrk_low, '#'
-	brne 16f
-	ldi wrk_low, 10
-	rjmp 2b
+    ; goes decimal
+    cpi wrk_low, '#'
+    brne 16f
+    ldi wrk_low, 10
+    rjmp 2b
 
-16:	
-	; no binary, no octal, no more bases
+16:    
+    ; no binary, no octal, no more bases
 
-	; how do negative ? just two-complement at end ?
+    ; how do negative ? just two-complement at end ?
 
 18:
-	; test end 
+    ; test end 
 
-	cpi wrk_low, 0
-	breq 80f
-	 
-	cpi wrk_low, 32
-	breq 80f
+    cpi wrk_low, 0
+    breq 80f
+     
+    cpi wrk_low, 32
+    breq 80f
 
-	; sorry no lowercases
-	subi wrk_low, '0'
+    ; sorry no lowercases
+    subi wrk_low, '0'
 
-	; ends ?
-	tst wrk_low
-	brlt 50f
+    ; ends ?
+    tst wrk_low
+    brlt 50f
 
-	cpi wrk_low, 9
-	brcc 20f
+    cpi wrk_low, 9
+    brcc 20f
 
-	; mind the gap !
-	subi wrk_low, 7
+    ; mind the gap !
+    subi wrk_low, 7
 
 20:
-	; ends ?
+    ; ends ?
     cp wrk_low, _work_
     brge 50f
 
-	; add to result
-	clr wrk_high
-	add tos_low, wrk_low
-	adc tos_high, wrk_high
+    ; add to result
+    clr wrk_high
+    add tos_low, wrk_low
+    adc tos_high, wrk_high
 
-	; multiply by base
-	movw nds_low, tos_low
+    ; multiply by base
+    movw nds_low, tos_low
 
-	; Multiply LSB
-	mul nds_low, _work_
-	; copy MSB result to result byte 1
-	mov tos_low, R0 
-	; copy MSB result to result byte 2
-	mov tos_high, R1
+    ; Multiply LSB
+    mul nds_low, _work_
+    ; copy MSB result to result byte 1
+    mov tos_low, R0 
+    ; copy MSB result to result byte 2
+    mov tos_high, R1
 
-	; Multiply MSB
-	mul nds_high, _work_
-	; copy MSB result to result byte 3
-	mov wrk_high, R1 
-	; add LSB result to result byte 2
-	add tos_high, R0 
-	brcc 30f ; if not carry, jump
-	inc wrk_high
+    ; Multiply MSB
+    mul nds_high, _work_
+    ; copy MSB result to result byte 3
+    mov wrk_high, R1 
+    ; add LSB result to result byte 2
+    add tos_high, R0 
+    brcc 30f ; if not carry, jump
+    inc wrk_high
 30:
-	; test overflow
-	tst wrk_high
-	brne 40f
+    ; test overflow
+    tst wrk_high
+    brne 40f
 
-	; count digits 
-	inc _zero_
-	; next digit
-	rjmp 10b
+    ; count digits 
+    inc _zero_
+    ; next digit
+    rjmp 10b
 
 40:
-	; overflow 16bits
+    ; overflow 16bits
     ldi wrk_low, OVERFLOW
     rjmp WARM
-	
+    
 50:
     ; NaN    
     ldi wrk_low, NOT_A_NUMBER
     rjmp WARM
 
 80:
-	; discards addr
-	pspull zpm_low, zpm_high
+    ; discards addr
+    pspull zpm_low, zpm_high
 
-	; push value
-	pspush tos_low, tos_high
+    ; push value
+    pspush tos_low, tos_high
 
 100:
-	; push digits
-	WOOP
+    ; push digits
+    WOOP
 
 ;----------------------------------------------------------------------
 ;
-; 	nok ( --- a2 u ) 
+;     nok ( --- a2 u ) 
 HEADER ".\"", "dotquote"
     NOOP
-	POON	
+    POON    
     
 ;----------------------------------------------------------------------
 ;    ok ( a u -- ) 
 ;
-;	called after parse ;)
+;    called after parse ;)
 ;
 HEADER    "(create)", "create"
     NOOP
@@ -682,65 +687,65 @@ HEADER    "(create)", "create"
     lds zpm_low, THIS+0
     lds zpm_high, THIS+1
 
-	; save link 
-	lds wrk_low, LAST+0
-	lds wrk_high, LAST+1
+    ; save link 
+    lds wrk_low, LAST+0
+    lds wrk_high, LAST+1
     st Z+, wrk_low
     st Z+, wrk_high
-	
-	; save size word
-	pspull tos_low, tos_high
-	st Z+, tos_low
+    
+    ; save size word
+    pspull tos_low, tos_high
+    st Z+, tos_low
 
-	; if odd
-	sbrc tos_low, 0
-	inc tos_low
+    ; if odd
+    sbrc tos_low, 0
+    inc tos_low
 
-	; keep size
-	mov tos_high, tos_low
+    ; keep size
+    mov tos_high, tos_low
 
-	; get address
-	pspull wrk_low, wrk_high
+    ; get address
+    pspull wrk_low, wrk_high
 
-	; save psp
-	rspush psp_low, psp_high
+    ; save psp
+    rspush psp_low, psp_high
 
-	; copy it
-	movw psp_low, wrk_low
+    ; copy it
+    movw psp_low, wrk_low
 10:
     ld wrk_low, X+
-	st Z+, wrk_low
-	dec tos_high
-	brne 10b
+    st Z+, wrk_low
+    dec tos_high
+    brne 10b
 
-	; load psp
-	rspull psp_low, psp_high
+    ; load psp
+    rspull psp_low, psp_high
 
-	; LAST and HERE are update as SEMI is executed
-	; but if is out of a : ; ?
-	; if is a  execute ?
+    ; LAST and HERE are update as SEMI is executed
+    ; but if is out of a : ; ?
+    ; if is a  execute ?
 /*
 
 ; Recall that words defined by CREATE  
 ; return the address of the next free dictionary 
 ; location at the time they werecreated.
 
-	; point to next free cell
-	; push dp to stack
+    ; point to next free cell
+    ; push dp to stack
     lds wrk_low, HERE+0
     lds wrk_high, HERE+1
-	; add link
-	adiw wrk_low, 2
-	; add size 
+    ; add link
+    adiw wrk_low, 2
+    ; add size 
     add wrk_low, tos_low
     adc wrk_low, tos_high
-	; 
-	pspush wrk_low, wrk_high
-	
-	OR just use: create HERE 
+    ; 
+    pspush wrk_low, wrk_high
+    
+    OR just use: create HERE 
 */
-	; updates
-	rjmp line_void
+    ; updates
+    rjmp line_void
 
 ;----------------------------------------------------------------------
 ;
@@ -755,8 +760,8 @@ HEADER "(comma)", "comma"
     st Z+, wrk_low
     st Z+, wrk_high
 
-	clr tos_high
-	clr tos_low
+    clr tos_high
+    clr tos_low
 
 line_void:
 
@@ -765,7 +770,7 @@ line_void:
     sts THIS+0, zpm_low
     sts THIS+1, zpm_high
 
-	; SRAM hold bottom of free ram
+    ; SRAM hold bottom of free ram
     ; verify free ram
     lds wrk_low, SRAM+0
     lds wrk_high, SRAM+1
@@ -783,8 +788,8 @@ line_void:
     lds wrk_high, HERE+1
     add wrk_low, tos_low
     adc wrk_low, tos_high
-	; point to next free cell
-	adiw wrk_low, 2
+    ; point to next free cell
+    adiw wrk_low, 2
     sts HERE+0, wrk_low
     sts HERE+1, wrk_high
 

@@ -28,16 +28,16 @@
 ;
 ;   MUST use gnu cpp 
 ;   use with .S (upper S) or
-;	use with -x assembler-with-cpp
+;    use with -x assembler-with-cpp
 ;
-; 	can't use alias 
+;     can't use alias 
 ;----------------------------------------------------------------------
 ;
 ; all defines, equs, macros are defined in this file
 ;
 ;----------------------------------------------------------------------
 ;
-;	about registers 
+;    about registers 
 ;
 ; r1:r0 reserved and used in self atmega8 instructions, as spm, mul, des etc
 ;
@@ -78,7 +78,7 @@
 #define tos_low r22
 #define tos_high r23
 
-; second value 
+; second temporary 
 #define nds_low r20
 #define nds_high r21
 
@@ -88,40 +88,34 @@
 
 ;----------------------------------------------------------------------
 ;
-; version information
-;
-.equ version, 10 ; 0.00.10
-
-;----------------------------------------------------------------------
-;
 ;  trick adapted from amforth-6.9
 ;
 .macro STRINGS string
 ;    .word DOSLIT
     .byte 8f - 7f
-7:  .ascii "\string"
+7:  .ascii "\\string"
 8:  .balign 2
 .endm
 
 ;----------------------------------------------------------------------
 ;
-; start reverse linked list
+; header of leaf word in dictionary
+;    flags must be 0x80, 0x40, 0x20, 0x10
+;    size  must be 1 to 15
+;
+;----------------------------------------------------------------------
+;
+; set start reverse linked list
 ;
 .set _link_, 0x0
 
-;----------------------------------------------------------------------
-;
-; header of leaf word in dictionary
-;	flags must be 0x80, 0x40, 0x20, 0x10
-;	size  must be 1 to 15
-;
-.macro HEADER name, label, flags
+.macro HEADER name, label, flags=0x0
 is_\label:
     .p2align 1, 0x00
 7:    
     .word _link_
     .set _link_, 7b
-    .byte \flags + (9f - 8f)
+    .byte (9f - 8f) + \flags
 8:    
     .ascii "\name"
 9:    
@@ -136,7 +130,7 @@ is_\label:
 ;    R    Y (r29:r28) is used as return stack pointer    
 ;    S    X (r27:r26) is used as data/parameter stack pointer
 ;    W    W (r25:r24) is used as generic work register
-;	
+;    
 ;
 ;   all stacks grows downwards.
 ;
@@ -218,13 +212,26 @@ is_\label:
 .endm
 
 ;----------------------------------------------------------------------
+; test, skip next if not zero
+;
+; for Atmega8:
+; __SREG__ is 0x3F
+; BIT_ZERO is 1
+;
+.macro test_zero low, high
+    mov _work_, \low
+    or _work_, \high
+    sbrs _work_, BIT_ZERO
+.endm
+
+;----------------------------------------------------------------------
 ; all primitives must start with NOOP and end with POON
-;	a  nop (0x0000) is used as a null reference, and marks all primitives
-;	as they are really a branch and link mark
+;    a  nop (0x0000) is used as a null reference, and marks all primitives
+;    as they are really a branch and link mark
 ;
 ; many primitives saves work register at end, 
-;	then for save bytes, ends with WOOP, 
-;	that goes to _pushw, that goes to POON 
+;    then for save bytes, ends with WOOP, 
+;    that goes to _pushw, that goes to POON 
 ;
 
 .macro NOOP
@@ -238,6 +245,12 @@ is_\label:
 .macro POON
     rjmp _link
 .endm
+
+;**********************************************************************
+;  constant values
+;
+;     %s/#define *\([^ ]*\) */ \1 = /
+;    %s/ *\([^ ]*\) *= */#define \1 /
 
 ;----------------------------------------------------------------------
 ;    sizes
@@ -259,20 +272,26 @@ PIC_SIZE = 16
 ; stacks 18 words deep. WISE as M00re said.
 STACK_SIZE = 36
 
+; default cell size
+CELL_SIZE = 2
+
+; default base
+BASE_DEFAULT = 16
+
 ;----------------------------------------------------------------------
 ;   reserved eeprom used (256 words total, 248 avaliabe) 
 ;
-    eeprom = 0x00
-    e_void = eeprom + 0  ; always zero
-    e_seed = eeprom + 2  ; seed for random
-    e_turn = eeprom + 4  ; routine after boot
-    e_rest = eeprom + 6  ; routine before reset
-    e_last = eeprom + 8  ; last link addres to dictionary 
-    e_here = eeprom + 10 ; next free flash address for dictionary
-    e_sram = eeprom + 12 ; next free sram address for variables, as stack
-    e_erom = eeprom + 14 ; next free eprom address for values, as stack
-    e_free = eeprom + 16 
-    
+eeprom = 0x00
+e_void = eeprom + 0  ; always zero
+e_seed = eeprom + 2  ; seed for random
+e_turn = eeprom + 4  ; routine after boot
+e_rest = eeprom + 6  ; routine before reset
+e_last = eeprom + 8  ; last link addres to dictionary 
+e_here = eeprom + 10 ; next free flash address for dictionary
+e_sram = eeprom + 12 ; next free sram address for variables, as stack
+e_erom = eeprom + 14 ; next free eprom address for values, as stack
+e_free = eeprom + 16 
+
 ;----------------------------------------------------------------------
 ;   words can be 1 to 15 chars lenght, 
 ;   almost over for normal english ~10 letters words http://norvig.com/mayzner.html
@@ -280,63 +299,39 @@ STACK_SIZE = 36
 ;   flags 
 ;   IMMEDIATE, COMPILE, HIDEN, TOGGLE
 ;
-    F_IMMEDIATE = 0x80
-    F_COMPILE_ONLY = 0x40
-    F_HIDDEN = 0x20
-    F_TOGGLE = 0x10
-   
-    F_TOMASK = 0xF0
-    F_UNMASK = 0x0F
-    F_FOUND =  0x01
+F_IMMEDIATE = 0x80
+F_COMPILE_ONLY = 0x40
+F_HIDDEN = 0x20
+F_TOGGLE = 0x10
+F_COMMON = 0x00
+
+F_TOMASK = 0xF0
+F_UNMASK = 0x0F
 
 ; STATES BIT!
-; execute STATE == 0
-; compile STATE == 1
-; postone STATE == 2 or 3, only for next word
+; execute  STATE == 0
+; compile  STATE == 1
+; postpone STATE == 2 or 3, only for next word
 
-    BIT_POSTONE = 1
-    BIT_COMPILE = 0
-    BIT_EXECUTE = 0
+BIT_POSTPONE = 1
+BIT_COMPILE = 0
+BIT_EXECUTE = 0
 
-/*       
-
-    default state is executing
-    while defining a new word, state is compiling
-    while state is compiling 
-    the immediate flag decides if execute or compile
-    but to force compiling next word, then state
-
-
-       common   immediate
-    S_EXECUTE   execute   execute
-    S_COMPILE   compile   execute
-    S_POSTONE   compile   compile
-
-    prefer
-
-    S_DECIDES   flag immediate decides
-    S_COMPILE   always compile next word
-    S_EXECUTE   always execute next word   
+/*
+state       common    immediate
+S_EXECUTE    execute   execute
+S_COMPILE    compile   execute
+S_POSTPONE   compile   compile
 
 */
 ;---------------------------------------------------------------------
-; default base
-;
-    BASE_DEFAULT = 16
-
-;---------------------------------------------------------------------
-; default cell size
-;
-    CELL_SIZE = 2
-
-;---------------------------------------------------------------------
 ; status register from error codes forth 2012
 ; minimal
-    NO_ERROR = 0
-    INVALID_MEMORY = -9
-    OVERFLOW = -11
-    WRITE_TO_READ_ONLY = -20
-    NOT_A_NUMBER = -24
+NO_ERROR = 0
+INVALID_MEMORY = -9
+OVERFLOW = -11
+WRITE_TO_READ_ONLY = -20
+NOT_A_NUMBER = -24
 
 ;---------------------------------------------------------------------
 ; Flow Control
@@ -345,49 +340,30 @@ STACK_SIZE = 36
 ; works as a screen or block, just receives a line till a CR or CR LF
 ; uses BS, ESC, CAN, XON, XOFF, for control 
 ;
- XON_   =   0x11	; ascii DC1 ^Q
- XOFF_  =   0x13	; ascii DC3 ^S
+XON_   =   0x11    ; ascii DC1 ^Q
+XOFF_  =   0x13    ; ascii DC3 ^S
 
- CR_    =   0x0d	; ascci carriage return ^M
- LF_    =   0x0a	; ascii line feed ^J
+CR_    =   0x0d    ; ascci carriage return ^M
+LF_    =   0x0a    ; ascii line feed ^J
 
- CAN_	=   0x18	; ascii cancel ^C
- ESC_   =   0x1B	; ascii escape ^[
+CAN_   =   0x18    ; ascii cancel ^C
+ESC_   =   0x1B    ; ascii escape ^[
 
- BS_	=   0x08	; ascii backspace ^H
- TAB_   =   0x09	; horizontal tab
- BL_    =   0x20	; ascii space 
+BS_    =   0x08    ; ascii backspace ^H
+TAB_   =   0x09    ; horizontal tab
+BL_    =   0x20    ; ascii space 
 
-;---------------------------------------------------------------------
-; from avr manual, for atmega8, do not change 
-; reserved I/O Memory
-;
-__SREG__ = 0x3f
-__SP_H__ = 0x3e
-__SP_L__ = 0x3d
-
-/* SPMCR */
-#define SPMCR  0x37
-#define SPMIE   7
-#define RWWSB   6
-/* bit 5 reserved */
-#define RWWSRE  4
-#define BLBSET  3
-#define PGWRT   2
-#define PGERS   1
-#define SPMEN   0
-
-BIT_CARRY = 0
 BIT_ZERO = 1
+BIT_CARRY = 0
 
 SRAM_START = 0x060  ; SRAM from AVR manual
-SRAM_END =   0x45F  ; SRAM from AVR manual
+SRAM_END = 0x45F  ; SRAM from AVR manual
 
-FLASH_RWW  = 0x0000
-FLASH_NRWW = 0x1E00	; using optiboot in 512 bytes !!!!
-FLASH_END  = 0x1FFF 
+FLASH_RWW = 0x0000
+FLASH_NRWW = 0x1E00    ; using optiboot in 512 bytes !!!!
+FLASH_END = 0x1FFF 
 
-FLASH_START = SRAM_END + 1	; just a offset
+FLASH_START = SRAM_END + 1    ; just a offset
 FLASH_STOP = FLASH_NRWW - 1
 
 /* for eeprom use */
@@ -399,6 +375,7 @@ E2P_END = 0x1FF
 /* for flash flush */
 
 SPM_PAGESIZE = 64    
+
 pagesize = (SPM_PAGESIZE - 1)
 pagemask = (~pagesize)
 

@@ -29,8 +29,16 @@
 ; sram mapped as: internal mapped 0x000 to 0x05F, free use 0x060 to 0x45F
 ; flash mapped as: bios 0x000 to 0x45F, forth 0x460 to 0x1eff, boot 0x1f00 to 0x1FFF
 ;---------------------------------------------------------------------
+
+;----------------------------------------------------------------------
+;
+; version information
+;
+.equ version, 10 ; 0.00.10
+
 #include "macros.S"
 
+;----------------------------------------------------------------------
 .section data
 .org 0x0060
 ; those are non volatile
@@ -45,20 +53,15 @@ EROM:	.word 0		; next free cell in eeprom < 480
 
 ; those are volatile
 STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile, 2 postpone
-BASE:	.word 0		; numeric radix for convertion
+RADX:	.word 0		; numeric radix for convertion
+TOIN:	.word 0		; next free char in terminal input buffer
 
-PAGE:	.word 0
-LINE:	.word 0
+; THIS:	.byte 0		; next free cell in FIB for flash flush
+; KEEP:	.byte 0		; actual page of flash memory, HERE/64 
 
-CURS:	.byte 0
-TOIN:	.byte 0		; next free char in terminal input buffer
-THIS:	.byte 0		; next free cell in FIB for flash flush
-KEEP:	.byte 0		; actual page of flash memory, HERE/64 
-
-.equ 	FREE, .
-.equ	TIB, FIB - TIB_SIZE
 .equ	FIB, PIC - FIB_SIZE
-.equ	PIC, END - PIC_SIZE
+.equ	PIC, TIB - PIC_SIZE
+.equ	TIB, END - TIB_SIZE 
 .equ	END, PSP - STACK_SIZE
 .equ	PSP, RSP - STACK_SIZE
 .equ	RSP, SPZ - STACK_SIZE
@@ -66,21 +69,27 @@ KEEP:	.byte 0		; actual page of flash memory, HERE/64
 
 ;.equ free_sram, TIB - FREE
 
+;----------------------------------------------------------------------
 .p2align 1, 0x00
 #include "bios.S"
 
+;----------------------------------------------------------------------
 .p2align 1, 0x00
 #include "forth.S"
 
+;----------------------------------------------------------------------
 .p2align 1, 0x00
 #include "inside.S"
 
+;----------------------------------------------------------------------
 .p2align 1, 0x00
 #include "math.S"
 
+;----------------------------------------------------------------------
 .p2align 1, 0x00
 #include "newff.S"
 
+;----------------------------------------------------------------------
 .equ free_flash, .
 
 /*
@@ -88,6 +97,7 @@ KEEP:	.byte 0		; actual page of flash memory, HERE/64
 2 	2nd 	snd,    second
 3 	3rd 	thd,    third
 4 	4th 	fth,    fourth
+and so on is th :)
 */
 
 

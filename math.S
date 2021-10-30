@@ -26,7 +26,7 @@
 
 ;----------------------------------------------------------------------
 ;
-;     great DJB hash, adapted for 16bits
+; great DJB hash, adapted for 16bits
 ;
 ; hash = (hash << 5) + str[i]
 ; for ascii chars in sram, in bytes not cells
@@ -34,13 +34,14 @@
 .equ djbHASH, 5381
 HEADER "HASH", "HASH"
     NOOP
+    clr _zero_
     ldi nds_low, lo8(djbHASH)
     ldi nds_high, hi8(djbHASH)
     pspull wrk_low, wrk_high
     pspull zpm_low, zpm_high
     ; get a char
 1:    
-	srload tos_low
+    srload tos_low
     add nds_low, tos_low
     adc nds_high, _zero_
     lsl nds_low
@@ -58,7 +59,7 @@ HEADER "HASH", "HASH"
     sbiw wrk_low, 1
     brge 1b
 2:  
-	pspush nds_low, nds_high
+    pspush nds_low, nds_high
     POON
 
 ;----------------------------------------------------------------------
@@ -85,12 +86,8 @@ HEADER "RANDOM", "RANDOM"
     eor wrk_low, wrk_high
     swap wrk_low
     add wrk_high, wrk_low
-;    save seed
     pspush wrk_low, wrk_high
-_seed:
-    sts SEED, wrk_low
-    sts SEED + 1, wrk_high
-    POON
+    rjmp _seed
 
 ;----------------------------------------------------------------------
 ;
@@ -99,10 +96,13 @@ _seed:
 HEADER "RAND", "RAND"
     NOOP
     pspull wrk_low, wrk_high
-    rjmp _seed
+_seed:
+    sts SEED, wrk_low
+    sts SEED + 1, wrk_high
+    POON
     
 ;----------------------------------------------------------------------
-; a 64 bit number 7FFF FFFF FFFF FFFF is 9.223.372.036.854.775.807
+; a 64 bit half number, 7FFF FFFF FFFF FFFF is 9.223.372.036.854.775.807
 ;----------------------------------------------------------------------
 ;
 ; adapted from AVR-200 
@@ -383,7 +383,6 @@ itoa:
  * 
  * Modifies:   _A3.._A0, _cnt 
  * 
- */ 
     .macro    div32_16    _A3, _A2, _A1, _A0, _B1, _B0, _cnt 
     ldi     \_cnt, 16 
 
@@ -414,3 +413,5 @@ itoa:
 
 3:
     .endm 
+
+*/
