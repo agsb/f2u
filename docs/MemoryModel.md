@@ -23,32 +23,32 @@ For the AVR Atmega8, by Harvard architeture, memory is separed in 512 bytes eepr
 3. Optiboot 
 
     0x1e00 optiboot main, handles boot and flash updates
-    0x1fb0 do_spm routine for update flash memory
+    0x1fb0 do_spm routine for runtime update flash memory
 # Memory Model
 
-the sram are mapped as:
+## the sram are mapped as:
 
     grows downwards:
 
-    0x060   forth variables, 16 cells
+    0x060   forth variables, 12 cells
 
-    0x07c   start of user ram, 740 bytes
-
-    0x35b   start of terminal input buffer, 72 bytes
-
-    0x3a3   start of flash internal buffer, 32 cells
-    
-    0x3e3   start of picture numeric buffer, 16
+    0x078   start of user ram, 826 bytes
 
     grows upwards:
 
+    0x3e3   start of picture numeric buffer, 16 bytes
+    
+    0x3a3   start of flash internal buffer, 64 bytes
+    
+    0x35b   start of terminal input buffer, 72 bytes
+   
     0x3f3   start stacks area
 
-    0x417   top of parameter stack, 36, 18 cells
+    0x417   top of parameter stack, 36 bytes, 18 cells
 
-    0x43b   top of return stack, 36, 18 cells
+    0x43b   top of return stack, 36 bytes, 18 cells
 
-    0x45f   top of stack pointer, 36, 18 cells
+    0x45f   top of stack pointer, 36 bytes, 18 cells
 
 note: last stack is for extra libraries, not for forth    
 
@@ -82,7 +82,7 @@ note: last stack is for extra libraries, not for forth
     
     last    last entry in dictionary, 2 bytes
 
-    here    next free cell in flash memory, 2 bytes
+    fshm    next free cell in flash memory, 2 bytes
     
     sram    next free cell in sram memory, 2 bytes
     
@@ -92,13 +92,11 @@ note: last stack is for extra libraries, not for forth
 
     state   state of interpreter, 2 byte
     
-    base    numeric radix, 2 byte
-
-    keep    hold  while update flash, 2 bytes
+    radx    numeric radix, 2 byte
     
-    tibc    cursor in TIB as offset, 1 byte, also >IN
+    toin    cursor in TIB as offset, 2 byte
     
-    fibc    cursor in FIB as offset, 1 byte
+    page    last flash page in buffer. 2 bytes
         
 ### 4. Stacks
 
@@ -146,9 +144,9 @@ note: last stack is for extra libraries, not for forth
 
 ### 6. Flags defined, inline
 
-    CELLZ   size of a cell in bytes, 2
+    CELL_SIZE   size of a cell in bytes, 2
     
-    WORDZ   size of maxim word, 15
+    WORD_SIE    size of maximum word, 15
 
     F_IMMEDIATE     flag for immediate words, 0x80
     
