@@ -4,6 +4,11 @@
 
 *still lots of english errors, please correct me*
 
+# 30/10/2021
+
+- A simple algorithm to flush flash pages, based in the address to write and flash buffer page, a write into a new page forces to save old page and to load new page. Done with assembler functions for !!, flush_flash, load_flash, save_flash, do_spm_stuff.
+
+- revised code for branchs
 # 26/10/2021
 
 - Change branch to use offsets instead of absolute addresses, as in original fig-forth
