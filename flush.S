@@ -1,96 +1,73 @@
 
-
 /*
 
 routines for flush flash memory
 
 SPM_PAGE, page size
 page_old = 0;
-mark = 0;
 
 void flush (int value, int address) {
 
-    int pos = address AND (SPM_PAGE - 1)
-    int page = address AND ~(SPM_PAGE - 1)
+// define flash page and position
+
+    int pos = address AND (SPM_PAGE - 1);
+    int page = address AND ~(SPM_PAGE - 1);
 
     if ( page != page_old ) {
-            if (mark == 1) save_page(page_old);
-            mark = 0;
-            }
-
-    PAGE @ PAGE_OLD @ 
-    = INVERT IF 
-        MARK ONE = IF 
-            SAVE_PAGE 
-            THEN
-        0 MARK ! 
-        THEN
-    MARK 0 = IF
-        PAGE @ PAGE_OLD !
-        LOAD_PAGE 
-        ONE MARK !
-        THEN    
-     
-    if (mark == 0) {
+            if (page_old) save_page(page_old);
             load_page(page);
             page_old = page;
-            mark = 1;
             }
 
     buffer[pos] = lo8(value)
     pos += 1;
     buffer[pos] = hi8(value)
-
 }
 
+: FLUSH
+    
+    PAGE_OLD @ DUP PAGE @
+    = INVERT IF 
+        IF SAVE_PAGE THEN
+        LOAD_PAGE 
+        PAGE @ PAGE_OLD !
+        THEN
+     
 */
 ;
 ;   to flash (w a -- )
 ;
 
-VARIABLE MARK
-VARIABLE PAGE
-
-HEADER "(flush)", "TOFLASH"
-    
-    NOOP
-
-    pspull tos_low, tos_high
-    pspull nds_low, nds_high
-    
-    movw wrk_low, tos_low
-    andi wrk_low, pagesize
-
-    cp wrk_low, page_old
-    brne
-    POON
-
 ;----------------------------------------------------------------------
 ;
-;  load a flash memory page (a -- )
-;  into FIB
+;   load a flash memory page (fa sa -- )
+;   copy one flash page from flash address fa to sram address sa
+;
 HEADER "(load_flash)", "LDFLASH"
     NOOP
-    ; preserve stack
-    rspush psp_low, psp_high
+
+    ; destin
+    pspull nds_low, nds_high
 
     ; origin
     pspull zpm_low, zpm_high
 
-    ; make round down pagesize, pagemask is ~pagesize
-    andi zpm_low, lo8(pagemask)
-    ; andi zpm_high, hi8(pagemask) ; not need if pagesize < 256
+    ; preserve stack
+    rspush psp_low, psp_high
 
-    ; destin
-    ldi psp_low, lo8(FIB)
-    ldi psp_high, hi8(FIB)
-        
-    ; how many bytes
-    lds wrk_low, SPM_PAGESIZE
+    movw psp_low, nds_low
+
+    ; make round down pagesize, pagemask is ~pagesize
+    ; andi zpm_high, hi8(pagemask) ; not need if pagesize < 256
+    andi zpm_low, lo8(pagemask)
 
     ; adjust address for lpm
     lsr zpm_low
     rol zpm_high
+
+    ; how many bytes
+    lds wrk_low, SPM_PAGE
+
 1:
     lpm _work_, Z+
     st X+, _work_
@@ -102,18 +79,23 @@ HEADER "(load_flash)", "LDFLASH"
 
 ;----------------------------------------------------------------------
 ;
-;  save a flash memory page (a -- )
-;  from FIB
+;   save a flash memory page (sa fa -- )
+;   copy one flash page from sram address sa to flash address fa
 ;   registers exposed are used for optiboot compiled with gcc
 ;
 HEADER "(save_flash)", "SVFLASH"
     NOOP
 
-    ; save psp for index
+    ; from sram
+    pspull nds_low, nds_high
+
+    ; into flash
+    pspull r24, r25
+
+    ; save psp 
     rspush psp_low, psp_high
 
-    ; to flash page
-    pspull r24, r25
+    movw psp_low, nds_low
 
     ; mask to match correct address
     ; andi r25, hi8(pagemask) ; not need if pagesize < 256
@@ -127,15 +109,11 @@ HEADER "(save_flash)", "SVFLASH"
     ldi r22, (1<<PGERS) | (1<<SPMEN)
     rcall _does_spm
 
-    ; from sram buffer
-    ldi psp_low, lo8(FIB)
-    ldi psp_high, hi8(FIB)
+    ; how many bytes, less than 256!
+    ldi r23, SPM_PAGE
 
-    ; how many bytes
-    ldi r23, lo8(SPM_PAGESIZE)
-
-    ; copy page
-20:
+    ; copy page, word by word
+2:
     ; fill page flash from sram
     ld r20, X+
     ld r21, X+
@@ -146,12 +124,13 @@ HEADER "(save_flash)", "SVFLASH"
     ; count down
     dec r23
     dec r23
-    brne 20b
+    brne 2b
 
     ; load address
     rspull r24, r25
 
     ; write page
+    ; r0:r1 is ignored, ATmega8L datasheet, pg 209
     ldi r22, (1<<PGWRT) | (1<<SPMEN)
     rcall _does_spm
 
@@ -167,12 +146,11 @@ HEADER "(save_flash)", "SVFLASH"
 #define OPTI_DO_SPM 0x1fb0
 
 _does_spm:
-        in _sreg_, __SREG__
-        cli
-        rcall OPTI_DO_SPM
-        out __SREG__, _sreg_
-        sei
-        ret
+    in _sreg_, __SREG__
+    cli
+    rcall OPTI_DO_SPM
+    out __SREG__, _sreg_
+    ret
 
 ;----------------------------------------------------------------------
 /* from optiboot version 8.2 listing, extra comments added
@@ -187,7 +165,7 @@ _does_spm:
         ; Do spm stuff
         ;
         ; do_spm is 1fb0
-        1fb0:       fc 01           movw    r30, r24
+    1fb0:       fc 01           movw    r30, r24
     1fb2:       0a 01           movw    r0, r20
     1fb4:       67 bf           out     0x37, r22       ; 55
     1fb6:       e8 95           spm

@@ -218,10 +218,10 @@ is_\label:
 ; __SREG__ is 0x3F
 ; BIT_ZERO is 1
 ;
-.macro test_zero low, high
+.macro test_zero low, high, address
     mov _work_, \low
     or _work_, \high
-    sbrs _work_, BIT_ZERO
+    brbs BIT_ZERO, \address
 .endm
 
 ;----------------------------------------------------------------------
@@ -274,6 +274,9 @@ STACK_SIZE = 36
 
 ; default cell size
 CELL_SIZE = 2
+
+; maximum word size
+WORD_SIZE = 15
 
 ; default base
 BASE_DEFAULT = 16

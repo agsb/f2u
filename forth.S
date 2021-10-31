@@ -101,10 +101,10 @@ _next:
     pmload wrk_low, wrk_high ; also increments zpm 
  
 ; if zero (NULL) is a primitive word 
+_void:
     mov _work_, wrk_low 
     or _work_, wrk_high 
-    sbrs _work_, BIT_ZERO 
-    rjmp _branch 
+    brbs BIT_ZERO, _branch 
  
 ; else is a reference 
 _enter: 
@@ -157,8 +157,10 @@ _pushw:
 ; 
 HEADER "0=", "ZEQU" 
     NOOP 
-    test_zero wrk_low, wrk_high 
-    rjmp _ffalse 
+    pspull wrk_low, wrk_high
+    mov _work_, wrk_low
+    or _work_, wrk_high
+    brbc BIT_ZERO, _ffalse
 _ftrue: 
     ser wrk_low 
     ser wrk_high 
@@ -507,8 +509,7 @@ HEADER "?DUP", "ZDUP"
     NOOP 
 ; copy the top 
     pspull wrk_low, wrk_high 
-    test_zero wrk_low, wrk_high 
-    rjmp 1f 
+    test_zero wrk_low, wrk_high, 1f 
     pspush wrk_low, wrk_high 
 1: 
     WOOP 
@@ -520,8 +521,7 @@ HEADER "?DUP", "ZDUP"
 HEADER "?BRANCH", "ZBRANCH" 
     NOOP 
     pspull wrk_low, wrk_high 
-    test_zero wrk_low, wrk_high 
-    rjmp 2f 
+    test_zero wrk_low, wrk_high, 2f 
     movw wrk_low, ipr_low 
     adiw wrk_low, 2 
     movw ipr_low, wrk_low 
@@ -791,7 +791,7 @@ HEADER "CSAME", "CSAME"
 ;---------------------------------------------------------------------- 
 ; ok ( a1 a2 u -- ) 
 ; 
-; MOVE copy bytes from source++ to destination++, decrease count-- 
+; MOVE (forward) copy bytes from source++ to destination++, decrease count-- 
 HEADER "CMOVE", "CMOVE" 
     NOOP 
     ; WARNING No bound check and counter equal 0 moves nothing 
@@ -836,7 +836,7 @@ HEADER "CMOVE", "CMOVE"
 ;---------------------------------------------------------------------- 
 ; ok ( a1 a2 u -- ) 
 ; 
-; MOVE copy bytes from source-- to destination--, decrease count-- 
+; MOVE (backward) copy bytes from source-- to destination--, decrease count-- 
 HEADER "BMOVE", "BMOVE" 
     NOOP 
     ; WARNING No bound check and counter equal 0 moves nothing 
@@ -882,9 +882,8 @@ HEADER "BMOVE", "BMOVE"
     rspull psp_low, psp_high
     POON
 
-
- 
 ;********************************************************************** 
+; FORTH
 ; 
 ;    the follow definitions of compound words 
 ;    are as already compiled into a list of references, 
@@ -1075,26 +1074,48 @@ HEADER  ",", "COMMA",
  
 ;---------------------------------------------------------------------- 
 ; 
-; ok this takes next cell and compiles into HERE 
+; ok this puts next cell into stack and compiles into HERE 
 ; 
 HEADER  "COMP", "COMP", 
     .word LITL, COMMA, ENDS 
  
+;----------------------------------------------------------------------
+; ok compile a eow 
+HEADER "FINITE", "FINITE"
+    .word COMP, ENDS, ENDS
+
+;----------------------------------------------------------------------
+; ok compile a header 
+HEADER "CREATE", "CREATE"
+    .word ENDS
+
+;----------------------------------------------------------------------
+; ok gets a cc<chars>cc from source
+;   ( -- a n )
+HEADER "PARSE", "PARSE"
+    .word ENDS
+/*
+          TOIN @ TIB @ TIB_SIZE PLUS MINUS <0 IF REFILL THEN
+          TOIN @ 
+          BEGIN DUP C@ 
+            DUP ZERO = IF REFILL ??? THEN 
+            BL = IF 1+ FALSE ELSE TRUE THEN UNTIL
+          DUP BEGIN DUP C@ 
+            DUP ZERO = IF REFILL ??? THEN 
+            BL = INVERT IF 1+ FALSE ELSE TRUE THEN UNTIL
+          DUP TOIN ! MINUS ENDS
+*/
+
 ;---------------------------------------------------------------------- 
 ; ok  
 HEADER  ":", "COLON", 
-    .word CREATE, HIDDEN, RBRAC, ENDS 
+    .word CREATE, RBRAC, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; ok  
 HEADER  ";", "SEMMI", 
-    .word COMP, ENDS, HIDDEN, LBRAC, ENDS 
- 
-;---------------------------------------------------------------------- 
-; ok  ZZZZ
-HEADER  "CREATE", "CREATE", 
-    .word ENDS 
-
+    .word FINITE, LBRAC, ENDS 
+  
 ;---------------------------------------------------------------------- 
 ; 
 ; ok BACK 

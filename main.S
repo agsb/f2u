@@ -46,6 +46,7 @@ VOID:	.word 0		; always 0x0000
 SEED:	.word 0		; seed for pseudo random
 TURN:	.word 0		; routine to run after boot
 REST:	.word 0		; routine to run before reset
+
 LAST:	.word 0		; reference to latest word in dictionary
 FSHM:	.word 0		; next free cell in flash dictionary
 SRAM:	.word 0		; next free cell in static ram < 740
@@ -55,9 +56,7 @@ EROM:	.word 0		; next free cell in eeprom < 480
 STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile, 2 postpone
 RADX:	.word 0		; numeric radix for convertion
 TOIN:	.word 0		; next free char in terminal input buffer
-
-; THIS:	.byte 0		; next free cell in FIB for flash flush
-; KEEP:	.byte 0		; actual page of flash memory, HERE/64 
+PAGE:   .word 0         ; last page address from/into flash memory
 
 .equ	FIB, PIC - FIB_SIZE
 .equ	PIC, TIB - PIC_SIZE
@@ -86,8 +85,8 @@ TOIN:	.word 0		; next free char in terminal input buffer
 #include "math.S"
 
 ;----------------------------------------------------------------------
-;.p2align 1, 0x00
-;#include "newff.S"
+.p2align 1, 0x00
+#include "flush.S"
 
 ;----------------------------------------------------------------------
 .equ free_flash, .
