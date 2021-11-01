@@ -227,8 +227,12 @@ This inner interpreters only works for program memory (flash), due specific addr
 ```
 ## Why branch and link ? 
 
-This really saves stack depth and reduce overall instruction code size by simplifly some primitives,.
-## the dicionary
+This really saves stack depth and reduce overall instruction code size by simplifly some primitives.
+
+A good essay, by David Frech, at <https://muforth.nimblemachines.com/call-versus-branch-and-link/>, asserts "There is a jump involved, so perhaps a pipeline refill occurs.", but always will have a jump.
+## the dictionary
+
+I like use the terms leaf for primitives words and twig for compound words, as in <https://muforth.nimblemachines.com/threaded-code/>.
   
     ;------------- independent 
     

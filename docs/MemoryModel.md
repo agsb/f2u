@@ -34,14 +34,14 @@ For the AVR Atmega8, by Harvard architeture, memory is separed in 512 bytes eepr
 
     0x078   start of user ram, 826 bytes
 
+    0x37b   start of picture numeric buffer, 16 bytes
+    
+    0x38b   start of flash internal buffer, 64 bytes
+    
+    0x3ab   start of terminal input buffer, 72 bytes
+    
     grows upwards:
 
-    0x3e3   start of picture numeric buffer, 16 bytes
-    
-    0x3a3   start of flash internal buffer, 64 bytes
-    
-    0x35b   start of terminal input buffer, 72 bytes
-   
     0x3f3   start stacks area
 
     0x417   top of parameter stack, 36 bytes, 18 cells
