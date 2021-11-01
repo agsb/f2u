@@ -7,6 +7,21 @@ Collage.md
 "May the Forth be with you."
 
 ---
+> Alvaro H. Salas, National University of Colomb
+
+sin x = x - (x^3)/3! + (x^5)/5! - (x^7)/7!
+
+cos x =  1 - (x^2)/2! + (x^4)/4! - (x^6)/6!
+
+Chebyshev polynomials T1(x), T3(x), T5(x), T7(x). 
+
+sin x ≈ 1.0001 * x − 0.166667 * x^3 + 0.00855974 * x^5 - 0.000204627 * x^7
+
+Chebyshev polynomials T1(x), T2(x), T6(x), T7(x).
+
+cos x = 1.0000 - 0.5000 * x^2 + 0.0416667 * x^4 - 0.00138875 * x^6
+
+---
 
 > ## http://computer-programming-forum.com/22-forth/fc123450c480e39c.htm Ulrich Hoffmann,
 ```

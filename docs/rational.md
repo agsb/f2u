@@ -32,3 +32,4 @@ PS. All errors less than 10^-7
  | _rFINE:  |    100 | 13704    | ; FINER   alpha  |
  | _rEMC:  |    24559 | 8192   | ; EMC2    c uni.    |
  | _rFRAC:  |    1228 | 263     | ; feigenbaum constant |
+ | _rCORDIC: | 9260 | 15249 | ; cordic constant | 
