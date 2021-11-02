@@ -20,6 +20,7 @@ The following example shows how to load an absolute address:
 
     lui  a0, %hi(msg + 1)
     addi a0, a0, %lo(msg + 1)
+
 ```
 
 //----------------------------------------------------------------------
@@ -40,6 +41,10 @@ The following example shows how to load an absolute address:
 .equ T0, s10
 .equ T1, s11
 */
+
+ #define  FALSE 0
+ #define  TRUE -1
+ #define  CELL  4
 
  #define  Ip s4     //   instruction register
  #define  Rs s5     //   return stack register
@@ -118,7 +123,7 @@ _unnest: // aka do_semis
 _next: // next
     lw Wr, 0 (Ip)
     addi Ip, Ip, CELL
-    beq Wr, zero, _branch
+    beq Wr, zero, _leap
 
 _nest:  // aka do_colon
     rspush Ip
@@ -127,7 +132,7 @@ _nest:  // aka do_colon
 _link:    
     jal zero, _next
 
-_branch:   
+_leap:   
     add Wr, zero, Ip
     addi Ip, Ip, CELL
     jalr zero, Wr, 0
@@ -169,7 +174,7 @@ header "!", "to",
 // ( a -- w )
 header "@", "at", 
     .word 0x0
-    ld Tr, 0 (Tr)
+    lw Tr, 0 (Tr)
     jal zero, _link
 
 //----------------------------------------------------------------------
@@ -332,6 +337,27 @@ header "CELL", "cell",
     .word 0x0
     pspush Tr
     addi Tr, zero, CELL   // li Tr, CELL
+    jal zero, _link
+
+//----------------------------------------------------------------------
+// CELL is 4, multiply by shift left
+header "CELLS", "cells", 
+    .word 0x0
+    slli Tr, Tr, 2
+    jal zero, _link
+
+//----------------------------------------------------------------------
+// CELL is 4, add
+header "CELL+", "cellp", 
+    .word 0x0
+    addi Tr, Tr, CELL
+    jal zero, _link
+
+//----------------------------------------------------------------------
+// CELL is 4, add
+header "CELL-", "cellm", 
+    .word 0x0
+    addi Tr, Tr, -1*CELL
     jal zero, _link
 
 //----------------------------------------------------------------------
@@ -517,7 +543,7 @@ HEADER "CSAME", "csame"
 
     addi Wr, Wr, 1
     addi Nr, Nr, 1
-    subi Tr, Tr, 1
+    addi Tr, Tr, -1
     jal zero, 1b
 2:
     // results
@@ -539,7 +565,7 @@ HEADER "CMOVE", "cmove"
     sb T0, 0(Nr)
     addi Wr, Wr, 1
     addi Nr, Nr, 1
-    subi Tr, Tr, 1
+    subi Tr, Tr, -1
     jal zero, 1b
 2:
     jal zero, drop
@@ -556,15 +582,15 @@ HEADER "BMOVE", "bmove"
     pspull Wr
 
 // do offsets    
-    addi Nr, Nr, Tr
-    addi Wr, Wr, Tr
+    add Nr, Nr, Tr
+    add Wr, Wr, Tr
 1:
     beq Tr, zero, 2f
     lb T0, 0(Wr)
     sb T0, 0(Nr)
-    subi Wr, Wr, 1
-    subi Nr, Nr, 1
-    subi Tr, Tr, 1
+    addi Wr, Wr, -1
+    addi Nr, Nr, -1
+    addi Tr, Tr, -1
     jal zero, 1b
 2:
     jal zero, drop
