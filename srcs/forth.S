@@ -104,7 +104,7 @@ _next:
 _void:
     mov _work_, wrk_low 
     or _work_, wrk_high 
-    brbs BIT_ZERO, _branch 
+    brbs BIT_ZERO, _jump
  
 ; else is a reference 
 _enter: 
@@ -113,7 +113,7 @@ _enter:
     rjmp _next 
  
 ; then branch, for exec it 
-_branch: 
+_jump: 
     movw wrk_low, zpm_low   ; copy this reference 
     adiw wrk_low, 2     ; point to next reference 
     movw ipr_low, wrk_low   ; keep this reference 
@@ -323,6 +323,9 @@ HEADER "FSHM", "here_"
     ldi zpm_high, hi8(FSHM) 
     WOOP 
  
+;********************************************************************** 
+;   usart i/O 
+; 
 ;---------------------------------------------------------------------- 
 ; 
 ; ok ( -- w) 
@@ -383,6 +386,7 @@ HEADER "millis", "millis_"
     movw wrk_low, ticks_low 
     WOOP 
  
+;********************************************************************** 
 ;---------------------------------------------------------------------- 
 ; ok ( -- -1 ) 
 ; 
@@ -543,7 +547,7 @@ HEADER "BRANCH", "BRANCH"
 ;---------------------------------------------------------------------- 
 ; ok ( branch next reference ) 
 ; 
-HEADER "EXEC", "EXEC" 
+HEADER "EXECUTE", "EXECUTE" 
     NOOP 
     pspull wrk_low, wrk_high 
     rspush wrk_low, wrk_high 
@@ -654,9 +658,10 @@ HEADER "><", "ENDIAN"
     WOOP 
  
 ;---------------------------------------------------------------------- 
-;  os LITL ( -- w ), inverse of comma 
-;  from flash to data stack 
-;  all prinmitives use branch and link, 
+;  os LITL ( -- w ), (IP++) -> Tos
+;   inverse of comma 
+;   from flash to data stack 
+;   all prinmitives use branch and link, 
 ;    the next is holding in ipr 
 ; 
 HEADER "LITL", "LITL" 
@@ -666,6 +671,32 @@ HEADER "LITL", "LITL"
     movw ipr_low, zpm_low 
     WOOP 
  
+;---------------------------------------------------------------------- 
+;  os CONL ( -- w ), IP++ -> Tos 
+;  from flash to data stack 
+;  all prinmitives use branch and link, 
+;    the next is holding in ipr 
+; 
+HEADER "CONL", "CONL" 
+    NOOP 
+    movw wrk_low, ipr_low 
+    pspush wrk_low, wrk_high
+    adiw wrk_low, 2
+    movw ipr_low, wrk_low
+    POON 
+ 
+;---------------------------------------------------------------------- 
+;  os LEAP ( -- w ), does a absolute jump 
+;  all prinmitives use branch and link, 
+;    the next is holding in ipr 
+; 
+HEADER "LEAP", "LEAP" 
+    NOOP 
+    movw zpm_low, ipr_low 
+    pmload wrk_low, wrk_high 
+    movw ipr_low, zpm_low 
+    POON
+    
 ;---------------------------------------------------------------------- 
 ; ok C! ( c a -- ) 
 ; sorry all in words 
@@ -789,7 +820,7 @@ HEADER "CSAME", "CSAME"
     WOOP 
  
 ;---------------------------------------------------------------------- 
-; ok ( a1 a2 u -- ) 
+; ok ( s d u -- ) 
 ; 
 ; MOVE (forward) copy bytes from source++ to destination++, decrease count-- 
 HEADER "CMOVE", "CMOVE" 
@@ -834,7 +865,7 @@ HEADER "CMOVE", "CMOVE"
     POON 
  
 ;---------------------------------------------------------------------- 
-; ok ( a1 a2 u -- ) 
+; ok ( s d u -- ) 
 ; 
 ; MOVE (backward) copy bytes from source-- to destination--, decrease count-- 
 HEADER "BMOVE", "BMOVE" 
@@ -905,6 +936,18 @@ HEADER "OVER", "OVER"
 HEADER "ROT", "ROT" 
     .word TOR, SWAP, RAT, SWAP, ENDS 
  
+;---------------------------------------------------------------------- 
+; ok ( w2 w1 --  w1 w2 w1 ) 
+; 
+HEADER "TUCK", "TUCK" 
+    .word DUP, ROT, SWAP, ENDS 
+ 
+;---------------------------------------------------------------------- 
+; ok ( w3 w2 w1 --  w1 w2 w3 ) 
+; 
+HEADER "FLIP", "FLIP" 
+    .word SWAP, ROT, ENDS 
+
 ;---------------------------------------------------------------------- 
 ; ok (  -- 2) 
 HEADER "2", "TWO" 
@@ -996,6 +1039,7 @@ HEADER "2-", "TWOMINUS"
 HEADER "+!", "PLUSTO" 
     .word SWAP, OVER, AT, PLUS, SWAP, TO, ENDS 
  
+;**********************************************************************
 ;---------------------------------------------------------------------- 
 ; 
 ; ok \] 
