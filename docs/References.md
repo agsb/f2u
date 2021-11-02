@@ -2,6 +2,8 @@
 
 # dictionary
 
+the dictionary is a linked list of (link, size + flags, name, pad, (code or references))
+
 Example of dictionary structure (adapted from jonasforth.S)
 ---
 ```
