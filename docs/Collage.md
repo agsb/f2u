@@ -7,6 +7,31 @@ Collage.md
 "May the Forth be with you."
 
 ---
+## muforth
+
+A Forth virtual machine in C language, with basic primitives, full portable, and a Forth language in Forth.
+
+> https://github.com/nimblemachines/muforth/blob/master/src/engine-itc.c
+```
+#define NEST      RPUSH((addr)IP)
+#define UNNEST    (IP = (xt_cell *)RPOP)
+
+/* The most important "word" of all: */
+static void mu_do_colon()
+{
+    NEST;                       /* entering a new word; push IP */
+    IP = (xt_cell *)&W[1];      /* new IP is address of parameter field */
+}
+
+/* The basis of create/does>. */
+static void mu_do_does()
+{
+    NEST;                       /* entering a new word; push IP */
+    IP = (xt_cell *)_(W[1]);    /* new IP is stored in the parameter field */
+    PUSH_ADDR(&W[2]);           /* push the address of the word's body */
+}
+```
+---
 > Alvaro H. Salas, National University of Colomb
 
 sin x = x - (x^3)/3! + (x^5)/5! - (x^7)/7!
