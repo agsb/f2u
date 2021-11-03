@@ -925,28 +925,40 @@ HEADER "BMOVE", "BMOVE"
 ;    (some adapted from old fig-forth listings) 
 ; 
 ;---------------------------------------------------------------------- 
+; ok ( w3 w2 w1 -- w2 w3 w1 ) 
+; 
+HEADER "BIS", "BIS" 
+    .word TOR, SWAP, RTO, ENDS 
+ 
+;---------------------------------------------------------------------- 
 ; ok ( w2 w1 -- w2 w1 w2 ) 
 ; 
 HEADER "OVER", "OVER" 
-    .word SWAP, DUP, TOR, SWAP, RAT, ENDS 
+    .word SWAP, DUP, BIS, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; ok ( w3 w2 w1 -- w2 w1 w3 ) 
 ; 
-HEADER "ROT", "ROT" 
-    .word TOR, SWAP, RAT, SWAP, ENDS 
+HEADER "ROT", "ROTU" 
+    .word BIS, SWAP, ENDS 
+ 
+;---------------------------------------------------------------------- 
+; ok ( w3 w2 w1 -- w1 w3 w2 ) 
+; 
+HEADER "-ROT", "ROTD" 
+    .word SWAP, BIS, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; ok ( w2 w1 --  w1 w2 w1 ) 
 ; 
 HEADER "TUCK", "TUCK" 
-    .word DUP, ROT, SWAP, ENDS 
+    .word DUP, BIS, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; ok ( w3 w2 w1 --  w1 w2 w3 ) 
 ; 
 HEADER "FLIP", "FLIP" 
-    .word SWAP, ROT, ENDS 
+    .word SWAP, BIS, SWAP, ENDS 
 
 ;---------------------------------------------------------------------- 
 ; ok (  -- 2) 
