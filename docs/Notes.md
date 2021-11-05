@@ -8,6 +8,8 @@
 
 - Finaly agree to created C@ and C!, but only in SRAM, for buffer I/O
 
+- Using internal names of DOVAR and DOCON, for COMP and DOLIT
+
 - Review of code in branch 'neck', using Tos in r24:r25, return stack in X, data stack in Y, memory access with Z. 
 
     Overall improved with less pulls and pushes, about 1200 bytes less code and proportional more speed, and could be improved ;)
