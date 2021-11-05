@@ -6,9 +6,33 @@
 
 # 04/11/2021
 
-- created C@ and C!, but only in SRAM, for buffer I/O
+- Finaly agree to created C@ and C!, but only in SRAM, for buffer I/O
 
-- review of code in branch 'neck', a try using  r24:r25 for Tos, return stack in X, data stack in Y, access memory in Z. Overall improved with less pulls and pushes.
+- Review of code in branch 'neck', using Tos in r24:r25, return stack in X, data stack in Y, memory access with Z. 
+
+    Overall improved with less pulls and pushes, about 1200 bytes less code and proportional more speed, and could be improved ;)
+
+    Not using Tos in register r24:r25
+    
+        Size after:
+        main.elf  :
+        section     size      addr
+        .text       4920         0
+        .data          0   8388704
+        data         120         0
+        .avr.prop   3068         0
+        Total       8108
+    
+    Using a Tos in register r24:r25
+    
+        Size after:
+        main.elf  :
+        section     size      addr
+        .text       3696         0
+        .data          0   8388704
+        data         120         0
+        .avr.prop   2575         0
+        Total       6391
 
 
 # 30/10/2021
