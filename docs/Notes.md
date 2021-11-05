@@ -4,6 +4,13 @@
 
 *still lots of english errors, please correct me*
 
+# 04/11/2021
+
+- created C@ and C!, but only in SRAM, for buffer I/O
+
+- review of code in branch 'neck', a try using  r24:r25 for Tos, return stack in X, data stack in Y, access memory in Z. Overall improved with less pulls and pushes.
+
+
 # 30/10/2021
 
 - A simple algorithm to flush flash pages, based in the address to write and flash buffer page, a write into a new page forces to save old page and to load new page. Done with assembler functions for !!, flush_flash, load_flash, save_flash, do_spm_stuff.
