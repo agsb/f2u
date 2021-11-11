@@ -4,6 +4,16 @@
 
 *still lots of english errors, please correct me*
 
+# 11/11/2021
+
+- review of POSTPONE, before many tests and simulations, sure classic behavior is better. Droped all changes for STATE stuff with POSTPONE as flag.
+
+- review of all variables as a continous array from bottom of ram, downwards over tib and stacks.
+
+- a lot of precompiled forth internal words, primitives for cmove, bmove, cfill, cscan, cfind, and coumpounds for outer interpreter
+
+- doing IMMU stuff also.
+
 # 04/11/2021
 
 - Finaly agree to created C@ and C!, but only in SRAM, for buffer I/O
