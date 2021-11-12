@@ -62,29 +62,29 @@
 #define zpm_low r30
 #define zpm_high r31
 
-; Y return stack pointer for access sram
-#define rsp_low r28
-#define rsp_high r29
+; Y parameter stack pointer for access sram
+#define psp_low r28
+#define psp_high r29
 
-; X parameter stack pointer for access sram
-#define psp_low r26
-#define psp_high r27
+; X return stack pointer for access sram
+#define rsp_low r26
+#define rsp_high r27
 
-; work register
-#define wrk_low r24
-#define wrk_high r25
+; top, Top parameter stack
+#define tos_low r24
+#define tos_high r25
 
-; fist temporary
-#define tos_low r22
-#define tos_high r23
+; nos, Next on parameter stack
+#define nos_low r22
+#define nos_high r23
 
-; second temporary 
-#define nds_low r20
-#define nds_high r21
+; wrk, Work temporary 
+#define wrk_low r20
+#define wrk_high r21
 
-; instruction pointer register for branch and link return
-#define ipr_low r18
-#define ipr_high r19
+; ips, instruction for jump and link return
+#define ips_low r18
+#define ips_high r19
 
 ;----------------------------------------------------------------------
 ;
@@ -137,29 +137,29 @@ is_\label:
 ;----------------------------------------------------------------------
 ;    push into return stack, 
 .macro rspush low, high 
-    st -Y, \low
-    st -Y, \high
-.endm
-
-;----------------------------------------------------------------------
-;    pull from return stack, 
-.macro rspull low, high
-    ld \high, Y+
-    ld \low, Y+
-.endm
-
-;----------------------------------------------------------------------
-;    push into data stack, 
-.macro pspush low, high
     st -X, \low
     st -X, \high
 .endm
 
 ;----------------------------------------------------------------------
-;    pull from data stack, 
-.macro pspull low, high
+;    pull from return stack, 
+.macro rspull low, high
     ld \high, X+
     ld \low, X+
+.endm
+
+;----------------------------------------------------------------------
+;    push into data stack, 
+.macro pspush low, high
+    st -Y, \low
+    st -Y, \high
+.endm
+
+;----------------------------------------------------------------------
+;    pull from data stack, 
+.macro pspull low, high
+    ld \high, Y+
+    ld \low, Y+
 .endm
 
 ;----------------------------------------------------------------------
