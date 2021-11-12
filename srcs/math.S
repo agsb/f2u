@@ -35,31 +35,36 @@
 HEADER "HASH", "HASH"
     NOOP
     clr _zero_
-    ldi nds_low, lo8(djbHASH)
-    ldi nds_high, hi8(djbHASH)
-    pspull wrk_low, wrk_high
+    ldi nos_low, lo8(djbHASH)
+    ldi nos_high, hi8(djbHASH)
     pspull zpm_low, zpm_high
+
     ; get a char
 1:    
-    srload tos_low
-    add nds_low, tos_low
-    adc nds_high, _zero_
-    lsl nds_low
-    rol nds_high
-    lsl nds_low
-    rol nds_high
-    lsl nds_low
-    rol nds_high
-    lsl nds_low
-    rol nds_high
-    lsl nds_low
-    rol nds_high
     
-; decrease counter
-    sbiw wrk_low, 1
-    brge 1b
-2:  
-    pspush nds_low, nds_high
+    mov _work_, tos_low
+    or _work_, tos_high
+    brbs BIT_ZERO, 2f
+
+    ld _work_, Z+
+    add nos_low, _work_
+    adc nos_high, _zero_
+    lsl nos_low
+    rol nos_high
+    lsl nos_low
+    rol nos_high
+    lsl nos_low
+    rol nos_high
+    lsl nos_low
+    rol nos_high
+    lsl nos_low
+    rol nos_high
+
+    sbiw tos_low, 1
+    rjmp 1b
+    
+2:
+    movw tos_low, nos_low
     POON
 
 ;----------------------------------------------------------------------
@@ -112,10 +117,10 @@ _seed:
 HEADER "UM*", "UMUL"
     NOOP
 ;
-;    move operands
+;    move operanos
 ;
     pspull tos_low, tos_high    ; pull multiplicand
-    pspull nds_low, nds_high    ; pull multiplier
+    pspull nos_low, nos_high    ; pull multiplier
 ;
 ;***** Code
 ;
@@ -126,8 +131,8 @@ mul16u:
     sub wrk_high, wrk_high    ;clear high result High byte and carry
 
     ; multiplier shift rigth
-    lsr nds_high
-    ror nds_low
+    lsr nos_high
+    ror nos_low
 
 m16u_1: 
     brcc noad8                 ;if carry, bit 0, of multiplier set
@@ -137,15 +142,15 @@ m16u_1:
 noad8: 
     ror wrk_high             ;shift right result byte 3
     ror wrk_low             ;rotate right result byte 2
-    ror nds_high            ;rotate result byte 1 and multiplier High
-    ror nds_low                ;rotate result byte 0 and multiplier Low
+    ror nos_high            ;rotate result byte 1 and multiplier High
+    ror nos_low                ;rotate result byte 0 and multiplier Low
     dec _work_                 ;decrement loop counter
     brne m16u_1             ;if not done, loop more
 
 m16ures: 
 m16result:    
     pspush wrk_low, wrk_high    ; high bytes
-    pspush nds_low, nds_high    ; low bytes
+    pspush nos_low, nos_high    ; low bytes
     POON
 
 ;----------------------------------------------------------------------
@@ -157,10 +162,10 @@ m16result:
 HEADER "UM/MOD", "UMBYMOD"
     NOOP
 ;
-;    move operands
+;    move operanos
 ;
     pspull tos_low, tos_high    ; pull divisor
-    pspull nds_low, nds_high    ; pull dividend
+    pspull nos_low, nos_high    ; pull dividend
 ;
 ;***** Code
 
@@ -171,8 +176,8 @@ div16u:
     sub wrk_high, wrk_high    ;clear remainder High byte and carry
 
 d16u_1: 
-    rol nds_low             ;shift left dividend
-    rol nds_high
+    rol nos_low             ;shift left dividend
+    rol nos_high
     dec _work_                 ;decrement counter
     breq d16ures             ;if done
 
@@ -203,10 +208,10 @@ HEADER "*", "SMUL"
 ;
 ;***** Code
 ;
-;    move operands
+;    move operanos
 ;
     pspull tos_low, tos_high        ; pull multiplicand
-    pspull nds_low, nds_high        ; pull multiplier
+    pspull nos_low, nos_high        ; pull multiplier
 ;
 ;***** Code
 mpy16s: 
@@ -220,14 +225,14 @@ m16s_1:
     add  wrk_low, tos_low   ;    add multiplicand Low to result byte 2
     adc  wrk_high, tos_high ;    add multiplicand High to result byte 3
 m16s_2: 
-    sbrc nds_low, 0          ;if current bit set
+    sbrc nos_low, 0          ;if current bit set
     sub  wrk_low, tos_low   ;    sub multiplicand Low from result byte 2
-    sbrc nds_low, 0            ;if current bit set
+    sbrc nos_low, 0            ;if current bit set
     sbc  wrk_high, tos_high ;    sub multiplicand High from result byte 3
     asr  wrk_high           ;shift right result and multiplier
     ror  wrk_low
-    ror  nds_high
-    ror  nds_low
+    ror  nos_high
+    ror  nos_low
     dec  _work_                ;decrement counter
     brne m16s_1                ;if not done, loop more
 
@@ -245,26 +250,26 @@ HEADER "/", "SDIV"
 ;
 ;***** Subroutine Register Variables
 ;
-;    move operands
+;    move operanos
 ;
     pspull tos_low, tos_high        ; pull divisor
-    pspull nds_low, nds_high        ; pull dividend
+    pspull nos_low, nos_high        ; pull dividend
 ;
 ;***** Code
 ;
 div16s: 
-    mov    _work_, nds_high   ;move dividend High to sign register
+    mov    _work_, nos_high   ;move dividend High to sign register
     eor    _work_, tos_high   ;xor divisor High with sign register
     bst _work_, 7                ;save it, but could be BST
 
 d16s_0:
-    sbrs   nds_high, 7          ;if MSB in dividend set
+    sbrs   nos_high, 7          ;if MSB in dividend set
     rjmp   d16s_1
     
-    com    nds_high            ;    change sign of dividend
-    com    nds_low
-    subi   nds_low, lo8(-1)
-    sbci   nds_low, hi8(-1)
+    com    nos_high            ;    change sign of dividend
+    com    nos_low
+    subi   nos_low, lo8(-1)
+    sbci   nos_low, hi8(-1)
 
 d16s_1: 
     sbrs   tos_high, 7    ;if MSB in divisor set
@@ -283,18 +288,18 @@ d16s_2:
     sub wrk_high, wrk_high  ;clear high remainder High byte and carry
 
 d16s_3: 
-    rol    nds_low    ;shift left dividend
-    rol    nds_high
+    rol    nos_low    ;shift left dividend
+    rol    nos_high
     dec    _work_     ;decrement counter
     brne    d16s_5    ;if done
 
     bld _work_, 7           ;save it, but could be BST
     sbrs    _work_, 7    ;    if MSB in sign register set
     rjmp    d16sres
-    com    nds_high      ;    change sign of result
-    com    nds_low
-    subi   nds_low,lo8(-1)
-    sbci   nds_high,hi8(-1)
+    com    nos_high      ;    change sign of result
+    com    nos_low
+    subi   nos_low,lo8(-1)
+    sbci   nos_high,hi8(-1)
 
 d16sres:
     rjmp m16result
@@ -327,7 +332,7 @@ HEADER "utoa", "utoa"
 
     ldi zpm_low, lo8(PIC)
     ldi zpm_high, hi8(PIC)
-    movw nds_low, zpm_low
+    movw nos_low, zpm_low
     pspull wrk_low, wrk_high
     
 itoa:
@@ -365,7 +370,7 @@ itoa:
     clr wrk_low
     st Z+, wrk_low
 
-    pspush nds_low, nds_high
+    pspush nos_low, nos_high
     POON
 
 /* 

@@ -47,7 +47,7 @@ HEADER "(load_flash)", "LDFLASH"
     NOOP
 
     ; destin
-    pspull nds_low, nds_high
+    pspull nos_low, nos_high
 
     ; origin
     pspull zpm_low, zpm_high
@@ -55,7 +55,7 @@ HEADER "(load_flash)", "LDFLASH"
     ; preserve stack
     rspush psp_low, psp_high
 
-    movw psp_low, nds_low
+    movw psp_low, nos_low
 
     ; make round down pagesize, pagemask is ~pagesize
     ; andi zpm_high, hi8(pagemask) ; not need if pagesize < 256
@@ -87,7 +87,7 @@ HEADER "(save_flash)", "SVFLASH"
     NOOP
 
     ; from sram
-    pspull nds_low, nds_high
+    pspull nos_low, nos_high
 
     ; into flash
     pspull r24, r25
@@ -95,7 +95,7 @@ HEADER "(save_flash)", "SVFLASH"
     ; save psp 
     rspush psp_low, psp_high
 
-    movw psp_low, nds_low
+    movw psp_low, nos_low
 
     ; mask to match correct address
     ; andi r25, hi8(pagemask) ; not need if pagesize < 256

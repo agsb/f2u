@@ -77,8 +77,8 @@ PAGE:   .word 0         ; last page address from/into flash memory
 #include "forth.S"
 
 ;----------------------------------------------------------------------
-.p2align 1, 0x00
-#include "inside.S"
+;.p2align 1, 0x00
+;#include "inside.S"
 
 ;----------------------------------------------------------------------
 .p2align 1, 0x00
