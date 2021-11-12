@@ -8,7 +8,7 @@
 
 - review of POSTPONE, before many tests and simulations, sure classic behavior is better. Droped all changes for STATE stuff with POSTPONE as flag.
 
-- review of all variables as a continous array from bottom of ram, downwards over tib and stacks.
+- review of all variables as a continous array at bottom of ram, starting above tib and stacks, and growing downwards  memory
 
 - a lot of precompiled forth internal words, primitives for cmove, bmove, cfill, cscan, cfind, and coumpounds for outer interpreter
 
