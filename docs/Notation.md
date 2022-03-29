@@ -11,7 +11,15 @@
 WORD expects c on top, then b below c, then a below b
 WORD leaves e on top, then d below e
 
-## 2. To translate forth names to assembler names, I prefer use prefix or sufix as:
+## 2. Numbers
+```
+%  binary
+'  octal
+"  hexadecimal
+#  decimal
+```
+
+## 3. To translate forth names to assembler names, I prefer use prefix or sufix as:
     
     use LE for <=
     use GE for >=
