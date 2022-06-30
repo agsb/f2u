@@ -50,6 +50,9 @@ Most of Forth implementations goes "runnig for speed" for timming applications o
 A MCU 32 bits, as ARM Cortex-M4 STM32L4+ with 2048k bytes flash and 640k bytes sram, really have 512k flash mcu words and 160k mcu words sram. Sure, that is much more than enough to run Forth.
 
 But my choice for design is a small AVR Atmega8, a complete RISC MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, with 32 (R0 to R31) 8 bits registers, with some that could be used as eight (R16 to R31) 16 bits registers. 
+
+UPDATE: changed from ATMEGA8 to ATMEGA328 due need of more flash for instructions (4k words to 16k words) and SRAM memory
+
 ## A challenge.
 
 There are many low cost MCU with far more resources and pleny of SRAM and flash. Why use an old MCU for hosting Forth ?
