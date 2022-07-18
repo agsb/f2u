@@ -42,12 +42,12 @@ defcode:  ; with NULL, one reference per primitive word
 +-------+---+---+---+---+-----+--------------+---------------+-------------+----------+
          len              NULL
 
-+-------+---+---+---+---+---+---+--------------+--------------+----------+--------------+----------+
-| LINK  | 1 | P | L | U | S | 0 | pull w, ps++ | pull t, ps++ | add w, t | push --ps, w | jmp link |
-+-------+---+---+---+---+---+---+--------------+--------------+----------+--------------+----------+
-         len                 pad
++-------+---+---+---+---+---+---+-----+-------------+--------------+----------+--------------+----------+
+| LINK  | 5 | P | L | U | S | 0 | 0x0 |pull w, ps++ | pull t, ps++ | add w, t | push --ps, w | jmp link |
++-------+---+---+---+---+---+---+-----+-------------+--------------+----------+--------------+----------+
+         len                 pad  NULL
 
-OBS: 0x0 in codeword for all primitives, no DO_COLON in codeword for all compounds
+OBS: 0x0 in codeword for all primitives, no need of DO_COLON in codeword for all compounds
 
 ```
 
@@ -168,7 +168,7 @@ DO_EXIT:  ; 6
 > why two "adiw WL, 1" ? Adjust Z to a even address
 
 ---
-# 4. In this F2U implementation for ATMEGA8, 
+# 4. In this F2U implementation for ATMEGA328, ATMEGA8 
   
 All primitive words use a branch and link model, with next reference explicity keeped into a reserved register to later return.
 
@@ -226,12 +226,14 @@ This inner interpreters only works for program memory (flash), due specific addr
  _link:     ;(3)
     movw zpm_low, ipr_low ; points to next reference
     rjmp _next
+    
 ```
 ## Why branch and link ? 
 
 This really saves stack depth and reduce overall instruction code size by simplifly some primitives.
 
 A good essay, by David Frech, at <https://muforth.nimblemachines.com/call-versus-branch-and-link/>, asserts "There is a jump involved, so perhaps a pipeline refill occurs.", but always will have a jump.
+
 ## the dictionary
 
 I like use the terms leaf for primitives words and twig for compound words, as in <https://muforth.nimblemachines.com/threaded-code/>.
