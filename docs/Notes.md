@@ -4,6 +4,16 @@
 
 *still lots of english errors, please correct me*
 
+# 18/07/2022
+
+- pause on immu (riscv eitc forth code)
+
+- doing a review for atmega328, still changing/remapping the address of flash and sram
+
+- doing tests with MiniCore spm.
+
+- no more reserving any register for extras, using spare registers to hold values to avoid stack push/pop 
+
 # 11/11/2021
 
 - review of POSTPONE, before many tests and simulations, sure classic behavior is better. Droped all changes for STATE stuff with POSTPONE as flag.
@@ -52,6 +62,7 @@
 - A simple algorithm to flush flash pages, based in the address to write and flash buffer page, a write into a new page forces to save old page and to load new page. Done with assembler functions for !!, flush_flash, load_flash, save_flash, do_spm_stuff.
 
 - revised code for branchs
+
 # 26/10/2021
 
 - Change branch to use offsets instead of absolute addresses, as in original fig-forth
@@ -118,6 +129,7 @@
 - words can be 1 to 15 chars lenght, almost over for normal english words http://norvig.com/mayzner.html
 
 - todo: someday, must unify call "data or parameter or argument" stack in all texts.
+
 # 10/06/2021 
 
 - The basic functional words are done, as minimal set for parse, find, evaluate, number, create, does;
