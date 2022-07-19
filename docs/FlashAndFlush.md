@@ -27,17 +27,12 @@ All those uses _store_ (!) to move a value into a memory address.
 
 So how _store_ would differentiate a address in flash or sram ?
 
-One simple form is using restrict range of address. 
+One simple form is using restrict range of address. In a ATmega8, everthing above 0x460 is flash memory, then if Forth starts at 0x460 in flash, everthing above is dictionary, then both @ and ! must play with address, to resolve if in flash or in sram. This solution maybe not fully portable but works for Atmega8. But is a waste of address.
 
-In a ATmega8, everthing above 0x460 is flash memory, then if Forth starts at 0x460 in flash, everthing above is dictionary.
-
-Then both @ and ! must play with address, to resolve if in flash or in sram.
-
-It also reserves a 1k byte for boot routines.
-
-This solution maybe not fully portable but works for Atmega8.
+PS: It also reserves a 1k byte flash for boot routines.
 
 > Still tons of things to play, as buffer for flash pages, incremental flush and flash, etc
+
 # my alternative: 
 
 - _Still not working_
