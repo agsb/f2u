@@ -32,15 +32,19 @@
 ;
 ; spm instruction uses:
 ; r31:r30 address in bytes, r1:r0 data, 
-; uses register r22 as command and scratch
-; uses register r23 as keeper of SREG
 ;
-	_swork_ = r16
-	_ssreg_ = r17
+; uses register r16 as command and scratch
+; uses register r17 as keeper of SREG
+;
+    _swork_ = r16
+    _ssreg_ = r17
 
-doin_spm:
-	in _ssreg_, __SREG__
-	cli
+;
+; bare bones 
+; 
+does_spm:
+    in _ssreg_, __SREG__
+    cli
     sts SPMCR, _swork_
     spm
 ;   wait spm done
@@ -48,7 +52,7 @@ doin_spm:
     sbrc _swork_, SPMEN
     rjmp 10b
 ;   return
-	out __SREG__, _ssreg_
+    out __SREG__, _ssreg_
     ret
 
 .equ nrww_end, .
