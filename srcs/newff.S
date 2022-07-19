@@ -10,12 +10,22 @@
 ;	 
 ;	when erase or write, r0:r1 is ignored, ATmega8L datasheet, pg 209
 ;
-;   re-enable the RWW section already done by do_spm
+;   but, optiboot do_spm carry all stack "overflow" from compiler
+;
+;   then rewrite a simple does_spm without stack stuff and using
+;   r24,
+;
+;   re-enable the RWW section 
+;   (already done by do_spm in optiboot, BUT NOT in doin_spm() )
+;   enable rww 
+;    ldi _swork_, ((1<<RWWSRE) | (1<<SPMEN))
+;    sts SPMCR, _swork_
+;    spm 
 ;
 ;	do not expeculate, only one page to "flash flush"
 ;---------------------------------------------------------------------
 ;    
-; ok start flash line buffer with a flash page  
+; ok copy a flash page into sram buffer  
 ;
 HEADER "(flash)", "flash"
 
@@ -59,7 +69,7 @@ HEADER "(flash)", "flash"
 ;----------------------------------------------------------------------
 ;
 ;
-;   ok flush sram buffer to flash, 
+;   ok copy sram buffer into flash page, 
 ;
 ;
 HEADER "(flush)", "flush"
@@ -80,9 +90,12 @@ HEADER "(flush)", "flush"
 	rspush r24, r25
 
     ; erase page
-	; r0:r1 is ignored, ATmega8L datasheet, pg 209
     ldi r22, (1<<PGERS) | (1<<SPMEN)
-    rcall _does_spm
+    rcall does_spm
+
+    ; enable 
+    ldi r22, 0x11
+    rcall does_spm
 
     ; from sram buffer
     ldi psp_low, lo8(FIB)
@@ -97,9 +110,8 @@ HEADER "(flush)", "flush"
     ld r20, X+
     ld r21, X+
     ldi r22, (1<<SPMEN)
-    rcall _does_spm
+    rcall does_spm
     adiw zpm_low, 2
-	
 	; count down
     dec r23
     dec r23
@@ -112,6 +124,11 @@ HEADER "(flush)", "flush"
     ldi r22, (1<<PGWRT) | (1<<SPMEN)
     rcall _does_spm
 
+    ; enable 
+    ldi r22, 0x11
+    rcall does_spm
+
+    ; from sram buffer
     ; clean house
     rspull psp_low, psp_high
     POON
@@ -128,7 +145,6 @@ _does_spm:
 	cli
 	rcall OPTI_DO_SPM 
 	out __SREG__, _sreg_
-	sei
 	ret
 
 ;----------------------------------------------------------------------

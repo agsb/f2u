@@ -91,6 +91,13 @@ PAGE:   .word 0         ; last page address from/into flash memory
 ;----------------------------------------------------------------------
 .equ free_flash, .
 
+
+;----------------------------------------------------------------------
+.p2align 1, 0x00
+#include "nrww.S"
+
+.equ nrww_flash, .
+
 /*
 1 	1st 	fst,    first  
 2 	2nd 	snd,    second

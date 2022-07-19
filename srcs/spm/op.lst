@@ -1,0 +1,2632 @@
+   1               		.file	"optiboot.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   9               		.text
+  10               	.Ltext0:
+ 116               	.global	optiboot_version
+ 117               		.section	.version,"a",@progbits
+ 120               	optiboot_version:
+ 121 0000 0308      		.word	2051
+ 122               	/* #APP */
+ 123               		.macro __wr_spmcsr p, v 
+ 124               		.if \p > 0x57	
+ 125               		sts \p, \v	
+ 126               		.else		
+ 127               		out \p-0x20, \v	
+ 128               		.endif		
+ 129               		.endm		
+ 130               	
+ 131               	/* #NOAPP */
+ 132               		.section	.init8,"ax",@progbits
+ 134               	.global	pre_main
+ 136               	pre_main:
+ 137               		.stabd	46,0,0
+   1:optiboot.c    **** #define FUNC_READ 1
+   2:optiboot.c    **** #define FUNC_WRITE 1
+   3:optiboot.c    **** /**********************************************************/
+   4:optiboot.c    **** /* Optiboot bootloader for Arduino                        */
+   5:optiboot.c    **** /*                                                        */
+   6:optiboot.c    **** /* http://optiboot.googlecode.com                         */
+   7:optiboot.c    **** /*                                                        */
+   8:optiboot.c    **** /* Arduino-maintained version : See README.TXT            */
+   9:optiboot.c    **** /* http://code.google.com/p/arduino/                      */
+  10:optiboot.c    **** /*  It is the intent that changes not relevant to the     */
+  11:optiboot.c    **** /*  Arduino production environment get moved from the     */
+  12:optiboot.c    **** /*  optiboot project to the arduino project in "lumps."   */
+  13:optiboot.c    **** /*                                                        */
+  14:optiboot.c    **** /* Heavily optimised bootloader that is faster and        */
+  15:optiboot.c    **** /* smaller than the Arduino standard bootloader           */
+  16:optiboot.c    **** /*                                                        */
+  17:optiboot.c    **** /* Enhancements:                                          */
+  18:optiboot.c    **** /*   Fits in 512 bytes, saving 1.5K of code space         */
+  19:optiboot.c    **** /*   Higher baud rate speeds up programming               */
+  20:optiboot.c    **** /*   Written almost entirely in C                         */
+  21:optiboot.c    **** /*   Customisable timeout with accurate timeconstant      */
+  22:optiboot.c    **** /*   Optional virtual UART. No hardware UART required.    */
+  23:optiboot.c    **** /*   Optional virtual boot partition for devices without. */
+  24:optiboot.c    **** /*                                                        */
+  25:optiboot.c    **** /* What you lose:                                         */
+  26:optiboot.c    **** /*   Implements a skeleton STK500 protocol which is       */
+  27:optiboot.c    **** /*     missing several features including EEPROM          */
+  28:optiboot.c    **** /*     programming and non-page-aligned writes            */
+  29:optiboot.c    **** /*   High baud rate breaks compatibility with standard    */
+  30:optiboot.c    **** /*     Arduino flash settings                             */
+  31:optiboot.c    **** /*                                                        */
+  32:optiboot.c    **** /* Supported Devices:                                     */
+  33:optiboot.c    **** /*   With the merges of Spence Konde's ATTinyCore         */
+  34:optiboot.c    **** /*     https://github.com/SpenceKonde/ATTinyCore          */
+  35:optiboot.c    **** /*   and MCUDude's MightyCore, MiniCore, MegaCore, etc    */
+  36:optiboot.c    **** /*     https://github.com/MCUdude                         */
+  37:optiboot.c    **** /*   the number of supported chips and configurations     */
+  38:optiboot.c    **** /*   has become quite large.  Try "make help" for a list  */
+  39:optiboot.c    **** /*   Not all chips have received the same amount of       */
+  40:optiboot.c    **** /*   overall attention.  Some version may have bugs.      */
+  41:optiboot.c    **** /*                                                        */
+  42:optiboot.c    **** /* Does not support:                                      */
+  43:optiboot.c    **** /*   USB based devices (eg. Teensy, Leonardo)             */
+  44:optiboot.c    **** /*                                                        */
+  45:optiboot.c    **** /* Assumptions:                                           */
+  46:optiboot.c    **** /*   The code makes several assumptions that reduce the   */
+  47:optiboot.c    **** /*   code size. They are all true after a hardware reset, */
+  48:optiboot.c    **** /*   but may not be true if the bootloader is called by   */
+  49:optiboot.c    **** /*   other means or on other hardware.                    */
+  50:optiboot.c    **** /*     No interrupts can occur                            */
+  51:optiboot.c    **** /*     UART and Timer 1 are set to their reset state      */
+  52:optiboot.c    **** /*     SP points to RAMEND                                */
+  53:optiboot.c    **** /*                                                        */
+  54:optiboot.c    **** /* Code builds on code, libraries and optimisations from: */
+  55:optiboot.c    **** /*   stk500boot.c          by Jason P. Kyle               */
+  56:optiboot.c    **** /*   Arduino bootloader    http://arduino.cc              */
+  57:optiboot.c    **** /*   Spiff's 1K bootloader http://spiffie.org/know/arduino_1k_bootloader/bootloader.shtml */
+  58:optiboot.c    **** /*   avr-libc project      http://nongnu.org/avr-libc     */
+  59:optiboot.c    **** /*   Adaboot               http://www.ladyada.net/library/arduino/bootloader.html */
+  60:optiboot.c    **** /*   AVR305                Atmel Application Note         */
+  61:optiboot.c    **** /*                                                        */
+  62:optiboot.c    **** 
+  63:optiboot.c    **** /* Copyright 2013-2021 by Bill Westfield.                 */
+  64:optiboot.c    **** /* Copyright 2010 by Peter Knight.                        */
+  65:optiboot.c    **** /*  Note that many others have made major contributions!  */
+  66:optiboot.c    **** /*                                                        */
+  67:optiboot.c    **** /* This program is free software; you can redistribute it */
+  68:optiboot.c    **** /* and/or modify it under the terms of the GNU General    */
+  69:optiboot.c    **** /* Public License as published by the Free Software       */
+  70:optiboot.c    **** /* Foundation; either version 2 of the License, or        */
+  71:optiboot.c    **** /* (at your option) any later version.                    */
+  72:optiboot.c    **** /*                                                        */
+  73:optiboot.c    **** /* This program is distributed in the hope that it will   */
+  74:optiboot.c    **** /* be useful, but WITHOUT ANY WARRANTY; without even the  */
+  75:optiboot.c    **** /* implied warranty of MERCHANTABILITY or FITNESS FOR A   */
+  76:optiboot.c    **** /* PARTICULAR PURPOSE.  See the GNU General Public        */
+  77:optiboot.c    **** /* License for more details.                              */
+  78:optiboot.c    **** /*                                                        */
+  79:optiboot.c    **** /* You should have received a copy of the GNU General     */
+  80:optiboot.c    **** /* Public License along with this program; if not, write  */
+  81:optiboot.c    **** /* to the Free Software Foundation, Inc.,                 */
+  82:optiboot.c    **** /* 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA */
+  83:optiboot.c    **** /*                                                        */
+  84:optiboot.c    **** /* Licence can be viewed at                               */
+  85:optiboot.c    **** /* http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt   */
+  86:optiboot.c    **** /*                                                        */
+  87:optiboot.c    **** /**********************************************************/
+  88:optiboot.c    **** 
+  89:optiboot.c    **** 
+  90:optiboot.c    **** /**********************************************************/
+  91:optiboot.c    **** /*                                                        */
+  92:optiboot.c    **** /* Optional defines:                                      */
+  93:optiboot.c    **** /*                                                        */
+  94:optiboot.c    **** /**********************************************************/
+  95:optiboot.c    **** /*                                                        */
+  96:optiboot.c    **** /* BIGBOOT:                                               */
+  97:optiboot.c    **** /* Build a 1k bootloader, not 512 bytes. This turns on    */
+  98:optiboot.c    **** /* extra functionality; notably EEPROM                    */
+  99:optiboot.c    **** /*                                                        */
+ 100:optiboot.c    **** /* NO_APP_SPM:                                            */
+ 101:optiboot.c    **** /* omit the code that allows applications to "call" the   */
+ 102:optiboot.c    **** /* bootloader to perform SPM operations.                  */
+ 103:optiboot.c    **** /*                                                        */
+ 104:optiboot.c    **** /* SUPPORT_EEPROM:                                        */
+ 105:optiboot.c    **** /* Support reading and writing from EEPROM. This is not   */
+ 106:optiboot.c    **** /* used by Arduino, so off by default.                    */
+ 107:optiboot.c    **** /*                                                        */
+ 108:optiboot.c    **** /* WDTTIME:                                               */
+ 109:optiboot.c    **** /* Bootloader timeout period, in seconds.                 */
+ 110:optiboot.c    **** /*  1 and 2 seconds are available on all chips            */
+ 111:optiboot.c    **** /*  4 and 8 are supported on most                         */
+ 112:optiboot.c    **** /*                                                        */
+ 113:optiboot.c    **** /* NO_START_APP_ON_POR:                                   */
+ 114:optiboot.c    **** /* If NO_START_APP_ON_POR is set, the bootloader will     */
+ 115:optiboot.c    **** /* also run on power-on                                   */
+ 116:optiboot.c    **** /*                                                        */
+ 117:optiboot.c    **** /* START_APP_ON_EXTR:                                     */
+ 118:optiboot.c    **** /* If START_APP_ON_EXTR is set, the bootloader will not   */
+ 119:optiboot.c    **** /* run in the event of an external reset.                 */
+ 120:optiboot.c    **** /*                                                        */
+ 121:optiboot.c    **** /* If both are set, the bootloader will only run if the   */
+ 122:optiboot.c    **** /* app jumps directly to it.                              */
+ 123:optiboot.c    **** /*                                                        */
+ 124:optiboot.c    **** /* ----------  Comm features                              */
+ 125:optiboot.c    **** /* UART:                                                  */
+ 126:optiboot.c    **** /* UART number (0..n) for devices with more than          */
+ 127:optiboot.c    **** /* one hardware uart (644P, 1284P, etc)                   */
+ 128:optiboot.c    **** /*                                                        */
+ 129:optiboot.c    **** /* BAUD_RATE:                                             */
+ 130:optiboot.c    **** /* Set bootloader baud rate.                              */
+ 131:optiboot.c    **** /*                                                        */
+ 132:optiboot.c    **** /* SINGLESPEED:                                           */
+ 133:optiboot.c    **** /* do not use "U2X" mode for UART initialization. This    */
+ 134:optiboot.c    **** /* can be useful for some bit rates.                      */
+ 135:optiboot.c    **** /*                                                        */
+ 136:optiboot.c    **** /* SOFT_UART:                                             */
+ 137:optiboot.c    **** /* Use AVR305 soft-UART instead of hardware UART.         */
+ 138:optiboot.c    **** /*                                                        */
+ 139:optiboot.c    **** /* RS485:                                                 */
+ 140:optiboot.c    **** /* Either a pin (ex: "B5") or a pin followed by _INV      */
+ 141:optiboot.c    **** /* (ex: "B5_INV") which indicates inverted polarity.      */
+ 142:optiboot.c    **** /* This pin will be held low while transmitting in order  */
+ 143:optiboot.c    **** /* to control the direction pin of an RS485 tranciever    */
+ 144:optiboot.c    **** /*  (RS485 support by Vladimir Dronnikov (github.com/dvv) */
+ 145:optiboot.c    **** /*    as used in github.com/SodaqMoja/optiboot )          */
+ 146:optiboot.c    **** /*                                                        */
+ 147:optiboot.c    **** /* ----------  LED behavior                               */
+ 148:optiboot.c    **** /* LED:                                                   */
+ 149:optiboot.c    **** /* Which pin to use for the LED flashs.  This is a pin    */
+ 150:optiboot.c    **** /* name like "B5"                                         */
+ 151:optiboot.c    **** /*                                                        */
+ 152:optiboot.c    **** /* LED_START_FLASHES:                                     */
+ 153:optiboot.c    **** /* Number of LED flashes on bootup.                       */
+ 154:optiboot.c    **** /*                                                        */
+ 155:optiboot.c    **** /* LED_DATA_FLASH:                                        */
+ 156:optiboot.c    **** /* Flash LED when transferring data. For boards without   */
+ 157:optiboot.c    **** /* TX or RX LEDs, or for people who like blinky lights.   */
+ 158:optiboot.c    **** /*                                                        */
+ 159:optiboot.c    **** /* LED_START_ON:                                          */
+ 160:optiboot.c    **** /* Instead of blinking, turn the LED on when we start,    */
+ 161:optiboot.c    **** /* and off when it exits.  Slightly smaller code.         */
+ 162:optiboot.c    **** /*                                                        */
+ 163:optiboot.c    **** /**********************************************************/
+ 164:optiboot.c    **** 
+ 165:optiboot.c    **** /*
+ 166:optiboot.c    ****  * default values.
+ 167:optiboot.c    ****  */
+ 168:optiboot.c    **** #if !defined(BIGBOOT)
+ 169:optiboot.c    **** #  define BIGBOOT 0
+ 170:optiboot.c    **** #endif
+ 171:optiboot.c    **** #if !defined(SUPPORT_EEPROM)
+ 172:optiboot.c    **** #  define SUPPORT_EEPROM 0
+ 173:optiboot.c    **** #endif
+ 174:optiboot.c    **** #if !defined(APP_NOSPM)
+ 175:optiboot.c    **** #  define APP_NOSPM 0
+ 176:optiboot.c    **** #endif
+ 177:optiboot.c    **** #if !defined(START_APP_ON_EXTR)
+ 178:optiboot.c    **** #  define START_APP_ON_EXTR 0
+ 179:optiboot.c    **** #endif
+ 180:optiboot.c    **** #if !defined(NO_START_APP_ON_POR)
+ 181:optiboot.c    **** #  define NO_START_APP_ON_POR 0
+ 182:optiboot.c    **** #endif
+ 183:optiboot.c    **** 
+ 184:optiboot.c    **** 
+ 185:optiboot.c    **** /* UART options */
+ 186:optiboot.c    **** #if !defined(SOFT_UART)
+ 187:optiboot.c    **** #  define SOFT_UART 0
+ 188:optiboot.c    **** #endif
+ 189:optiboot.c    **** #if !defined(UART)
+ 190:optiboot.c    **** #define UART 0
+ 191:optiboot.c    **** #endif
+ 192:optiboot.c    **** #if !defined(SINGLESPEED)
+ 193:optiboot.c    **** #define SINGLESPEED 0
+ 194:optiboot.c    **** #endif
+ 195:optiboot.c    **** 
+ 196:optiboot.c    **** /* LED Options */
+ 197:optiboot.c    **** #if !defined(LED_START_FLASHES)
+ 198:optiboot.c    **** #define LED_START_FLASHES 0
+ 199:optiboot.c    **** #endif
+ 200:optiboot.c    **** #if !defined(LED_DATA_FLASH)
+ 201:optiboot.c    **** #  define LED_DATA_FLASH 0
+ 202:optiboot.c    **** #endif
+ 203:optiboot.c    **** #if !defined(LED_START_ON)
+ 204:optiboot.c    **** #  define LED_START_ON 0
+ 205:optiboot.c    **** #endif
+ 206:optiboot.c    **** 
+ 207:optiboot.c    **** 
+ 208:optiboot.c    **** /**********************************************************/
+ 209:optiboot.c    **** /* Version Numbers!                                       */
+ 210:optiboot.c    **** /*                                                        */
+ 211:optiboot.c    **** /* Arduino Optiboot now includes this Version number in   */
+ 212:optiboot.c    **** /* the source and object code.                            */
+ 213:optiboot.c    **** /*                                                        */
+ 214:optiboot.c    **** /* Version 3 was released as zip from the optiboot        */
+ 215:optiboot.c    **** /*  repository and was distributed with Arduino 0022.     */
+ 216:optiboot.c    **** /* Version 4 starts with the arduino repository commit    */
+ 217:optiboot.c    **** /*  that brought the arduino repository up-to-date with   */
+ 218:optiboot.c    **** /*  the optiboot source tree changes since v3.            */
+ 219:optiboot.c    **** /* Version 5 was created at the time of the new Makefile  */
+ 220:optiboot.c    **** /*  structure (Mar, 2013), even though no binaries changed*/
+ 221:optiboot.c    **** /* Version 6 added EEPROM support, including causing an   */
+ 222:optiboot.c    **** /*  error when trying to write eeprom with versions that  */
+ 223:optiboot.c    **** /*  didn't have the code there. Makefiles were further    */
+ 224:optiboot.c    **** /*  restructured.  Overlapping SPM/download removed.      */
+ 225:optiboot.c    **** /* Version 7 straightened out the MCUSR and RESET         */
+ 226:optiboot.c    **** /*  handling, did MORE Makefile mods.  EEPROM support now */
+ 227:optiboot.c    **** /*  fits in 512 bytes, if you turn off LED Blinking.      */
+ 228:optiboot.c    **** /*  Various bigboot and virboot targets were fixed.       */
+ 229:optiboot.c    **** /* Version 8.0 adds the do_spm code callable from Apps.   */
+ 230:optiboot.c    **** /*                                                        */
+ 231:optiboot.c    **** /* It would be good if versions implemented outside the   */
+ 232:optiboot.c    **** /*  official repository used an out-of-seqeunce version   */
+ 233:optiboot.c    **** /*  number (like 104.6 if based on based on 4.5) to       */
+ 234:optiboot.c    **** /*  prevent collisions.  The CUSTOM_VERSION=n option      */
+ 235:optiboot.c    **** /*  adds n to the high version to facilitate this.        */
+ 236:optiboot.c    **** /*                                                        */
+ 237:optiboot.c    **** /**********************************************************/
+ 238:optiboot.c    **** 
+ 239:optiboot.c    **** /**********************************************************/
+ 240:optiboot.c    **** /* Edit History:                                          */
+ 241:optiboot.c    **** /*                                                        */
+ 242:optiboot.c    **** /* Oct 2021                                               */
+ 243:optiboot.c    **** /* 8.3 WestfW add section-start determination code to     */
+ 244:optiboot.c    **** /*     the C source.  In theory, this causes no changes   */
+ 245:optiboot.c    **** /*     to the binary, but it's "risky", so ... bump.      */
+ 246:optiboot.c    **** /* Aug 2019                                               */
+ 247:optiboot.c    **** /* 8.1  WestfW Fix bug in calculation of Vboot offset     */
+ 248:optiboot.c    **** /* Sep 2018                                               */
+ 249:optiboot.c    **** /* 8.0  WestfW (and Majekw and MCUDude)                   */
+ 250:optiboot.c    **** /*      Include do_spm routine callable from the app      */
+ 251:optiboot.c    **** /*      at BOOTSTART+2, controllable with compile option  */
+ 252:optiboot.c    **** /* July 2018                                              */
+ 253:optiboot.c    **** /* 7.0  WestfW (with much input from Others)              */
+ 254:optiboot.c    **** /*      Fix MCUSR treatement as per much discussion,      */
+ 255:optiboot.c    **** /*       Patches by MarkG55, majekw.  Preserve value      */
+ 256:optiboot.c    **** /*       for the application, as much as possible.        */
+ 257:optiboot.c    **** /*       see https://github.com/Optiboot/optiboot/issues/97 */
+ 258:optiboot.c    **** /*      Optimize a bit by implementing a union for the    */
+ 259:optiboot.c    **** /*       various 16bit address values used (based on      */
+ 260:optiboot.c    **** /*       observation by "aweatherguy", but different.)    */
+ 261:optiboot.c    **** /*      Slightly optimize math in VIRTUAL_BOOT code       */
+ 262:optiboot.c    **** /*      Add some virboot targets, fix some fuses.         */
+ 263:optiboot.c    **** /*      Implement LED_START_ON; less code than flashes    */
+ 264:optiboot.c    **** /* Aug 2014                                               */
+ 265:optiboot.c    **** /* 6.2 WestfW: make size of length variables dependent    */
+ 266:optiboot.c    **** /*              on the SPM_PAGESIZE.  This saves space    */
+ 267:optiboot.c    **** /*              on the chips where it's most important.   */
+ 268:optiboot.c    **** /* 6.1 WestfW: Fix OPTIBOOT_CUSTOMVER (send it!)          */
+ 269:optiboot.c    **** /*             Make no-wait mod less picky about          */
+ 270:optiboot.c    **** /*               skipping the bootloader.                 */
+ 271:optiboot.c    **** /*             Remove some dead code                      */
+ 272:optiboot.c    **** /* Jun 2014                                               */
+ 273:optiboot.c    **** /* 6.0 WestfW: Modularize memory read/write functions     */
+ 274:optiboot.c    **** /*             Remove serial/flash overlap                */
+ 275:optiboot.c    **** /*              (and all references to NRWWSTART/etc)     */
+ 276:optiboot.c    **** /*             Correctly handle pagesize > 255bytes       */
+ 277:optiboot.c    **** /*             Add EEPROM support in BIGBOOT (1284)       */
+ 278:optiboot.c    **** /*             EEPROM write on small chips now causes err */
+ 279:optiboot.c    **** /*             Split Makefile into smaller pieces         */
+ 280:optiboot.c    **** /*             Add Wicked devices Wildfire                */
+ 281:optiboot.c    **** /*             Move UART=n conditionals into pin_defs.h   */
+ 282:optiboot.c    **** /*             Remove LUDICOUS_SPEED option               */
+ 283:optiboot.c    **** /*             Replace inline assembler for .version      */
+ 284:optiboot.c    **** /*              and add OPTIBOOT_CUSTOMVER for user code  */
+ 285:optiboot.c    **** /*             Fix LED value for Bobuino (Makefile)       */
+ 286:optiboot.c    **** /*             Make all functions explicitly inline or    */
+ 287:optiboot.c    **** /*              noinline, so we fit when using gcc4.8     */
+ 288:optiboot.c    **** /*             Change optimization options for gcc4.8     */
+ 289:optiboot.c    **** /*             Make ENV=arduino work in 1.5.x trees.      */
+ 290:optiboot.c    **** /* May 2014                                               */
+ 291:optiboot.c    **** /* 5.0 WestfW: Add support for 1Mbps UART                 */
+ 292:optiboot.c    **** /* Mar 2013                                               */
+ 293:optiboot.c    **** /* 5.0 WestfW: Major Makefile restructuring.              */
+ 294:optiboot.c    **** /*             See Makefile and pin_defs.h                */
+ 295:optiboot.c    **** /*             (no binary changes)                        */
+ 296:optiboot.c    **** /*                                                        */
+ 297:optiboot.c    **** /* 4.6 WestfW/Pito: Add ATmega32 support                  */
+ 298:optiboot.c    **** /* 4.6 WestfW/radoni: Don't set LED_PIN as an output if   */
+ 299:optiboot.c    **** /*                    not used. (LED_START_FLASHES = 0)   */
+ 300:optiboot.c    **** /* Jan 2013                                               */
+ 301:optiboot.c    **** /* 4.6 WestfW/dkinzer: use autoincrement lpm for read     */
+ 302:optiboot.c    **** /* 4.6 WestfW/dkinzer: pass reset cause to app in R2      */
+ 303:optiboot.c    **** /* Mar 2012                                               */
+ 304:optiboot.c    **** /* 4.5 WestfW: add infrastructure for non-zero UARTS.     */
+ 305:optiboot.c    **** /* 4.5 WestfW: fix SIGNATURE_2 for m644 (bad in avr-libc) */
+ 306:optiboot.c    **** /* Jan 2012:                                              */
+ 307:optiboot.c    **** /* 4.5 WestfW: fix NRWW value for m1284.                  */
+ 308:optiboot.c    **** /* 4.4 WestfW: use attribute OS_main instead of naked for */
+ 309:optiboot.c    **** /*             main().  This allows optimizations that we */
+ 310:optiboot.c    **** /*             count on, which are prohibited in naked    */
+ 311:optiboot.c    **** /*             functions due to PR42240.  (keeps us less  */
+ 312:optiboot.c    **** /*             than 512 bytes when compiler is gcc4.5     */
+ 313:optiboot.c    **** /*             (code from 4.3.2 remains the same.)        */
+ 314:optiboot.c    **** /* 4.4 WestfW and Maniacbug:  Add m1284 support.  This    */
+ 315:optiboot.c    **** /*             does not change the 328 binary, so the     */
+ 316:optiboot.c    **** /*             version number didn't change either. (?)   */
+ 317:optiboot.c    **** /* June 2011:                                             */
+ 318:optiboot.c    **** /* 4.4 WestfW: remove automatic soft_uart detect (didn't  */
+ 319:optiboot.c    **** /*             know what it was doing or why.)  Added a   */
+ 320:optiboot.c    **** /*             check of the calculated BRG value instead. */
+ 321:optiboot.c    **** /*             Version stays 4.4; existing binaries are   */
+ 322:optiboot.c    **** /*             not changed.                               */
+ 323:optiboot.c    **** /* 4.4 WestfW: add initialization of address to keep      */
+ 324:optiboot.c    **** /*             the compiler happy.  Change SC'ed targets. */
+ 325:optiboot.c    **** /*             Return the SW version via READ PARAM       */
+ 326:optiboot.c    **** /* 4.3 WestfW: catch framing errors in getch(), so that   */
+ 327:optiboot.c    **** /*             AVRISP works without HW kludges.           */
+ 328:optiboot.c    **** /*  http://code.google.com/p/arduino/issues/detail?id=368n*/
+ 329:optiboot.c    **** /* 4.2 WestfW: reduce code size, fix timeouts, change     */
+ 330:optiboot.c    **** /*             verifySpace to use WDT instead of appstart */
+ 331:optiboot.c    **** /* 4.1 WestfW: put version number in binary.              */
+ 332:optiboot.c    **** /**********************************************************/
+ 333:optiboot.c    **** 
+ 334:optiboot.c    **** #define OPTIBOOT_MAJVER 8
+ 335:optiboot.c    **** #define OPTIBOOT_MINVER 3
+ 336:optiboot.c    **** 
+ 337:optiboot.c    **** /*
+ 338:optiboot.c    ****  * OPTIBOOT_CUSTOMVER should be defined (by the makefile) for custom edits
+ 339:optiboot.c    ****  * of optiboot.  That way you don't wind up with very different code that
+ 340:optiboot.c    ****  * matches the version number of a "released" optiboot.
+ 341:optiboot.c    ****  */
+ 342:optiboot.c    **** 
+ 343:optiboot.c    **** #if !defined(OPTIBOOT_CUSTOMVER)
+ 344:optiboot.c    **** #define OPTIBOOT_CUSTOMVER 0
+ 345:optiboot.c    **** #endif
+ 346:optiboot.c    **** 
+ 347:optiboot.c    **** unsigned const int __attribute__((section(".version")))
+ 348:optiboot.c    **** optiboot_version = 256*(OPTIBOOT_MAJVER + OPTIBOOT_CUSTOMVER) + OPTIBOOT_MINVER;
+ 349:optiboot.c    **** 
+ 350:optiboot.c    **** 
+ 351:optiboot.c    **** #define __AVR_LIBC_DEPRECATED_ENABLE__ 1  // don't poison MCUSR on some chips
+ 352:optiboot.c    **** #include <inttypes.h>
+ 353:optiboot.c    **** #include <avr/io.h>
+ 354:optiboot.c    **** #include <avr/pgmspace.h>
+ 355:optiboot.c    **** #include <avr/eeprom.h>
+ 356:optiboot.c    **** 
+ 357:optiboot.c    **** /*
+ 358:optiboot.c    ****  * optiboot uses several "address" variables that are sometimes byte pointers,
+ 359:optiboot.c    ****  * sometimes word pointers. sometimes 16bit quantities, and sometimes built
+ 360:optiboot.c    ****  * up from 8bit input characters.  avr-gcc is not great at optimizing the
+ 361:optiboot.c    ****  * assembly of larger words from bytes, but we can use the usual union to
+ 362:optiboot.c    ****  * do this manually.  Expanding it a little, we can also get rid of casts.
+ 363:optiboot.c    ****  */
+ 364:optiboot.c    **** typedef union {
+ 365:optiboot.c    ****   uint8_t  *bptr;
+ 366:optiboot.c    ****   uint16_t *wptr;
+ 367:optiboot.c    ****   uint16_t word;
+ 368:optiboot.c    ****   uint8_t bytes[2];
+ 369:optiboot.c    **** } addr16_t;
+ 370:optiboot.c    **** 
+ 371:optiboot.c    **** /*
+ 372:optiboot.c    ****  * Note that we use a replacement of "boot.h"
+ 373:optiboot.c    ****  * <avr/boot.h> uses sts instructions, but this version uses out instructions
+ 374:optiboot.c    ****  * This saves cycles and program memory, if possible.
+ 375:optiboot.c    ****  * boot_opt.h pulls in the standard boot.h for the odd target (?)
+ 376:optiboot.c    ****  */
+ 377:optiboot.c    **** #include "boot_opt.h"
+ 378:optiboot.c    **** 
+ 379:optiboot.c    **** 
+ 380:optiboot.c    **** // We don't use <avr/wdt.h> as those routines have interrupt overhead we don't need.
+ 381:optiboot.c    **** 
+ 382:optiboot.c    **** /*
+ 383:optiboot.c    ****  * pin_defs.h
+ 384:optiboot.c    ****  * This contains most of the rather ugly defines that implement our
+ 385:optiboot.c    ****  * ability to use UART=n and LED=D3, and some avr family bit name differences.
+ 386:optiboot.c    ****  */
+ 387:optiboot.c    **** #include "pin_defs.h"
+ 388:optiboot.c    **** 
+ 389:optiboot.c    **** /*
+ 390:optiboot.c    ****  * stk500.h contains the constant definitions for the stk500v1 comm protocol
+ 391:optiboot.c    ****  */
+ 392:optiboot.c    **** #include "stk500.h"
+ 393:optiboot.c    **** 
+ 394:optiboot.c    **** /* set the UART baud rate defaults */
+ 395:optiboot.c    **** #ifndef BAUD_RATE
+ 396:optiboot.c    **** #if F_CPU >= 8000000L
+ 397:optiboot.c    **** #define BAUD_RATE   115200L // Highest rate Avrdude win32 will support
+ 398:optiboot.c    **** #elif F_CPU >= 1000000L
+ 399:optiboot.c    **** #define BAUD_RATE   9600L   // 19200 also supported, but with significant error
+ 400:optiboot.c    **** #elif F_CPU >= 128000L
+ 401:optiboot.c    **** #define BAUD_RATE   4800L   // Good for 128kHz internal RC
+ 402:optiboot.c    **** #else
+ 403:optiboot.c    **** #define BAUD_RATE 1200L     // Good even at 32768Hz
+ 404:optiboot.c    **** #endif
+ 405:optiboot.c    **** #endif
+ 406:optiboot.c    **** 
+ 407:optiboot.c    **** #if (SOFT_UART == 0)
+ 408:optiboot.c    **** #if SINGLESPEED
+ 409:optiboot.c    **** /* Single speed option */
+ 410:optiboot.c    **** #define BAUD_SETTING (( (F_CPU + BAUD_RATE * 8L) / ((BAUD_RATE * 16L))) - 1 )
+ 411:optiboot.c    **** #define BAUD_ACTUAL (F_CPU/(16 * ((BAUD_SETTING)+1)))
+ 412:optiboot.c    **** #else
+ 413:optiboot.c    **** /* Normal U2X usage */
+ 414:optiboot.c    **** #define BAUD_SETTING (( (F_CPU + BAUD_RATE * 4L) / ((BAUD_RATE * 8L))) - 1 )
+ 415:optiboot.c    **** #define BAUD_ACTUAL (F_CPU/(8 * ((BAUD_SETTING)+1)))
+ 416:optiboot.c    **** #endif
+ 417:optiboot.c    **** #if BAUD_ACTUAL <= BAUD_RATE
+ 418:optiboot.c    **** #define BAUD_ERROR (( 100*(BAUD_RATE - BAUD_ACTUAL) ) / BAUD_RATE)
+ 419:optiboot.c    **** #if BAUD_ERROR >= 5
+ 420:optiboot.c    **** #error BAUD_RATE off by greater than -5%
+ 421:optiboot.c    **** #elif BAUD_ERROR >= 2  && !defined(PRODUCTION)
+ 422:optiboot.c    **** #warning BAUD_RATE off by greater than -2%
+ 423:optiboot.c    **** #endif
+ 424:optiboot.c    **** #else
+ 425:optiboot.c    **** #define BAUD_ERROR (( 100*(BAUD_ACTUAL - BAUD_RATE) ) / BAUD_RATE)
+ 426:optiboot.c    **** #if BAUD_ERROR >= 5
+ 427:optiboot.c    **** #error BAUD_RATE off by greater than 5%
+ 428:optiboot.c    **** #elif BAUD_ERROR >= 2  && !defined(PRODUCTION)
+ 429:optiboot.c    **** #warning BAUD_RATE off by greater than 2%
+ 430:optiboot.c    **** #endif
+ 431:optiboot.c    **** #endif
+ 432:optiboot.c    **** 
+ 433:optiboot.c    **** #if BAUD_SETTING > 250
+ 434:optiboot.c    **** #error Unachievable baud rate (too slow) BAUD_RATE
+ 435:optiboot.c    **** #endif // baud rate slow check
+ 436:optiboot.c    **** #if (BAUD_SETTING - 1) < 3
+ 437:optiboot.c    **** #if BAUD_ERROR != 0 // permit high bitrates (ie 1Mbps@16MHz) if error is zero
+ 438:optiboot.c    **** #error Unachievable baud rate (too fast) BAUD_RATE
+ 439:optiboot.c    **** #endif
+ 440:optiboot.c    **** #endif // baud rate fast check
+ 441:optiboot.c    **** #endif // SOFT_UART
+ 442:optiboot.c    **** 
+ 443:optiboot.c    **** /* Watchdog settings */
+ 444:optiboot.c    **** #define WATCHDOG_OFF    (0)
+ 445:optiboot.c    **** #define WATCHDOG_16MS   (_BV(WDE))
+ 446:optiboot.c    **** #define WATCHDOG_32MS   (_BV(WDP0) | _BV(WDE))
+ 447:optiboot.c    **** #define WATCHDOG_64MS   (_BV(WDP1) | _BV(WDE))
+ 448:optiboot.c    **** #define WATCHDOG_125MS  (_BV(WDP1) | _BV(WDP0) | _BV(WDE))
+ 449:optiboot.c    **** #define WATCHDOG_250MS  (_BV(WDP2) | _BV(WDE))
+ 450:optiboot.c    **** #define WATCHDOG_500MS  (_BV(WDP2) | _BV(WDP0) | _BV(WDE))
+ 451:optiboot.c    **** #define WATCHDOG_1S     (_BV(WDP2) | _BV(WDP1) | _BV(WDE))
+ 452:optiboot.c    **** #define WATCHDOG_2S     (_BV(WDP2) | _BV(WDP1) | _BV(WDP0) | _BV(WDE))
+ 453:optiboot.c    **** #ifdef  WDP3
+ 454:optiboot.c    **** #define WATCHDOG_4S     (_BV(WDP3) | _BV(WDE))
+ 455:optiboot.c    **** #define WATCHDOG_8S     (_BV(WDP3) | _BV(WDP0) | _BV(WDE))
+ 456:optiboot.c    **** #endif
+ 457:optiboot.c    **** 
+ 458:optiboot.c    ****   /*
+ 459:optiboot.c    ****    * Watchdog timeout translations from human readable to config vals
+ 460:optiboot.c    ****    */
+ 461:optiboot.c    **** #ifndef WDTTIME
+ 462:optiboot.c    **** # define WDTPERIOD WATCHDOG_1S  // 1 second default
+ 463:optiboot.c    **** #elif WDTTIME == 1
+ 464:optiboot.c    **** # define WDTPERIOD WATCHDOG_1S  // 1 second
+ 465:optiboot.c    **** #elif WDTTIME == 2
+ 466:optiboot.c    **** # define WDTPERIOD WATCHDOG_2S  // 2 seconds
+ 467:optiboot.c    **** #elif defined(WDP3) && (WDTTIME == 4)
+ 468:optiboot.c    **** # define WDTPERIOD WATCHDOG_4S  // 4 seconds
+ 469:optiboot.c    **** #elif defined(WDP3) && (WDTTIME == 8)
+ 470:optiboot.c    **** # define WDTPERIOD WATCHDOG_8S  // 8 seconds
+ 471:optiboot.c    **** #else
+ 472:optiboot.c    **** #error Invalid TIMEOUT
+ 473:optiboot.c    **** #endif
+ 474:optiboot.c    **** 
+ 475:optiboot.c    **** /*
+ 476:optiboot.c    ****  * We can never load flash with more than 1 page at a time, so we can save
+ 477:optiboot.c    ****  * some code space on parts with smaller pagesize by using a smaller int.
+ 478:optiboot.c    ****  */
+ 479:optiboot.c    **** #if SPM_PAGESIZE > 255
+ 480:optiboot.c    **** typedef uint16_t pagelen_t ;
+ 481:optiboot.c    **** #define GETLENGTH(len) len = getch()<<8; len |= getch()
+ 482:optiboot.c    **** #else
+ 483:optiboot.c    **** typedef uint8_t pagelen_t;
+ 484:optiboot.c    **** #define GETLENGTH(len) (void) getch() /* skip high byte */; len = getch()
+ 485:optiboot.c    **** #endif
+ 486:optiboot.c    **** 
+ 487:optiboot.c    **** 
+ 488:optiboot.c    **** /* Function Prototypes
+ 489:optiboot.c    ****  * The main() function is in init9, which removes the interrupt vector table
+ 490:optiboot.c    ****  * we don't need. It is also 'OS_main', which means the compiler does not
+ 491:optiboot.c    ****  * generate any entry or exit code itself (but unlike 'naked', it doesn't
+ 492:optiboot.c    ****  * suppress some compile-time options we want.)
+ 493:optiboot.c    ****  */
+ 494:optiboot.c    **** 
+ 495:optiboot.c    **** void pre_main(void) __attribute__ ((naked)) __attribute__ ((section (".init8")));
+ 496:optiboot.c    **** int main(void) __attribute__ ((OS_main)) __attribute__ ((section (".init9"))) __attribute__((used))
+ 497:optiboot.c    **** 
+ 498:optiboot.c    **** void __attribute__((noinline)) __attribute__((leaf)) putch(char);
+ 499:optiboot.c    **** uint8_t __attribute__((noinline)) __attribute__((leaf)) getch(void) ;
+ 500:optiboot.c    **** void __attribute__((noinline)) verifySpace();
+ 501:optiboot.c    **** void __attribute__((noinline)) watchdogConfig(uint8_t x);
+ 502:optiboot.c    **** 
+ 503:optiboot.c    **** static void getNch(uint8_t);
+ 504:optiboot.c    **** #if LED_START_FLASHES > 0
+ 505:optiboot.c    **** static inline void flash_led(uint8_t);
+ 506:optiboot.c    **** #endif
+ 507:optiboot.c    **** static inline void watchdogReset();
+ 508:optiboot.c    **** static inline void writebuffer(int8_t memtype, addr16_t mybuff,
+ 509:optiboot.c    ****                                addr16_t address, pagelen_t len);
+ 510:optiboot.c    **** static inline void read_mem(uint8_t memtype,
+ 511:optiboot.c    ****                             addr16_t, pagelen_t len);
+ 512:optiboot.c    **** 
+ 513:optiboot.c    **** #if SOFT_UART
+ 514:optiboot.c    **** void uartDelay() __attribute__ ((naked));
+ 515:optiboot.c    **** #endif
+ 516:optiboot.c    **** 
+ 517:optiboot.c    **** /*
+ 518:optiboot.c    ****  * RAMSTART should be self-explanatory.  It's bigger on parts with a
+ 519:optiboot.c    ****  * lot of peripheral registers.  Let 0x100 be the default
+ 520:optiboot.c    ****  * Note that RAMSTART (for optiboot) need not be exactly at the start of RAM.
+ 521:optiboot.c    ****  */
+ 522:optiboot.c    **** #if !defined(RAMSTART)  // newer versions of gcc avr-libc define RAMSTART
+ 523:optiboot.c    **** #define RAMSTART 0x100
+ 524:optiboot.c    **** #if defined (__AVR_ATmega644P__)
+ 525:optiboot.c    **** // correct for a bug in avr-libc
+ 526:optiboot.c    **** #undef SIGNATURE_2
+ 527:optiboot.c    **** #define SIGNATURE_2 0x0A
+ 528:optiboot.c    **** #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+ 529:optiboot.c    **** #undef RAMSTART
+ 530:optiboot.c    **** #define RAMSTART (0x200)
+ 531:optiboot.c    **** #endif
+ 532:optiboot.c    **** #endif
+ 533:optiboot.c    **** 
+ 534:optiboot.c    **** /* C zero initialises all global variables. However, that requires */
+ 535:optiboot.c    **** /* These definitions are NOT zero initialised, but that doesn't matter */
+ 536:optiboot.c    **** /* This allows us to drop the zero init code, saving us memory */
+ 537:optiboot.c    **** static addr16_t buff = {(uint8_t *)(RAMSTART)};
+ 538:optiboot.c    **** 
+ 539:optiboot.c    **** /* Virtual boot partition support */
+ 540:optiboot.c    **** #ifdef VIRTUAL_BOOT_PARTITION
+ 541:optiboot.c    **** 
+ 542:optiboot.c    **** // RAM locations to save vector info (temporarilly)
+ 543:optiboot.c    **** #define rstVect0_sav (*(uint8_t*)(RAMSTART+SPM_PAGESIZE*2+4))
+ 544:optiboot.c    **** #define rstVect1_sav (*(uint8_t*)(RAMSTART+SPM_PAGESIZE*2+5))
+ 545:optiboot.c    **** #define saveVect0_sav (*(uint8_t*)(RAMSTART+SPM_PAGESIZE*2+6))
+ 546:optiboot.c    **** #define saveVect1_sav (*(uint8_t*)(RAMSTART+SPM_PAGESIZE*2+7))
+ 547:optiboot.c    **** 
+ 548:optiboot.c    **** #define RSTVEC_ADDRESS 0  // flash address where vectors start.
+ 549:optiboot.c    **** // Vector to save original reset jump:
+ 550:optiboot.c    **** //   SPM Ready is least probably used, so it's default
+ 551:optiboot.c    **** //   if not, use old way WDT_vect_num,
+ 552:optiboot.c    **** //   or simply set custom save_vect_num in Makefile using vector name
+ 553:optiboot.c    **** //   or even raw number.
+ 554:optiboot.c    **** #if !defined (save_vect_num)
+ 555:optiboot.c    **** #if defined (SPM_RDY_vect_num)
+ 556:optiboot.c    **** #define save_vect_num (SPM_RDY_vect_num)
+ 557:optiboot.c    **** #elif defined (SPM_READY_vect_num)
+ 558:optiboot.c    **** #define save_vect_num (SPM_READY_vect_num)
+ 559:optiboot.c    **** #elif defined (EE_RDY_vect_num)
+ 560:optiboot.c    **** #define save_vect_num (EE_RDY_vect_num)
+ 561:optiboot.c    **** #elif defined (EE_READY_vect_num)
+ 562:optiboot.c    **** #define save_vect_num (EE_READY_vect_num)
+ 563:optiboot.c    **** #elif defined (WDT_vect_num)
+ 564:optiboot.c    **** #define save_vect_num (WDT_vect_num)
+ 565:optiboot.c    **** #else
+ 566:optiboot.c    **** #error "Can't find SPM or WDT interrupt vector for this CPU"
+ 567:optiboot.c    **** #endif
+ 568:optiboot.c    **** #endif //save_vect_num
+ 569:optiboot.c    **** 
+ 570:optiboot.c    **** // check if it's on the same page (code assumes that)
+ 571:optiboot.c    **** 
+ 572:optiboot.c    **** #if FLASHEND > 8192
+ 573:optiboot.c    **** // AVRs with more than 8k of flash have 4-byte vectors, and use jmp.
+ 574:optiboot.c    **** //  We save only 16 bits of address, so devices with more than 128KB
+ 575:optiboot.c    **** //  may behave wrong for upper part of address space.
+ 576:optiboot.c    **** #define rstVect0 2
+ 577:optiboot.c    **** #define rstVect1 3
+ 578:optiboot.c    **** #define saveVect0 (save_vect_num*4+2)
+ 579:optiboot.c    **** #define saveVect1 (save_vect_num*4+3)
+ 580:optiboot.c    **** #define appstart_vec (save_vect_num*2)
+ 581:optiboot.c    **** 
+ 582:optiboot.c    **** // address of page that will have the saved vector
+ 583:optiboot.c    **** #define SAVVEC_ADDRESS (SPM_PAGESIZE*(save_vect_num/(SPM_PAGESIZE/4)))
+ 584:optiboot.c    **** 
+ 585:optiboot.c    **** #else
+ 586:optiboot.c    **** 
+ 587:optiboot.c    **** // AVRs with up to 8k of flash have 2-byte vectors, and use rjmp.
+ 588:optiboot.c    **** #define rstVect0 0
+ 589:optiboot.c    **** #define rstVect1 1
+ 590:optiboot.c    **** #define saveVect0 (save_vect_num*2)
+ 591:optiboot.c    **** #define saveVect1 (save_vect_num*2+1)
+ 592:optiboot.c    **** #define appstart_vec (save_vect_num)
+ 593:optiboot.c    **** 
+ 594:optiboot.c    **** // address of page that will have the saved vector
+ 595:optiboot.c    **** #define SAVVEC_ADDRESS (SPM_PAGESIZE*(save_vect_num/(SPM_PAGESIZE/2)))
+ 596:optiboot.c    **** #endif
+ 597:optiboot.c    **** 
+ 598:optiboot.c    **** #else
+ 599:optiboot.c    **** 
+ 600:optiboot.c    **** #define appstart_vec (0)
+ 601:optiboot.c    **** 
+ 602:optiboot.c    **** #endif // VIRTUAL_BOOT_PARTITION
+ 603:optiboot.c    **** 
+ 604:optiboot.c    **** void sectionOpts() __attribute__((naked));
+ 605:optiboot.c    **** void sectionOpts() {
+ 606:optiboot.c    **** /*
+ 607:optiboot.c    ****  * Mysterious Magic code to allow section-start addresses to be
+ 608:optiboot.c    ****  * specifed by the C code (which, after all, has access to CPP symbols
+ 609:optiboot.c    ****  * like FLASHEND, and can make a "safer" guess than putting manually
+ 610:optiboot.c    ****  * determined constants in the Makefile.  This is dependent on a custom
+ 611:optiboot.c    ****  * linker script that makes use of the __BOOT_ symbols that we define.
+ 612:optiboot.c    ****  * Fortunately, that script can be used to link optiboot on any of its
+ 613:optiboot.c    ****  * usual chips.
+ 614:optiboot.c    ****  *
+ 615:optiboot.c    ****  * with some judicious use of asm directives, we can define symbols
+ 616:optiboot.c    ****  * that the linker will look at for positioning our segments (in
+ 617:optiboot.c    ****  * combination with a custom linker script) based on the flash size
+ 618:optiboot.c    ****  * defined via io.h, instead of requiring magic --section-start
+ 619:optiboot.c    ****  * constants on the build line.
+ 620:optiboot.c    ****  *
+ 621:optiboot.c    ****  * This apparently needs to be inside a function in order to pass
+ 622:optiboot.c    ****  * arguments to the asm command (even though the asm doesn't
+ 623:optiboot.c    ****  * generate any code)  But we can make sure the function (which doesn't
+ 624:optiboot.c    ****  * actually contain any code) doesn't actually end up in the binary.
+ 625:optiboot.c    ****  */
+ 626:optiboot.c    **** #if BIGBOOT
+ 627:optiboot.c    ****   /*
+ 628:optiboot.c    ****    * BIGBOOT images are easy, because they're much smaller than the
+ 629:optiboot.c    ****    * flash size that they are defined to occupy (1k)
+ 630:optiboot.c    ****    */
+ 631:optiboot.c    ****   asm(" .global __BOOT_SIZE__, __BOOT_START__, __VERSION_START__\n"
+ 632:optiboot.c    ****       " .equ __BOOT_SIZE__, 1024\n"
+ 633:optiboot.c    ****       " .equ __BOOT_START__, (%0-1023)\n"
+ 634:optiboot.c    ****       " .equ __VERSION_START__, (%0-1)\n"
+ 635:optiboot.c    ****       ::"i"((uint32_t)FLASHEND));
+ 636:optiboot.c    **** #else
+ 637:optiboot.c    ****   /*
+ 638:optiboot.c    ****    * non-BIGBOOT images try to fit in 512bytes, but don't quite fit
+ 639:optiboot.c    ****    * on chips that don't have HW support for a boot section.  We try
+ 640:optiboot.c    ****    * to guess how big the extra bits of code are, and then round up
+ 641:optiboot.c    ****    * to the next larger flash page boundry (which can be nearly 4 pages
+ 642:optiboot.c    ****    * away on chips with FOURPAGEERASE)
+ 643:optiboot.c    ****    * These numbers are determined manually by building a reference
+ 644:optiboot.c    ****    * implementation with various options and comparing sizes.
+ 645:optiboot.c    ****    */
+ 646:optiboot.c    **** # if VIRTUAL_BOOT_PARTITION
+ 647:optiboot.c    **** /*  VIRTUAL_BOOT_PARTITION code is about 100 bytes */
+ 648:optiboot.c    **** #   define VBSIZE 110
+ 649:optiboot.c    **** # else
+ 650:optiboot.c    **** #   define VBSIZE 0
+ 651:optiboot.c    **** # endif
+ 652:optiboot.c    **** # if LED_START_FLASHES==0
+ 653:optiboot.c    **** /*  if LED_START_FLASHES is 0 (eg on 8pin chips), it saves some code */
+ 654:optiboot.c    **** #   define LEDSIZE (-30)
+ 655:optiboot.c    **** # else
+ 656:optiboot.c    **** #   define LEDSIZE 0
+ 657:optiboot.c    **** # endif
+ 658:optiboot.c    **** # if SOFT_UART
+ 659:optiboot.c    **** /*  But not having a hardware UART costs a bit */
+ 660:optiboot.c    **** #   define SOFTUSIZE 16
+ 661:optiboot.c    **** # else
+ 662:optiboot.c    **** #   define SOFTUSIZE 0
+ 663:optiboot.c    **** # endif
+ 664:optiboot.c    **** 
+ 665:optiboot.c    **** # if FOURPAGEERASE
+ 666:optiboot.c    **** /*  FOURPAGEERASE adds some code, and also affects how we round */
+ 667:optiboot.c    **** #   define ERASESIZE 8
+ 668:optiboot.c    **** #   define PAGSIZ_B (SPM_PAGESIZE*4)
+ 669:optiboot.c    **** # else
+ 670:optiboot.c    **** #   define PAGSIZ_B (SPM_PAGESIZE)
+ 671:optiboot.c    **** #   define ERASESIZE 0
+ 672:optiboot.c    **** # endif
+ 673:optiboot.c    **** 
+ 674:optiboot.c    **** /*
+ 675:optiboot.c    ****  * Round our guess up to next page size.  So 560 byte images occupy 576bytes,
+ 676:optiboot.c    ****  * 600 byte images occupy 640 bytes, etc.  Depending on chip.
+ 677:optiboot.c    ****  * Note that SPM_PAGESIZE is already in bytes in the .h files.
+ 678:optiboot.c    ****  */  
+ 679:optiboot.c    **** # define ROUNDTOPAGE(size) (((size + (PAGSIZ_B/2))/(PAGSIZ_B))*(PAGSIZ_B))
+ 680:optiboot.c    **** /* use 511 here so we don't round up to the next page on normal systems. */
+ 681:optiboot.c    **** # define BOOTSIZE (511+ERASESIZE+VBSIZE+SOFTUSIZE+LEDSIZE)
+ 682:optiboot.c    ****   asm(" .global __BOOT_SIZE__, __BOOT_START__, __VERSION_START__\n"
+ 683:optiboot.c    ****       " .equ __BOOT_SIZE__, %1\n"
+ 684:optiboot.c    ****       " .equ __BOOT_START__, ((%0+1)-%1)\n"
+ 685:optiboot.c    ****       " .equ __VERSION_START__, (%0-1)\n"
+ 686:optiboot.c    ****       ::"i"((uint32_t)FLASHEND), "i"(ROUNDTOPAGE(BOOTSIZE)));
+ 687:optiboot.c    **** #endif
+ 688:optiboot.c    **** /* Wasn't that FUN! */
+ 689:optiboot.c    **** }
+ 690:optiboot.c    **** 
+ 691:optiboot.c    **** /* everything that needs to run VERY early */
+ 692:optiboot.c    **** void pre_main(void) {
+ 139               	.LM0:
+ 140               	.LFBB1:
+ 141               	/* prologue: naked */
+ 142               	/* frame size = 0 */
+ 143               	/* stack size = 0 */
+ 144               	.L__stack_usage = 0
+ 693:optiboot.c    ****   // Allow convenient way of calling do_spm function - jump table, so
+ 694:optiboot.c    ****   //   entry to this function will always be here, independent of
+ 695:optiboot.c    ****   //   compilation, features etc
+ 696:optiboot.c    ****   asm volatile (
+ 146               	.LM1:
+ 147               	/* #APP */
+ 148               	 ;  696 "optiboot.c" 1
+ 149 0000 00C0      		  rjmp    1f
+ 150 0002 00C0      	  rjmp    do_spm
+ 151               	1:
+ 152               	
+ 153               	 ;  0 "" 2
+ 697:optiboot.c    ****     "  rjmp    1f\n"
+ 698:optiboot.c    **** #if APP_NOSPM
+ 699:optiboot.c    ****     "  ret\n"   // if do_spm isn't include, return without doing anything
+ 700:optiboot.c    **** #else
+ 701:optiboot.c    ****     "  rjmp    do_spm\n"
+ 702:optiboot.c    **** #endif
+ 703:optiboot.c    ****     "1:\n"
+ 704:optiboot.c    ****     );
+ 705:optiboot.c    **** }
+ 155               	.LM2:
+ 156               	/* #NOAPP */
+ 157 0004 0000      		nop
+ 158               	/* epilogue start */
+ 160               	.Lscope1:
+ 162               		.stabd	78,0,0
+ 163               		.section	.init9,"ax",@progbits
+ 165               	.global	main
+ 167               	main:
+ 168               		.stabd	46,0,0
+ 706:optiboot.c    **** 
+ 707:optiboot.c    **** 
+ 708:optiboot.c    **** /* main program starts here */
+ 709:optiboot.c    **** int main(void) {
+ 170               	.LM3:
+ 171               	.LFBB2:
+ 172 0000 CDB7      		in r28,__SP_L__
+ 173 0002 DEB7      		in r29,__SP_H__
+ 174 0004 2797      		sbiw r28,7
+ 175 0006 DEBF      		out __SP_H__,r29
+ 176 0008 CDBF      		out __SP_L__,r28
+ 177               	/* prologue: function */
+ 178               	/* frame size = 7 */
+ 179               	/* stack size = 7 */
+ 180               	.L__stack_usage = 7
+ 710:optiboot.c    ****   uint8_t ch;
+ 711:optiboot.c    **** 
+ 712:optiboot.c    ****   /*
+ 713:optiboot.c    ****    * Making these local and in registers prevents the need for initializing
+ 714:optiboot.c    ****    * them, and also saves space because code no longer stores to memory.
+ 715:optiboot.c    ****    * (initializing address keeps the compiler happy, but isn't really
+ 716:optiboot.c    ****    *  necessary, and uses 4 bytes of flash.)
+ 717:optiboot.c    ****    */
+ 718:optiboot.c    ****   register addr16_t address;
+ 719:optiboot.c    ****   register pagelen_t  length;
+ 720:optiboot.c    **** 
+ 721:optiboot.c    ****   // After the zero init loop, this is the first code to run.
+ 722:optiboot.c    ****   //
+ 723:optiboot.c    ****   // This code makes the following assumptions:
+ 724:optiboot.c    ****   //  No interrupts will execute
+ 725:optiboot.c    ****   //  SP points to RAMEND
+ 726:optiboot.c    ****   //  r1 contains zero
+ 727:optiboot.c    ****   //
+ 728:optiboot.c    ****   // If not, uncomment the following instructions:
+ 729:optiboot.c    ****   // cli();
+ 730:optiboot.c    ****   asm volatile ("  clr __zero_reg__");
+ 182               	.LM4:
+ 183               	/* #APP */
+ 184               	 ;  730 "optiboot.c" 1
+ 185 000a 1124      		  clr __zero_reg__
+ 186               	 ;  0 "" 2
+ 731:optiboot.c    **** 
+ 732:optiboot.c    **** #if defined(__AVR_ATmega8__) || defined(__AVR_ATmega8515__) ||  \
+ 733:optiboot.c    ****   defined(__AVR_ATmega8535__) || defined (__AVR_ATmega16__) ||  \
+ 734:optiboot.c    ****   defined (__AVR_ATmega32__) || defined (__AVR_ATmega64__)  ||  \
+ 735:optiboot.c    ****   defined (__AVR_ATmega128__) || defined (__AVR_ATmega162__)
+ 736:optiboot.c    ****   SP=RAMEND;  // This is done by hardware reset on newer chips
+ 737:optiboot.c    **** #endif
+ 738:optiboot.c    **** 
+ 739:optiboot.c    **** #if defined(OSCCAL_VALUE)
+ 740:optiboot.c    ****   OSCCAL = OSCCAL_VALUE;
+ 741:optiboot.c    **** #endif
+ 742:optiboot.c    **** 
+ 743:optiboot.c    ****   /*
+ 744:optiboot.c    ****    * Protect as much from MCUSR as possible for application
+ 745:optiboot.c    ****    * and still skip bootloader if not necessary
+ 746:optiboot.c    ****    *
+ 747:optiboot.c    ****    * Code by MarkG55
+ 748:optiboot.c    ****    * see discussion in https://github.com/Optiboot/optiboot/issues/97
+ 749:optiboot.c    ****    */
+ 750:optiboot.c    **** #ifndef MCUSR  // Backward compatability with old AVRs
+ 751:optiboot.c    **** #define MCUSR MCUCSR
+ 752:optiboot.c    **** #endif
+ 753:optiboot.c    **** #if (START_APP_ON_EXTR == 0 && NO_START_APP_ON_POR == 0)
+ 754:optiboot.c    ****   /*
+ 755:optiboot.c    ****    * Normal behavior.  Start if EXTRF in on and WDRF is off
+ 756:optiboot.c    ****    */
+ 757:optiboot.c    **** #  define APP_START_REASONS ((ch & (_BV(WDRF) | _BV(EXTRF))) != _BV(EXTRF))
+ 758:optiboot.c    **** #  define WDRF_CLR_REASONS (ch & _BV(EXTRF))
+ 759:optiboot.c    **** #elif (START_APP_ON_EXTR && NO_START_APP_ON_POR)
+ 760:optiboot.c    ****   /*
+ 761:optiboot.c    ****    * If NO_START_APP_ON_POR is defined, run bootloader after POR.
+ 762:optiboot.c    ****    * This allows use with reset disabled: power on and immediately
+ 763:optiboot.c    ****    * program.
+ 764:optiboot.c    ****    */
+ 765:optiboot.c    **** #  define APP_START_REASONS ((ch & (_BV(PORF) | _BV(WDRF) | _BV(EXTRF))) != _BV(PORF))
+ 766:optiboot.c    **** #  define WDRF_CLR_REASONS ((ch & (_BV(PORF) | _BV(WDRF))) == (_BV(PORF) | _BV(WDRF)))
+ 767:optiboot.c    **** #elif ((START_APP_ON_EXTR == 0) && NO_START_APP_ON_POR)
+ 768:optiboot.c    ****   /*
+ 769:optiboot.c    ****    * If START_APP_ON_EXTR is defined, don't run bootloader after
+ 770:optiboot.c    ****    * an external reset - only useful in combination with above,
+ 771:optiboot.c    ****    * for some unusual use cases.
+ 772:optiboot.c    ****    */
+ 773:optiboot.c    **** #  define APP_START_REASONS (ch & _BV(WDRF))
+ 774:optiboot.c    **** #  define WDRF_CLR_REASONS (ch & (_BV(PORF) | _BV(EXTRF)))
+ 775:optiboot.c    **** #else
+ 776:optiboot.c    ****   /*
+ 777:optiboot.c    ****    * Only run bootloader via jmp to 0 with MCUSR==0.
+ 778:optiboot.c    ****    * Probably an error.
+ 779:optiboot.c    ****    */
+ 780:optiboot.c    **** #  warning "Bootloader can only start via app request because "
+ 781:optiboot.c    **** #  warning "START_APP_ON_EXTR is defined and NO_START_APP_ON_POR isn't"
+ 782:optiboot.c    **** #  define APP_START_REASONS 1 /* Always start rge App. */
+ 783:optiboot.c    **** #  define WDRF_CLR_REASONS 0  /* Never clear WDRF */
+ 784:optiboot.c    **** #endif
+ 785:optiboot.c    **** 
+ 786:optiboot.c    ****   ch = MCUSR;
+ 188               	.LM5:
+ 189               	/* #NOAPP */
+ 190 000c 84E5      		ldi r24,lo8(84)
+ 191 000e 90E0      		ldi r25,0
+ 192 0010 FC01      		movw r30,r24
+ 193 0012 8081      		ld r24,Z
+ 194 0014 8B83      		std Y+3,r24
+ 787:optiboot.c    **** 
+ 788:optiboot.c    ****   // Skip all logic and run bootloader if MCUSR is cleared (application request)
+ 789:optiboot.c    ****   if (ch != 0) {
+ 196               	.LM6:
+ 197 0016 8B81      		ldd r24,Y+3
+ 198 0018 8823      		tst r24
+ 199 001a 01F0      		breq .L3
+ 790:optiboot.c    ****     /*
+ 791:optiboot.c    ****      * To run the boot loader, External Reset Flag must be set.
+ 792:optiboot.c    ****      * If not, we could make shortcut and jump directly to application code.
+ 793:optiboot.c    ****      * Also WDRF set with EXTRF is a result of Optiboot timeout, so we
+ 794:optiboot.c    ****      * shouldn't run bootloader in loop :-) That's why:
+ 795:optiboot.c    ****      *  1. application is running if WDRF is cleared
+ 796:optiboot.c    ****      *  2. we clear WDRF if it's set with EXTRF to avoid loops
+ 797:optiboot.c    ****      * One problematic scenario: broken application code sets watchdog timer
+ 798:optiboot.c    ****      * without clearing MCUSR before and triggers it quickly. But it's
+ 799:optiboot.c    ****      * recoverable by power-on with pushed reset button.
+ 800:optiboot.c    ****      */
+ 801:optiboot.c    **** 
+ 802:optiboot.c    ****     if (APP_START_REASONS) {
+ 201               	.LM7:
+ 202 001c 8B81      		ldd r24,Y+3
+ 203 001e 882F      		mov r24,r24
+ 204 0020 90E0      		ldi r25,0
+ 205 0022 8A70      		andi r24,10
+ 206 0024 9927      		clr r25
+ 207 0026 0297      		sbiw r24,2
+ 208 0028 01F0      		breq .L3
+ 803:optiboot.c    ****       if (WDRF_CLR_REASONS) {
+ 210               	.LM8:
+ 211 002a 8B81      		ldd r24,Y+3
+ 212 002c 882F      		mov r24,r24
+ 213 002e 90E0      		ldi r25,0
+ 214 0030 8270      		andi r24,2
+ 215 0032 9927      		clr r25
+ 216 0034 892B      		or r24,r25
+ 217 0036 01F0      		breq .L4
+ 804:optiboot.c    ****         /*
+ 805:optiboot.c    ****          * Clear WDRF if it was most probably set by wdr in bootloader.
+ 806:optiboot.c    ****          */
+ 807:optiboot.c    ****         if ((uint16_t)&MCUSR > 0x1F) {
+ 808:optiboot.c    ****           MCUSR = ~(_BV(WDRF));   // optimize to LDI/OUT
+ 219               	.LM9:
+ 220 0038 84E5      		ldi r24,lo8(84)
+ 221 003a 90E0      		ldi r25,0
+ 222 003c 27EF      		ldi r18,lo8(-9)
+ 223 003e FC01      		movw r30,r24
+ 224 0040 2083      		st Z,r18
+ 225               	.L4:
+ 809:optiboot.c    ****         } else {
+ 810:optiboot.c    ****           MCUSR &= ~(_BV(WDRF));  // or optimize to CBI if possible
+ 811:optiboot.c    ****         }
+ 812:optiboot.c    ****       }
+ 813:optiboot.c    ****       /*
+ 814:optiboot.c    ****        * save the reset flags in the designated register
+ 815:optiboot.c    ****        * This can be saved in a main program by putting code in .init0 (which
+ 816:optiboot.c    ****        * executes before normal c init code) to save R2 to a global variable.
+ 817:optiboot.c    ****        */
+ 818:optiboot.c    ****       __asm__ __volatile__ ("  mov r2, %0\n" :: "r" (ch));
+ 227               	.LM10:
+ 228 0042 8B81      		ldd r24,Y+3
+ 229               	/* #APP */
+ 230               	 ;  818 "optiboot.c" 1
+ 231 0044 282E      		  mov r2, r24
+ 232               	
+ 233               	 ;  0 "" 2
+ 819:optiboot.c    **** 
+ 820:optiboot.c    ****       // switch off watchdog
+ 821:optiboot.c    ****       watchdogConfig(WATCHDOG_OFF);
+ 235               	.LM11:
+ 236               	/* #NOAPP */
+ 237 0046 80E0      		ldi r24,0
+ 238 0048 0E94 0000 		call watchdogConfig
+ 822:optiboot.c    ****       // Note that appstart_vec is defined so that this works with either
+ 823:optiboot.c    ****       // real or virtual boot partitions.
+ 824:optiboot.c    ****       __asm__ __volatile__ (
+ 240               	.LM12:
+ 241               	/* #APP */
+ 242               	 ;  824 "optiboot.c" 1
+ 243 004c 00C0      		  rjmp optiboot_version+2
+ 244               	
+ 245               	 ;  0 "" 2
+ 246               	/* #NOAPP */
+ 247               	.L3:
+ 825:optiboot.c    ****         // Jump to 'save' or RST vector
+ 826:optiboot.c    **** #ifdef VIRTUAL_BOOT_PARTITION
+ 827:optiboot.c    ****         // full code version for virtual boot partition
+ 828:optiboot.c    ****         "  ldi r30,%[rstvec]\n"
+ 829:optiboot.c    ****         "  clr r31\n"
+ 830:optiboot.c    ****         "  ijmp\n"::[rstvec] "M"(appstart_vec)
+ 831:optiboot.c    **** #else
+ 832:optiboot.c    **** #ifdef RAMPZ
+ 833:optiboot.c    ****         // use absolute jump for devices with lot of flash
+ 834:optiboot.c    ****         "  jmp 0\n"::
+ 835:optiboot.c    **** #else
+ 836:optiboot.c    ****         // use rjmp to go around end of flash to address 0
+ 837:optiboot.c    ****         // it uses fact that optiboot_version constant is 2 bytes before end of flash
+ 838:optiboot.c    ****         "  rjmp optiboot_version+2\n"
+ 839:optiboot.c    **** #endif //RAMPZ
+ 840:optiboot.c    **** #endif //VIRTUAL_BOOT_PARTITION
+ 841:optiboot.c    ****         );
+ 842:optiboot.c    ****     }
+ 843:optiboot.c    ****   } //end handling of MCUSR !=0
+ 844:optiboot.c    **** 
+ 845:optiboot.c    **** #if LED_START_FLASHES > 0
+ 846:optiboot.c    ****   // Set up Timer 1 for timeout counter
+ 847:optiboot.c    **** #if defined(__AVR_ATtiny261__)||defined(__AVR_ATtiny461__)||defined(__AVR_ATtiny861__)
+ 848:optiboot.c    ****   TCCR1B = 0x0E; //div 8196 - we could divide by less since it's a 10-bit counter, but why?
+ 849:optiboot.c    **** #elif defined(__AVR_ATtiny25__)||defined(__AVR_ATtiny45__)||defined(__AVR_ATtiny85__)
+ 850:optiboot.c    ****   TCCR1 = 0x0E; //div 8196 - it's an 8-bit timer.
+ 851:optiboot.c    **** #elif defined(__AVR_ATtiny43__)
+ 852:optiboot.c    **** #error "LED flash for Tiny43 not yet supported"
+ 853:optiboot.c    **** #else
+ 854:optiboot.c    ****   TCCR1B = _BV(CS12) | _BV(CS10); // div 1024
+ 249               	.LM13:
+ 250 004e 81E8      		ldi r24,lo8(-127)
+ 251 0050 90E0      		ldi r25,0
+ 252 0052 25E0      		ldi r18,lo8(5)
+ 253 0054 FC01      		movw r30,r24
+ 254 0056 2083      		st Z,r18
+ 855:optiboot.c    **** #endif
+ 856:optiboot.c    **** #endif
+ 857:optiboot.c    **** 
+ 858:optiboot.c    **** 
+ 859:optiboot.c    **** #if (SOFT_UART == 0)
+ 860:optiboot.c    **** #if defined(__AVR_ATmega8__) || defined (__AVR_ATmega8515__) || \
+ 861:optiboot.c    ****   defined (__AVR_ATmega8535__) || defined (__AVR_ATmega16__) || \
+ 862:optiboot.c    ****   defined (__AVR_ATmega32__)
+ 863:optiboot.c    **** #if (SINGLESPEED == 0)
+ 864:optiboot.c    ****   UCSRA = _BV(U2X); //Double speed mode USART
+ 865:optiboot.c    **** #endif //singlespeed
+ 866:optiboot.c    ****   UCSRB = _BV(RXEN) | _BV(TXEN);  // enable Rx & Tx
+ 867:optiboot.c    ****   UCSRC = _BV(URSEL) | _BV(UCSZ1) | _BV(UCSZ0);  // config USART; 8N1
+ 868:optiboot.c    ****   UBRRL = (uint8_t)BAUD_SETTING;
+ 869:optiboot.c    **** #else // mega8/etc
+ 870:optiboot.c    **** #ifdef LIN_UART
+ 871:optiboot.c    ****   //DDRB|=3;
+ 872:optiboot.c    ****   LINCR = (1 << LSWRES);
+ 873:optiboot.c    ****   //LINBRRL = (((F_CPU * 10L / 32L / BAUD_RATE) + 5L) / 10L) - 1;
+ 874:optiboot.c    ****   LINBRRL=(uint8_t)BAUD_SETTING;
+ 875:optiboot.c    ****   LINBTR = (1 << LDISR) | (8 << LBT0); 
+ 876:optiboot.c    ****   LINCR = _BV(LENA) | _BV(LCMD2) | _BV(LCMD1) | _BV(LCMD0);
+ 877:optiboot.c    ****   LINDAT=0;
+ 878:optiboot.c    **** #else
+ 879:optiboot.c    **** #if (SINGLESPEED == 0)
+ 880:optiboot.c    ****   UART_SRA = _BV(U2X0); //Double speed mode USART0
+ 256               	.LM14:
+ 257 0058 80EC      		ldi r24,lo8(-64)
+ 258 005a 90E0      		ldi r25,0
+ 259 005c 22E0      		ldi r18,lo8(2)
+ 260 005e FC01      		movw r30,r24
+ 261 0060 2083      		st Z,r18
+ 881:optiboot.c    **** #endif
+ 882:optiboot.c    ****   UART_SRB = _BV(RXEN0) | _BV(TXEN0);
+ 263               	.LM15:
+ 264 0062 81EC      		ldi r24,lo8(-63)
+ 265 0064 90E0      		ldi r25,0
+ 266 0066 28E1      		ldi r18,lo8(24)
+ 267 0068 FC01      		movw r30,r24
+ 268 006a 2083      		st Z,r18
+ 883:optiboot.c    ****   UART_SRC = _BV(UCSZ00) | _BV(UCSZ01);
+ 270               	.LM16:
+ 271 006c 82EC      		ldi r24,lo8(-62)
+ 272 006e 90E0      		ldi r25,0
+ 273 0070 26E0      		ldi r18,lo8(6)
+ 274 0072 FC01      		movw r30,r24
+ 275 0074 2083      		st Z,r18
+ 884:optiboot.c    ****   UART_SRL = (uint8_t)BAUD_SETTING;
+ 277               	.LM17:
+ 278 0076 84EC      		ldi r24,lo8(-60)
+ 279 0078 90E0      		ldi r25,0
+ 280 007a 20E1      		ldi r18,lo8(16)
+ 281 007c FC01      		movw r30,r24
+ 282 007e 2083      		st Z,r18
+ 885:optiboot.c    **** #endif // LIN_UART
+ 886:optiboot.c    **** #endif // mega8/etc
+ 887:optiboot.c    **** #endif // soft_uart
+ 888:optiboot.c    **** 
+ 889:optiboot.c    **** #ifdef RS485
+ 890:optiboot.c    ****   RS485_DDR |= _BV(RS485_BIT);
+ 891:optiboot.c    ****   #ifdef RS485_INVERT
+ 892:optiboot.c    ****   RS485_PORT |= _BV(RS485_BIT);
+ 893:optiboot.c    ****   #else
+ 894:optiboot.c    ****   RS485_PORT &= ~_BV(RS485_BIT);
+ 895:optiboot.c    ****   #endif
+ 896:optiboot.c    **** #endif
+ 897:optiboot.c    **** 
+ 898:optiboot.c    ****   // Set up watchdog to trigger after desired timeout
+ 899:optiboot.c    ****   watchdogConfig(WDTPERIOD);
+ 284               	.LM18:
+ 285 0080 8EE0      		ldi r24,lo8(14)
+ 286 0082 0E94 0000 		call watchdogConfig
+ 900:optiboot.c    **** 
+ 901:optiboot.c    **** #if (LED_START_FLASHES > 0) || LED_DATA_FLASH || LED_START_ON
+ 902:optiboot.c    ****   /* Set LED pin as output */
+ 903:optiboot.c    ****   LED_DDR |= _BV(LED);
+ 288               	.LM19:
+ 289 0086 84E2      		ldi r24,lo8(36)
+ 290 0088 90E0      		ldi r25,0
+ 291 008a 24E2      		ldi r18,lo8(36)
+ 292 008c 30E0      		ldi r19,0
+ 293 008e F901      		movw r30,r18
+ 294 0090 2081      		ld r18,Z
+ 295 0092 2062      		ori r18,lo8(32)
+ 296 0094 FC01      		movw r30,r24
+ 297 0096 2083      		st Z,r18
+ 904:optiboot.c    **** #endif
+ 905:optiboot.c    **** 
+ 906:optiboot.c    **** #if SOFT_UART
+ 907:optiboot.c    ****   /* Set TX pin as HIGH output */
+ 908:optiboot.c    ****   UART_PORT |= _BV(UART_TX_BIT);
+ 909:optiboot.c    ****   UART_DDR |= _BV(UART_TX_BIT);
+ 910:optiboot.c    **** #endif
+ 911:optiboot.c    **** 
+ 912:optiboot.c    **** #if LED_START_FLASHES > 0
+ 913:optiboot.c    ****   /* Flash onboard LED to signal entering of bootloader */
+ 914:optiboot.c    ****   flash_led(LED_START_FLASHES * 2);
+ 299               	.LM20:
+ 300 0098 84E0      		ldi r24,lo8(4)
+ 301 009a 0E94 0000 		call flash_led
+ 302               	.L19:
+ 915:optiboot.c    **** #else
+ 916:optiboot.c    **** #if LED_START_ON
+ 917:optiboot.c    ****   /* Turn on LED to indicate starting bootloader (less code!) */
+ 918:optiboot.c    ****   LED_PORT |= _BV(LED);
+ 919:optiboot.c    **** #endif
+ 920:optiboot.c    **** #endif
+ 921:optiboot.c    **** 
+ 922:optiboot.c    ****   /* Forever loop: exits by causing WDT reset */
+ 923:optiboot.c    ****   for (;;) {
+ 924:optiboot.c    ****     /* get character from UART */
+ 925:optiboot.c    ****     ch = getch();
+ 304               	.LM21:
+ 305 009e 0E94 0000 		call getch
+ 306 00a2 8B83      		std Y+3,r24
+ 926:optiboot.c    **** 
+ 927:optiboot.c    ****     if (ch == STK_GET_PARAMETER) {
+ 308               	.LM22:
+ 309 00a4 8B81      		ldd r24,Y+3
+ 310 00a6 8134      		cpi r24,lo8(65)
+ 311 00a8 01F4      		brne .L5
+ 312               	.LBB2:
+ 928:optiboot.c    ****       unsigned char which = getch();
+ 314               	.LM23:
+ 315 00aa 0E94 0000 		call getch
+ 316 00ae 8C83      		std Y+4,r24
+ 929:optiboot.c    ****       verifySpace();
+ 318               	.LM24:
+ 319 00b0 0E94 0000 		call verifySpace
+ 930:optiboot.c    ****       /*
+ 931:optiboot.c    ****        * Send optiboot version as "SW version"
+ 932:optiboot.c    ****        * Note that the references to memory are optimized away.
+ 933:optiboot.c    ****        */
+ 934:optiboot.c    ****       if (which == STK_SW_MINOR) {
+ 321               	.LM25:
+ 322 00b4 8C81      		ldd r24,Y+4
+ 323 00b6 8238      		cpi r24,lo8(-126)
+ 324 00b8 01F4      		brne .L6
+ 935:optiboot.c    ****         putch(optiboot_version & 0xFF);
+ 326               	.LM26:
+ 327 00ba 83E0      		ldi r24,lo8(3)
+ 328 00bc 98E0      		ldi r25,lo8(8)
+ 329 00be 0E94 0000 		call putch
+ 330 00c2 00C0      		rjmp .L9
+ 331               	.L6:
+ 936:optiboot.c    ****       } else if (which == STK_SW_MAJOR) {
+ 333               	.LM27:
+ 334 00c4 8C81      		ldd r24,Y+4
+ 335 00c6 8138      		cpi r24,lo8(-127)
+ 336 00c8 01F4      		brne .L8
+ 937:optiboot.c    ****         putch(optiboot_version >> 8);
+ 338               	.LM28:
+ 339 00ca 83E0      		ldi r24,lo8(3)
+ 340 00cc 98E0      		ldi r25,lo8(8)
+ 341 00ce 892F      		mov r24,r25
+ 342 00d0 9927      		clr r25
+ 343 00d2 0E94 0000 		call putch
+ 344 00d6 00C0      		rjmp .L9
+ 345               	.L8:
+ 938:optiboot.c    ****       } else {
+ 939:optiboot.c    ****         /*
+ 940:optiboot.c    ****          * GET PARAMETER returns a generic 0x03 reply for
+ 941:optiboot.c    ****          * other parameters - enough to keep Avrdude happy
+ 942:optiboot.c    ****          */
+ 943:optiboot.c    ****         putch(0x03);
+ 347               	.LM29:
+ 348 00d8 83E0      		ldi r24,lo8(3)
+ 349 00da 0E94 0000 		call putch
+ 350 00de 00C0      		rjmp .L9
+ 351               	.L5:
+ 352               	.LBE2:
+ 944:optiboot.c    ****       }
+ 945:optiboot.c    ****     }
+ 946:optiboot.c    ****     else if (ch == STK_SET_DEVICE) {
+ 354               	.LM30:
+ 355 00e0 8B81      		ldd r24,Y+3
+ 356 00e2 8234      		cpi r24,lo8(66)
+ 357 00e4 01F4      		brne .L10
+ 947:optiboot.c    ****       // SET DEVICE is ignored
+ 948:optiboot.c    ****       getNch(20);
+ 359               	.LM31:
+ 360 00e6 84E1      		ldi r24,lo8(20)
+ 361 00e8 0E94 0000 		call getNch
+ 362 00ec 00C0      		rjmp .L9
+ 363               	.L10:
+ 949:optiboot.c    ****     }
+ 950:optiboot.c    ****     else if (ch == STK_SET_DEVICE_EXT) {
+ 365               	.LM32:
+ 366 00ee 8B81      		ldd r24,Y+3
+ 367 00f0 8534      		cpi r24,lo8(69)
+ 368 00f2 01F4      		brne .L11
+ 951:optiboot.c    ****       // SET DEVICE EXT is ignored
+ 952:optiboot.c    ****       getNch(5);
+ 370               	.LM33:
+ 371 00f4 85E0      		ldi r24,lo8(5)
+ 372 00f6 0E94 0000 		call getNch
+ 373 00fa 00C0      		rjmp .L9
+ 374               	.L11:
+ 953:optiboot.c    ****     }
+ 954:optiboot.c    ****     else if (ch == STK_LOAD_ADDRESS) {
+ 376               	.LM34:
+ 377 00fc 8B81      		ldd r24,Y+3
+ 378 00fe 8535      		cpi r24,lo8(85)
+ 379 0100 01F4      		brne .L12
+ 955:optiboot.c    ****       // LOAD ADDRESS
+ 956:optiboot.c    ****       address.bytes[0] = getch();
+ 381               	.LM35:
+ 382 0102 0E94 0000 		call getch
+ 383 0106 E82E      		mov r14,r24
+ 957:optiboot.c    ****       address.bytes[1] = getch();
+ 385               	.LM36:
+ 386 0108 0E94 0000 		call getch
+ 387 010c F82E      		mov r15,r24
+ 958:optiboot.c    **** #ifdef RAMPZ
+ 959:optiboot.c    ****       // Transfer top bit to LSB in RAMPZ
+ 960:optiboot.c    ****       if (address.bytes[1] & 0x80) {
+ 961:optiboot.c    ****         RAMPZ |= 0x01;
+ 962:optiboot.c    ****       }
+ 963:optiboot.c    ****       else {
+ 964:optiboot.c    ****         RAMPZ &= 0xFE;
+ 965:optiboot.c    ****       }
+ 966:optiboot.c    **** #endif
+ 967:optiboot.c    ****       address.word *= 2; // Convert from word address to byte address
+ 389               	.LM37:
+ 390 010e C701      		movw r24,r14
+ 391 0110 880F      		lsl r24
+ 392 0112 991F      		rol r25
+ 393 0114 7C01      		movw r14,r24
+ 968:optiboot.c    ****       verifySpace();
+ 395               	.LM38:
+ 396 0116 0E94 0000 		call verifySpace
+ 397 011a 00C0      		rjmp .L9
+ 398               	.L12:
+ 969:optiboot.c    ****     }
+ 970:optiboot.c    ****     else if (ch == STK_UNIVERSAL) {
+ 400               	.LM39:
+ 401 011c 8B81      		ldd r24,Y+3
+ 402 011e 8635      		cpi r24,lo8(86)
+ 403 0120 01F4      		brne .L13
+ 971:optiboot.c    **** #ifdef RAMPZ
+ 972:optiboot.c    ****       // LOAD_EXTENDED_ADDRESS is needed in STK_UNIVERSAL for addressing more than 128kB
+ 973:optiboot.c    ****       if ( AVR_OP_LOAD_EXT_ADDR == getch() ) {
+ 974:optiboot.c    ****         // get address
+ 975:optiboot.c    ****         getch();  // get '0'
+ 976:optiboot.c    ****         RAMPZ = (RAMPZ & 0x01) | ((getch() << 1) & 0xff);  // get address and put it in RAMPZ
+ 977:optiboot.c    ****         getNch(1); // get last '0'
+ 978:optiboot.c    ****         // response
+ 979:optiboot.c    ****         putch(0x00);
+ 980:optiboot.c    ****       }
+ 981:optiboot.c    ****       else {
+ 982:optiboot.c    ****         // everything else is ignored
+ 983:optiboot.c    ****         getNch(3);
+ 984:optiboot.c    ****         putch(0x00);
+ 985:optiboot.c    ****       }
+ 986:optiboot.c    **** #else
+ 987:optiboot.c    ****       // UNIVERSAL command is ignored
+ 988:optiboot.c    ****       getNch(4);
+ 405               	.LM40:
+ 406 0122 84E0      		ldi r24,lo8(4)
+ 407 0124 0E94 0000 		call getNch
+ 989:optiboot.c    ****       putch(0x00);
+ 409               	.LM41:
+ 410 0128 80E0      		ldi r24,0
+ 411 012a 0E94 0000 		call putch
+ 412 012e 00C0      		rjmp .L9
+ 413               	.L13:
+ 990:optiboot.c    **** #endif
+ 991:optiboot.c    ****     }
+ 992:optiboot.c    ****     /* Write memory, length is big endian and is in bytes */
+ 993:optiboot.c    ****     else if (ch == STK_PROG_PAGE) {
+ 415               	.LM42:
+ 416 0130 8B81      		ldd r24,Y+3
+ 417 0132 8436      		cpi r24,lo8(100)
+ 418 0134 01F4      		brne .L14
+ 419               	.LBB3:
+ 994:optiboot.c    ****       // PROGRAM PAGE - we support flash programming only, not EEPROM
+ 995:optiboot.c    ****       uint8_t desttype;
+ 996:optiboot.c    ****       uint8_t *bufPtr;
+ 997:optiboot.c    ****       pagelen_t savelength;
+ 998:optiboot.c    **** 
+ 999:optiboot.c    ****       GETLENGTH(length);
+ 421               	.LM43:
+ 422 0136 0E94 0000 		call getch
+ 423 013a 0E94 0000 		call getch
+ 424 013e D82E      		mov r13,r24
+1000:optiboot.c    ****       savelength = length;
+ 426               	.LM44:
+ 427 0140 DD82      		std Y+5,r13
+1001:optiboot.c    ****       desttype = getch();
+ 429               	.LM45:
+ 430 0142 0E94 0000 		call getch
+ 431 0146 8E83      		std Y+6,r24
+1002:optiboot.c    **** 
+1003:optiboot.c    ****       // read a page worth of contents
+1004:optiboot.c    ****       bufPtr = buff.bptr;
+ 433               	.LM46:
+ 434 0148 8091 0000 		lds r24,buff
+ 435 014c 9091 0000 		lds r25,buff+1
+ 436 0150 9A83      		std Y+2,r25
+ 437 0152 8983      		std Y+1,r24
+ 438               	.L15:
+1005:optiboot.c    ****       do *bufPtr++ = getch();
+ 440               	.LM47:
+ 441 0154 0981      		ldd r16,Y+1
+ 442 0156 1A81      		ldd r17,Y+2
+ 443 0158 C801      		movw r24,r16
+ 444 015a 0196      		adiw r24,1
+ 445 015c 9A83      		std Y+2,r25
+ 446 015e 8983      		std Y+1,r24
+ 447 0160 0E94 0000 		call getch
+ 448 0164 F801      		movw r30,r16
+ 449 0166 8083      		st Z,r24
+1006:optiboot.c    ****       while (--length);
+ 451               	.LM48:
+ 452 0168 DA94      		dec r13
+ 453 016a DD20      		tst r13
+ 454 016c 01F4      		brne .L15
+1007:optiboot.c    **** 
+1008:optiboot.c    ****       // Read command terminator, start reply
+1009:optiboot.c    ****       verifySpace();
+ 456               	.LM49:
+ 457 016e 0E94 0000 		call verifySpace
+1010:optiboot.c    **** 
+1011:optiboot.c    **** #ifdef VIRTUAL_BOOT_PARTITION
+1012:optiboot.c    **** /*
+1013:optiboot.c    ****  *              How the Virtual Boot Partition works:
+1014:optiboot.c    ****  * At the beginning of a normal AVR program are a set of vectors that
+1015:optiboot.c    ****  * implement the interrupt mechanism.  Each vector is usually a single
+1016:optiboot.c    ****  * instruction that dispatches to the appropriate ISR.
+1017:optiboot.c    ****  * The instruction is normally an rjmp (on AVRs with 8k or less of flash)
+1018:optiboot.c    ****  * or jmp instruction, and the 0th vector is executed on reset and jumps
+1019:optiboot.c    ****  * to the start of the user program:
+1020:optiboot.c    ****  * vectors: jmp startup
+1021:optiboot.c    ****  *          jmp ISR1
+1022:optiboot.c    ****  *          jmp ISR2
+1023:optiboot.c    ****  *             :      ;; etc
+1024:optiboot.c    ****  *          jmp lastvector
+1025:optiboot.c    ****  * To implement the "Virtual Boot Partition", Optiboot detects when the
+1026:optiboot.c    ****  * flash page containing the vectors is being programmed, and replaces the
+1027:optiboot.c    ****  * startup vector with a jump to te beginning of Optiboot.  Then it saves
+1028:optiboot.c    ****  * the applications's startup vector in another (must be unused by the
+1029:optiboot.c    ****  * application), and finally programs the page with the changed vectors.
+1030:optiboot.c    ****  * Thereafter, on reset, the vector will dispatch to the beginning of
+1031:optiboot.c    ****  * Optiboot.  When Optiboot decides that it will run the user application,
+1032:optiboot.c    ****  * it fetches the saved start address from the unused vector, and jumps
+1033:optiboot.c    ****  * there.
+1034:optiboot.c    ****  * The logic is dependent on size of flash, and whether the reset vector is
+1035:optiboot.c    ****  * on the same flash page as the saved start address.
+1036:optiboot.c    ****  */
+1037:optiboot.c    **** 
+1038:optiboot.c    **** #if FLASHEND > 8192
+1039:optiboot.c    **** /*
+1040:optiboot.c    ****  * AVR with 4-byte ISR Vectors and "jmp"
+1041:optiboot.c    ****  * WARNING: this works only up to 128KB flash!
+1042:optiboot.c    ****  */
+1043:optiboot.c    **** #if FLASHEND > (128*1024)
+1044:optiboot.c    **** #error "Can't use VIRTUAL_BOOT_PARTITION with more than 128k of Flash"
+1045:optiboot.c    **** #endif
+1046:optiboot.c    ****       if (address.word == RSTVEC_ADDRESS) {
+1047:optiboot.c    ****         // This is the reset vector page. We need to live-patch the
+1048:optiboot.c    ****         // code so the bootloader runs first.
+1049:optiboot.c    ****         //
+1050:optiboot.c    ****         // Save jmp targets (for "Verify")
+1051:optiboot.c    ****         rstVect0_sav = buff.bptr[rstVect0];
+1052:optiboot.c    ****         rstVect1_sav = buff.bptr[rstVect1];
+1053:optiboot.c    **** 
+1054:optiboot.c    ****         // Add "jump to Optiboot" at RESET vector
+1055:optiboot.c    ****         // WARNING: this works as long as 'main' is in first section
+1056:optiboot.c    ****         buff.bptr[rstVect0] = ((uint16_t)pre_main) & 0xFF;
+1057:optiboot.c    ****         buff.bptr[rstVect1] = ((uint16_t)pre_main) >> 8;
+1058:optiboot.c    **** 
+1059:optiboot.c    **** #if (SAVVEC_ADDRESS != RSTVEC_ADDRESS)
+1060:optiboot.c    **** // the save_vector is not necessarilly on the same flash page as the reset
+1061:optiboot.c    **** //  vector.  If it isn't, we've waiting to actually write it.
+1062:optiboot.c    ****       } else if (address.word == SAVVEC_ADDRESS) {
+1063:optiboot.c    ****         // Save old values for Verify
+1064:optiboot.c    ****         saveVect0_sav = buff.bptr[saveVect0 - SAVVEC_ADDRESS];
+1065:optiboot.c    ****         saveVect1_sav = buff.bptr[saveVect1 - SAVVEC_ADDRESS];
+1066:optiboot.c    **** 
+1067:optiboot.c    ****         // Move RESET jmp target to 'save' vector
+1068:optiboot.c    ****         buff.bptr[saveVect0 - SAVVEC_ADDRESS] = rstVect0_sav;
+1069:optiboot.c    ****         buff.bptr[saveVect1 - SAVVEC_ADDRESS] = rstVect1_sav;
+1070:optiboot.c    ****       }
+1071:optiboot.c    **** #else
+1072:optiboot.c    ****       // Save old values for Verify
+1073:optiboot.c    ****       saveVect0_sav = buff.bptr[saveVect0];
+1074:optiboot.c    ****       saveVect1_sav = buff.bptr[saveVect1];
+1075:optiboot.c    **** 
+1076:optiboot.c    ****       // Move RESET jmp target to 'save' vector
+1077:optiboot.c    ****       buff.bptr[saveVect0] = rstVect0_sav;
+1078:optiboot.c    ****       buff.bptr[saveVect1] = rstVect1_sav;
+1079:optiboot.c    ****     }
+1080:optiboot.c    **** #endif
+1081:optiboot.c    **** 
+1082:optiboot.c    **** #else  // bigger flash
+1083:optiboot.c    **** #ifdef KeepBracesMatched
+1084:optiboot.c    ****     {
+1085:optiboot.c    **** #endif
+1086:optiboot.c    **** /*
+1087:optiboot.c    ****  * AVR with 2-byte ISR Vectors and rjmp
+1088:optiboot.c    ****  */
+1089:optiboot.c    ****       if (address.word == rstVect0) {
+1090:optiboot.c    ****         // This is the reset vector page. We need to live-patch
+1091:optiboot.c    ****         // the code so the bootloader runs first.
+1092:optiboot.c    ****         //
+1093:optiboot.c    ****         // Move RESET vector to 'save' vector
+1094:optiboot.c    ****         // Save jmp targets (for "Verify")
+1095:optiboot.c    ****         rstVect0_sav = buff.bptr[rstVect0];
+1096:optiboot.c    ****         rstVect1_sav = buff.bptr[rstVect1];
+1097:optiboot.c    ****         addr16_t vect;
+1098:optiboot.c    ****         vect.word = ((uint16_t)pre_main-1);
+1099:optiboot.c    ****         // Instruction is a relative jump (rjmp), so recalculate.
+1100:optiboot.c    ****         // an RJMP instruction is 0b1100xxxx xxxxxxxx, so we should be able to
+1101:optiboot.c    ****         // do math on the offsets without masking it off first.
+1102:optiboot.c    ****         // Note that rjmp is relative to the already incremented PC, so the
+1103:optiboot.c    ****         //  offset is one less than you might expect.
+1104:optiboot.c    ****         buff.bptr[0] = vect.bytes[0]; // rjmp to start of bootloader
+1105:optiboot.c    ****         buff.bptr[1] = vect.bytes[1] | 0xC0;  // make an "rjmp"
+1106:optiboot.c    **** #if (SAVVEC_ADDRESS != RSTVEC_ADDRESS)
+1107:optiboot.c    ****       } else if (address.word == SAVVEC_ADDRESS) {
+1108:optiboot.c    ****         addr16_t vect;
+1109:optiboot.c    ****         vect.bytes[0] = rstVect0_sav;
+1110:optiboot.c    ****         vect.bytes[1] = rstVect1_sav;
+1111:optiboot.c    ****         // Save old values for Verify
+1112:optiboot.c    ****         saveVect0_sav = buff.bptr[saveVect0 - SAVVEC_ADDRESS];
+1113:optiboot.c    ****         saveVect1_sav = buff.bptr[saveVect1 - SAVVEC_ADDRESS];
+1114:optiboot.c    **** 
+1115:optiboot.c    ****         vect.word = (vect.word-save_vect_num); //substract 'save' interrupt position
+1116:optiboot.c    ****         // Move RESET jmp target to 'save' vector
+1117:optiboot.c    ****         buff.bptr[saveVect0 - SAVVEC_ADDRESS] = vect.bytes[0];
+1118:optiboot.c    ****         buff.bptr[saveVect1 - SAVVEC_ADDRESS] = (vect.bytes[1] & 0x0F)| 0xC0;  // make an "rjmp"
+1119:optiboot.c    ****       }
+1120:optiboot.c    **** #else
+1121:optiboot.c    **** #ifdef KeepBracesMatched
+1122:optiboot.c    ****       {
+1123:optiboot.c    **** #endif
+1124:optiboot.c    **** 
+1125:optiboot.c    ****         // Save old values for Verify
+1126:optiboot.c    ****         saveVect0_sav = buff.bptr[saveVect0];
+1127:optiboot.c    ****         saveVect1_sav = buff.bptr[saveVect1];
+1128:optiboot.c    **** 
+1129:optiboot.c    ****         vect.bytes[0] = rstVect0_sav;
+1130:optiboot.c    ****         vect.bytes[1] = rstVect1_sav;
+1131:optiboot.c    ****         vect.word = (vect.word-save_vect_num); //substract 'save' interrupt position
+1132:optiboot.c    ****         // Move RESET jmp target to 'save' vector
+1133:optiboot.c    ****         buff.bptr[saveVect0] = vect.bytes[0];
+1134:optiboot.c    ****         buff.bptr[saveVect1] = (vect.bytes[1] & 0x0F)| 0xC0;  // make an "rjmp"
+1135:optiboot.c    ****         // Add rjmp to bootloader at RESET vector
+1136:optiboot.c    ****         vect.word = ((uint16_t)pre_main-1); // (main) is always <= 0x0FFF; no masking needed.
+1137:optiboot.c    ****         buff.bptr[0] = vect.bytes[0]; // rjmp 0x1c00 instruction
+1138:optiboot.c    ****       }
+1139:optiboot.c    **** 
+1140:optiboot.c    **** #endif
+1141:optiboot.c    **** 
+1142:optiboot.c    **** #endif // FLASHEND
+1143:optiboot.c    **** #endif // VBP
+1144:optiboot.c    **** 
+1145:optiboot.c    ****       writebuffer(desttype, buff, address, savelength);
+ 459               	.LM50:
+ 460 0172 3E81      		ldd r19,Y+6
+ 461 0174 8091 0000 		lds r24,buff
+ 462 0178 9091 0000 		lds r25,buff+1
+ 463 017c 2D81      		ldd r18,Y+5
+ 464 017e A701      		movw r20,r14
+ 465 0180 BC01      		movw r22,r24
+ 466 0182 832F      		mov r24,r19
+ 467 0184 0E94 0000 		call writebuffer
+ 468               	.LBE3:
+ 469 0188 00C0      		rjmp .L9
+ 470               	.L14:
+1146:optiboot.c    **** 
+1147:optiboot.c    **** 
+1148:optiboot.c    ****     }
+1149:optiboot.c    **** /* Read memory block mode, length is big endian.  */
+1150:optiboot.c    ****     else if (ch == STK_READ_PAGE) {
+ 472               	.LM51:
+ 473 018a 8B81      		ldd r24,Y+3
+ 474 018c 8437      		cpi r24,lo8(116)
+ 475 018e 01F4      		brne .L16
+ 476               	.LBB4:
+1151:optiboot.c    ****       uint8_t desttype;
+1152:optiboot.c    ****       GETLENGTH(length);
+ 478               	.LM52:
+ 479 0190 0E94 0000 		call getch
+ 480 0194 0E94 0000 		call getch
+ 481 0198 D82E      		mov r13,r24
+1153:optiboot.c    **** 
+1154:optiboot.c    ****       desttype = getch();
+ 483               	.LM53:
+ 484 019a 0E94 0000 		call getch
+ 485 019e 8F83      		std Y+7,r24
+1155:optiboot.c    **** 
+1156:optiboot.c    ****       verifySpace();
+ 487               	.LM54:
+ 488 01a0 0E94 0000 		call verifySpace
+1157:optiboot.c    **** 
+1158:optiboot.c    ****       read_mem(desttype, address, length);
+ 490               	.LM55:
+ 491 01a4 4D2D      		mov r20,r13
+ 492 01a6 B701      		movw r22,r14
+ 493 01a8 8F81      		ldd r24,Y+7
+ 494 01aa 0E94 0000 		call read_mem
+ 495               	.LBE4:
+ 496 01ae 00C0      		rjmp .L9
+ 497               	.L16:
+1159:optiboot.c    ****     }
+1160:optiboot.c    **** 
+1161:optiboot.c    **** /* Get device signature bytes  */
+1162:optiboot.c    ****     else if (ch == STK_READ_SIGN) {
+ 499               	.LM56:
+ 500 01b0 8B81      		ldd r24,Y+3
+ 501 01b2 8537      		cpi r24,lo8(117)
+ 502 01b4 01F4      		brne .L17
+1163:optiboot.c    ****       // READ SIGN - return what Avrdude wants to hear
+1164:optiboot.c    ****       verifySpace();
+ 504               	.LM57:
+ 505 01b6 0E94 0000 		call verifySpace
+1165:optiboot.c    ****       putch(SIGNATURE_0);
+ 507               	.LM58:
+ 508 01ba 8EE1      		ldi r24,lo8(30)
+ 509 01bc 0E94 0000 		call putch
+1166:optiboot.c    ****       putch(SIGNATURE_1);
+ 511               	.LM59:
+ 512 01c0 85E9      		ldi r24,lo8(-107)
+ 513 01c2 0E94 0000 		call putch
+1167:optiboot.c    ****       putch(SIGNATURE_2);
+ 515               	.LM60:
+ 516 01c6 84E1      		ldi r24,lo8(20)
+ 517 01c8 0E94 0000 		call putch
+ 518 01cc 00C0      		rjmp .L9
+ 519               	.L17:
+1168:optiboot.c    ****     }
+1169:optiboot.c    ****     else if (ch == STK_LEAVE_PROGMODE) { /* 'Q' */
+ 521               	.LM61:
+ 522 01ce 8B81      		ldd r24,Y+3
+ 523 01d0 8135      		cpi r24,lo8(81)
+ 524 01d2 01F4      		brne .L18
+1170:optiboot.c    ****       // Adaboot no-wait mod
+1171:optiboot.c    ****       watchdogConfig(WATCHDOG_16MS);
+ 526               	.LM62:
+ 527 01d4 88E0      		ldi r24,lo8(8)
+ 528 01d6 0E94 0000 		call watchdogConfig
+1172:optiboot.c    ****       verifySpace();
+ 530               	.LM63:
+ 531 01da 0E94 0000 		call verifySpace
+ 532 01de 00C0      		rjmp .L9
+ 533               	.L18:
+1173:optiboot.c    ****     }
+1174:optiboot.c    ****     else {
+1175:optiboot.c    ****       // This covers the response to commands like STK_ENTER_PROGMODE
+1176:optiboot.c    ****       verifySpace();
+ 535               	.LM64:
+ 536 01e0 0E94 0000 		call verifySpace
+ 537               	.L9:
+1177:optiboot.c    ****     }
+1178:optiboot.c    ****     putch(STK_OK);
+ 539               	.LM65:
+ 540 01e4 80E1      		ldi r24,lo8(16)
+ 541 01e6 0E94 0000 		call putch
+1179:optiboot.c    ****   }
+ 543               	.LM66:
+ 544 01ea 00C0      		rjmp .L19
+ 562               	.Lscope2:
+ 564               		.stabd	78,0,0
+ 565               		.data
+ 568               	buff:
+ 569 0000 0001      		.word	256
+ 570               		.text
+ 572               	.global	sectionOpts
+ 574               	sectionOpts:
+ 575               		.stabd	46,0,0
+ 605:optiboot.c    **** /*
+ 577               	.LM67:
+ 578               	.LFBB3:
+ 579               	/* prologue: naked */
+ 580               	/* frame size = 0 */
+ 581               	/* stack size = 0 */
+ 582               	.L__stack_usage = 0
+ 682:optiboot.c    ****       " .equ __BOOT_SIZE__, %1\n"
+ 584               	.LM68:
+ 585               	/* #APP */
+ 586               	 ;  682 "optiboot.c" 1
+ 587               		 .global __BOOT_SIZE__, __BOOT_START__, __VERSION_START__
+ 588               	 .equ __BOOT_SIZE__, 512
+ 589               	 .equ __BOOT_START__, ((32767+1)-512)
+ 590               	 .equ __VERSION_START__, (32767-1)
+ 591               	
+ 592               	 ;  0 "" 2
+ 689:optiboot.c    **** 
+ 594               	.LM69:
+ 595               	/* #NOAPP */
+ 596 0000 0000      		nop
+ 597               	/* epilogue start */
+ 599               	.Lscope3:
+ 601               		.stabd	78,0,0
+ 604               	.global	putch
+ 606               	putch:
+ 607               		.stabd	46,0,0
+1180:optiboot.c    **** }
+1181:optiboot.c    **** 
+1182:optiboot.c    **** void putch(char ch) {
+ 609               	.LM70:
+ 610               	.LFBB4:
+ 611 0002 CF93      		push r28
+ 612 0004 DF93      		push r29
+ 613 0006 1F92      		push __zero_reg__
+ 614 0008 CDB7      		in r28,__SP_L__
+ 615 000a DEB7      		in r29,__SP_H__
+ 616               	/* prologue: function */
+ 617               	/* frame size = 1 */
+ 618               	/* stack size = 3 */
+ 619               	.L__stack_usage = 3
+ 620 000c 8983      		std Y+1,r24
+1183:optiboot.c    **** #if (SOFT_UART == 0)
+1184:optiboot.c    ****   // Hardware UARTs.
+1185:optiboot.c    **** #ifndef LIN_UART
+1186:optiboot.c    **** #ifdef RS485
+1187:optiboot.c    ****   uint8_t x;
+1188:optiboot.c    ****   do {
+1189:optiboot.c    ****     x = UART_SRA;
+1190:optiboot.c    ****   } while (!(x & _BV(UDRE0)));
+1191:optiboot.c    ****   // clear transmitted flag
+1192:optiboot.c    ****   x |= _BV(TXC0);
+1193:optiboot.c    ****   UART_SRA = x;
+1194:optiboot.c    ****   // put transceiver to output mode
+1195:optiboot.c    **** # ifdef RS485_INVERT
+1196:optiboot.c    ****   RS485_PORT &= ~_BV(RS485_BIT);
+1197:optiboot.c    **** # else
+1198:optiboot.c    ****   RS485_PORT |= _BV(RS485_BIT);
+1199:optiboot.c    **** # endif
+1200:optiboot.c    ****   // put char
+1201:optiboot.c    ****   UART_UDR = ch;
+1202:optiboot.c    ****   // wait for char transmitted
+1203:optiboot.c    ****   while (!(UART_SRA & _BV(TXC0))) {  /* Spin */ }
+1204:optiboot.c    ****   // put transceiver to input mode
+1205:optiboot.c    **** # ifdef RS485_INVERT
+1206:optiboot.c    ****   RS485_PORT |= _BV(RS485_BIT);
+1207:optiboot.c    **** # else
+1208:optiboot.c    ****   RS485_PORT &= ~_BV(RS485_BIT);
+1209:optiboot.c    **** # endif
+1210:optiboot.c    **** #else //not RS485
+1211:optiboot.c    ****   while (!(UART_SRA & _BV(UDRE0))) {  /* Spin */ }
+ 622               	.LM71:
+ 623 000e 0000      		nop
+ 624               	.L22:
+ 626               	.LM72:
+ 627 0010 80EC      		ldi r24,lo8(-64)
+ 628 0012 90E0      		ldi r25,0
+ 629 0014 FC01      		movw r30,r24
+ 630 0016 8081      		ld r24,Z
+ 631 0018 882F      		mov r24,r24
+ 632 001a 90E0      		ldi r25,0
+ 633 001c 8072      		andi r24,32
+ 634 001e 9927      		clr r25
+ 635 0020 892B      		or r24,r25
+ 636 0022 01F0      		breq .L22
+1212:optiboot.c    ****   UART_UDR = ch;
+ 638               	.LM73:
+ 639 0024 86EC      		ldi r24,lo8(-58)
+ 640 0026 90E0      		ldi r25,0
+ 641 0028 2981      		ldd r18,Y+1
+ 642 002a FC01      		movw r30,r24
+ 643 002c 2083      		st Z,r18
+1213:optiboot.c    **** #endif
+1214:optiboot.c    **** #else //is LIN UART
+1215:optiboot.c    ****   while (!(LINSIR & _BV(LTXOK)))   {  /* Spin */ }
+1216:optiboot.c    ****   UART_UDR = ch;
+1217:optiboot.c    **** #endif
+1218:optiboot.c    **** 
+1219:optiboot.c    **** #else // SOFT_UART
+1220:optiboot.c    **** 
+1221:optiboot.c    **** #ifdef RS485
+1222:optiboot.c    ****   // put transceiver to output mode
+1223:optiboot.c    ****   #ifdef RS485_INVERT
+1224:optiboot.c    ****   RS485_PORT &= ~_BV(RS485_BIT);
+1225:optiboot.c    ****   #else
+1226:optiboot.c    ****   RS485_PORT |= _BV(RS485_BIT);
+1227:optiboot.c    ****   #endif
+1228:optiboot.c    **** #endif
+1229:optiboot.c    ****   __asm__ __volatile__ (
+1230:optiboot.c    ****     "   com %[ch]\n" // ones complement, carry set
+1231:optiboot.c    ****     "   sec\n"
+1232:optiboot.c    ****     "1: brcc 2f\n"
+1233:optiboot.c    ****     "   cbi %[uartPort],%[uartBit]\n"
+1234:optiboot.c    ****     "   rjmp 3f\n"
+1235:optiboot.c    ****     "2: sbi %[uartPort],%[uartBit]\n"
+1236:optiboot.c    ****     "   nop\n"
+1237:optiboot.c    ****     "3: rcall uartDelay\n"
+1238:optiboot.c    ****     "   rcall uartDelay\n"
+1239:optiboot.c    ****     "   lsr %[ch]\n"
+1240:optiboot.c    ****     "   dec %[bitcnt]\n"
+1241:optiboot.c    ****     "   brne 1b\n"
+1242:optiboot.c    ****     :
+1243:optiboot.c    ****     :
+1244:optiboot.c    ****     [bitcnt] "d" (10),
+1245:optiboot.c    ****     [ch] "r" (ch),
+1246:optiboot.c    ****     [uartPort] "I" (_SFR_IO_ADDR(UART_PORT)),
+1247:optiboot.c    ****     [uartBit] "I" (UART_TX_BIT)
+1248:optiboot.c    ****     :
+1249:optiboot.c    ****     "r25"
+1250:optiboot.c    ****     );
+1251:optiboot.c    **** 
+1252:optiboot.c    **** #ifdef RS485
+1253:optiboot.c    ****   // put transceiver to input mode
+1254:optiboot.c    ****   #ifdef RS485_INVERT
+1255:optiboot.c    ****   RS485_PORT |= _BV(RS485_BIT);
+1256:optiboot.c    ****   #else
+1257:optiboot.c    ****   RS485_PORT &= ~_BV(RS485_BIT);
+1258:optiboot.c    ****   #endif
+1259:optiboot.c    **** #endif
+1260:optiboot.c    **** #endif // SOFT_UART
+1261:optiboot.c    **** }
+ 645               	.LM74:
+ 646 002e 0000      		nop
+ 647               	/* epilogue start */
+ 648 0030 0F90      		pop __tmp_reg__
+ 649 0032 DF91      		pop r29
+ 650 0034 CF91      		pop r28
+ 651 0036 0895      		ret
+ 653               	.Lscope4:
+ 655               		.stabd	78,0,0
+ 658               	toggle_led:
+ 659               		.stabd	46,0,0
+1262:optiboot.c    **** 
+1263:optiboot.c    **** static void inline toggle_led(void) {
+ 661               	.LM75:
+ 662               	.LFBB5:
+ 663 0038 CF93      		push r28
+ 664 003a DF93      		push r29
+ 665 003c CDB7      		in r28,__SP_L__
+ 666 003e DEB7      		in r29,__SP_H__
+ 667               	/* prologue: function */
+ 668               	/* frame size = 0 */
+ 669               	/* stack size = 2 */
+ 670               	.L__stack_usage = 2
+1264:optiboot.c    **** #if defined(__AVR_ATmega8__)    || defined(__AVR_ATmega8515__) ||       \
+1265:optiboot.c    ****   defined(__AVR_ATmega8535__) || defined(__AVR_ATmega16__)   ||         \
+1266:optiboot.c    ****   defined(__AVR_ATmega162__)  || defined(__AVR_ATmega32__)   ||         \
+1267:optiboot.c    ****   defined(__AVR_ATmega64__)   || defined(__AVR_ATmega128__)
+1268:optiboot.c    ****   LED_PORT ^= _BV(LED);
+1269:optiboot.c    **** #else
+1270:optiboot.c    ****   LED_PIN |= _BV(LED);  // Newer AVRs can toggle by writing PINx
+ 672               	.LM76:
+ 673 0040 83E2      		ldi r24,lo8(35)
+ 674 0042 90E0      		ldi r25,0
+ 675 0044 23E2      		ldi r18,lo8(35)
+ 676 0046 30E0      		ldi r19,0
+ 677 0048 F901      		movw r30,r18
+ 678 004a 2081      		ld r18,Z
+ 679 004c 2062      		ori r18,lo8(32)
+ 680 004e FC01      		movw r30,r24
+ 681 0050 2083      		st Z,r18
+1271:optiboot.c    **** #endif
+1272:optiboot.c    **** }
+ 683               	.LM77:
+ 684 0052 0000      		nop
+ 685               	/* epilogue start */
+ 686 0054 DF91      		pop r29
+ 687 0056 CF91      		pop r28
+ 688 0058 0895      		ret
+ 690               	.Lscope5:
+ 692               		.stabd	78,0,0
+ 694               	.global	getch
+ 696               	getch:
+ 697               		.stabd	46,0,0
+1273:optiboot.c    **** 
+1274:optiboot.c    **** uint8_t getch(void) {
+ 699               	.LM78:
+ 700               	.LFBB6:
+ 701 005a CF93      		push r28
+ 702 005c DF93      		push r29
+ 703 005e 1F92      		push __zero_reg__
+ 704 0060 CDB7      		in r28,__SP_L__
+ 705 0062 DEB7      		in r29,__SP_H__
+ 706               	/* prologue: function */
+ 707               	/* frame size = 1 */
+ 708               	/* stack size = 3 */
+ 709               	.L__stack_usage = 3
+1275:optiboot.c    ****   uint8_t ch;
+1276:optiboot.c    **** 
+1277:optiboot.c    **** #if LED_DATA_FLASH
+1278:optiboot.c    ****   toggle_led();
+1279:optiboot.c    **** #endif
+1280:optiboot.c    **** 
+1281:optiboot.c    **** #if SOFT_UART
+1282:optiboot.c    ****   watchdogReset();
+1283:optiboot.c    ****   __asm__ __volatile__ (
+1284:optiboot.c    ****     "1: sbic  %[uartPin],%[uartBit]\n"  // Wait for start edge
+1285:optiboot.c    ****     "   rjmp  1b\n"
+1286:optiboot.c    ****     "   rcall uartDelay\n"          // Get to middle of start bit
+1287:optiboot.c    ****     "2: rcall uartDelay\n"              // Wait 1 bit period
+1288:optiboot.c    ****     "   rcall uartDelay\n"              // Wait 1 bit period
+1289:optiboot.c    ****     "   clc\n"
+1290:optiboot.c    ****     "   sbic  %[uartPin],%[uartBit]\n"
+1291:optiboot.c    ****     "   sec\n"
+1292:optiboot.c    ****     "   dec   %[bitCnt]\n"
+1293:optiboot.c    ****     "   breq  3f\n"
+1294:optiboot.c    ****     "   ror   %[ch]\n"
+1295:optiboot.c    ****     "   rjmp  2b\n"
+1296:optiboot.c    ****     "3:\n"
+1297:optiboot.c    ****     :
+1298:optiboot.c    ****     [ch] "=r" (ch)
+1299:optiboot.c    ****     :
+1300:optiboot.c    ****     [bitCnt] "d" (9),
+1301:optiboot.c    ****     [uartPin] "I" (_SFR_IO_ADDR(UART_PIN)),
+1302:optiboot.c    ****     [uartBit] "I" (UART_RX_BIT)
+1303:optiboot.c    ****     :
+1304:optiboot.c    ****     "r25"
+1305:optiboot.c    ****     );
+1306:optiboot.c    **** #else
+1307:optiboot.c    **** #ifndef LIN_UART
+1308:optiboot.c    ****   while (!(UART_SRA & _BV(RXC0)))  {  /* Spin */ }
+ 711               	.LM79:
+ 712 0064 0000      		nop
+ 713               	.L25:
+ 715               	.LM80:
+ 716 0066 80EC      		ldi r24,lo8(-64)
+ 717 0068 90E0      		ldi r25,0
+ 718 006a FC01      		movw r30,r24
+ 719 006c 8081      		ld r24,Z
+ 720 006e 8823      		tst r24
+ 721 0070 04F4      		brge .L25
+1309:optiboot.c    ****   if (!(UART_SRA & _BV(FE0))) {
+ 723               	.LM81:
+ 724 0072 80EC      		ldi r24,lo8(-64)
+ 725 0074 90E0      		ldi r25,0
+ 726 0076 FC01      		movw r30,r24
+ 727 0078 8081      		ld r24,Z
+ 728 007a 882F      		mov r24,r24
+ 729 007c 90E0      		ldi r25,0
+ 730 007e 8071      		andi r24,16
+ 731 0080 9927      		clr r25
+ 732 0082 892B      		or r24,r25
+ 733 0084 01F4      		brne .L26
+1310:optiboot.c    ****     /*
+1311:optiboot.c    ****      * A Framing Error indicates (probably) that something is talking
+1312:optiboot.c    ****      * to us at the wrong bit rate.  Assume that this is because it
+1313:optiboot.c    ****      * expects to be talking to the application, and DON'T reset the
+1314:optiboot.c    ****      * watchdog.  This should cause the bootloader to abort and run
+1315:optiboot.c    ****      * the application "soon", if it keeps happening.  (Note that we
+1316:optiboot.c    ****      * don't care that an invalid char is returned...)
+1317:optiboot.c    ****      */
+1318:optiboot.c    ****     watchdogReset();
+ 735               	.LM82:
+ 736 0086 0E94 0000 		call watchdogReset
+ 737               	.L26:
+1319:optiboot.c    ****   }
+1320:optiboot.c    **** #else
+1321:optiboot.c    ****   while (!(LINSIR & _BV(LRXOK)))  {  /* Spin */ }
+1322:optiboot.c    ****   if (!(LINSIR & _BV(LFERR))) {
+1323:optiboot.c    ****     watchdogReset();  /* Eventually abort if wrong speed */
+1324:optiboot.c    ****   }
+1325:optiboot.c    **** #endif
+1326:optiboot.c    ****   ch = UART_UDR;
+ 739               	.LM83:
+ 740 008a 86EC      		ldi r24,lo8(-58)
+ 741 008c 90E0      		ldi r25,0
+ 742 008e FC01      		movw r30,r24
+ 743 0090 8081      		ld r24,Z
+ 744 0092 8983      		std Y+1,r24
+1327:optiboot.c    **** #endif
+1328:optiboot.c    **** 
+1329:optiboot.c    **** #if LED_DATA_FLASH
+1330:optiboot.c    ****   toggle_led();
+1331:optiboot.c    **** #endif
+1332:optiboot.c    **** 
+1333:optiboot.c    ****   return ch;
+ 746               	.LM84:
+ 747 0094 8981      		ldd r24,Y+1
+ 748               	/* epilogue start */
+1334:optiboot.c    **** }
+ 750               	.LM85:
+ 751 0096 0F90      		pop __tmp_reg__
+ 752 0098 DF91      		pop r29
+ 753 009a CF91      		pop r28
+ 754 009c 0895      		ret
+ 759               	.Lscope6:
+ 761               		.stabd	78,0,0
+ 765               	getNch:
+ 766               		.stabd	46,0,0
+1335:optiboot.c    **** 
+1336:optiboot.c    **** #if SOFT_UART
+1337:optiboot.c    **** // AVR305 equation: #define UART_B_VALUE (((F_CPU/BAUD_RATE)-23)/6)
+1338:optiboot.c    **** // Adding 3 to numerator simulates nearest rounding for more accurate baud rates
+1339:optiboot.c    **** #define UART_B_VALUE (((F_CPU/BAUD_RATE)-20)/6)
+1340:optiboot.c    **** #if UART_B_VALUE > 255
+1341:optiboot.c    **** #error Baud rate too slow for soft UART
+1342:optiboot.c    **** #endif
+1343:optiboot.c    **** 
+1344:optiboot.c    **** #if UART_B_VALUE < 6
+1345:optiboot.c    **** // (this value is a "guess" at when loop/call overhead might become too
+1346:optiboot.c    **** //  significant for the soft uart to work.  It tests OK with the popular
+1347:optiboot.c    **** //  "ATtinycore" chips that need SOFT_UART, at the usual clock/baud combos.)
+1348:optiboot.c    **** #error Baud rate too high for soft UART
+1349:optiboot.c    **** #endif
+1350:optiboot.c    **** 
+1351:optiboot.c    **** 
+1352:optiboot.c    **** void uartDelay() {
+1353:optiboot.c    ****   __asm__ __volatile__ (
+1354:optiboot.c    ****     "  ldi r25,%[count]\n"
+1355:optiboot.c    ****     "1: dec r25\n"
+1356:optiboot.c    ****     "  brne 1b\n"
+1357:optiboot.c    ****     "  ret\n"
+1358:optiboot.c    ****     ::[count] "M" (UART_B_VALUE)
+1359:optiboot.c    ****     );
+1360:optiboot.c    **** }
+1361:optiboot.c    **** #endif
+1362:optiboot.c    **** 
+1363:optiboot.c    **** void getNch(uint8_t count) {
+ 768               	.LM86:
+ 769               	.LFBB7:
+ 770 009e CF93      		push r28
+ 771 00a0 DF93      		push r29
+ 772 00a2 1F92      		push __zero_reg__
+ 773 00a4 CDB7      		in r28,__SP_L__
+ 774 00a6 DEB7      		in r29,__SP_H__
+ 775               	/* prologue: function */
+ 776               	/* frame size = 1 */
+ 777               	/* stack size = 3 */
+ 778               	.L__stack_usage = 3
+ 779 00a8 8983      		std Y+1,r24
+ 780               	.L29:
+1364:optiboot.c    ****   do getch(); while (--count);
+ 782               	.LM87:
+ 783 00aa 0E94 0000 		call getch
+ 784 00ae 8981      		ldd r24,Y+1
+ 785 00b0 8150      		subi r24,lo8(-(-1))
+ 786 00b2 8983      		std Y+1,r24
+ 787 00b4 8981      		ldd r24,Y+1
+ 788 00b6 8823      		tst r24
+ 789 00b8 01F4      		brne .L29
+1365:optiboot.c    ****   verifySpace();
+ 791               	.LM88:
+ 792 00ba 0E94 0000 		call verifySpace
+1366:optiboot.c    **** }
+ 794               	.LM89:
+ 795 00be 0000      		nop
+ 796               	/* epilogue start */
+ 797 00c0 0F90      		pop __tmp_reg__
+ 798 00c2 DF91      		pop r29
+ 799 00c4 CF91      		pop r28
+ 800 00c6 0895      		ret
+ 802               	.Lscope7:
+ 804               		.stabd	78,0,0
+ 806               	.global	verifySpace
+ 808               	verifySpace:
+ 809               		.stabd	46,0,0
+1367:optiboot.c    **** 
+1368:optiboot.c    **** void verifySpace() {
+ 811               	.LM90:
+ 812               	.LFBB8:
+ 813 00c8 CF93      		push r28
+ 814 00ca DF93      		push r29
+ 815 00cc CDB7      		in r28,__SP_L__
+ 816 00ce DEB7      		in r29,__SP_H__
+ 817               	/* prologue: function */
+ 818               	/* frame size = 0 */
+ 819               	/* stack size = 2 */
+ 820               	.L__stack_usage = 2
+1369:optiboot.c    ****   if (getch() != CRC_EOP) {
+ 822               	.LM91:
+ 823 00d0 0E94 0000 		call getch
+ 824 00d4 8032      		cpi r24,lo8(32)
+ 825 00d6 01F0      		breq .L31
+1370:optiboot.c    ****     watchdogConfig(WATCHDOG_16MS);    // shorten WD timeout
+ 827               	.LM92:
+ 828 00d8 88E0      		ldi r24,lo8(8)
+ 829 00da 0E94 0000 		call watchdogConfig
+ 830               	.L32:
+1371:optiboot.c    ****     while (1)                         // and busy-loop so that WD causes
+1372:optiboot.c    ****       ;                               //  a reset and app start.
+ 832               	.LM93:
+ 833 00de 00C0      		rjmp .L32
+ 834               	.L31:
+1373:optiboot.c    ****   }
+1374:optiboot.c    ****   putch(STK_INSYNC);
+ 836               	.LM94:
+ 837 00e0 84E1      		ldi r24,lo8(20)
+ 838 00e2 0E94 0000 		call putch
+1375:optiboot.c    **** }
+ 840               	.LM95:
+ 841 00e6 0000      		nop
+ 842               	/* epilogue start */
+ 843 00e8 DF91      		pop r29
+ 844 00ea CF91      		pop r28
+ 845 00ec 0895      		ret
+ 847               	.Lscope8:
+ 849               		.stabd	78,0,0
+ 853               	flash_led:
+ 854               		.stabd	46,0,0
+1376:optiboot.c    **** 
+1377:optiboot.c    **** #if LED_START_FLASHES > 0
+1378:optiboot.c    **** void flash_led(uint8_t count) {
+ 856               	.LM96:
+ 857               	.LFBB9:
+ 858 00ee CF93      		push r28
+ 859 00f0 DF93      		push r29
+ 860 00f2 1F92      		push __zero_reg__
+ 861 00f4 CDB7      		in r28,__SP_L__
+ 862 00f6 DEB7      		in r29,__SP_H__
+ 863               	/* prologue: function */
+ 864               	/* frame size = 1 */
+ 865               	/* stack size = 3 */
+ 866               	.L__stack_usage = 3
+ 867 00f8 8983      		std Y+1,r24
+ 868               	.L37:
+1379:optiboot.c    ****   do {
+1380:optiboot.c    **** #if defined(__AVR_ATtiny261__)||defined(__AVR_ATtiny461__)||defined(__AVR_ATtiny861__) || defined(_
+1381:optiboot.c    ****     TCNT1 = 0xFF & (-(F_CPU/(8196L*16)));
+1382:optiboot.c    ****     TIFR = _BV(TOV1);
+1383:optiboot.c    ****     while (!(TIFR & _BV(TOV1)));
+1384:optiboot.c    **** #elif defined(__AVR_ATtiny43__)
+1385:optiboot.c    **** #error "LED flash for Tiny43 not yet supported"
+1386:optiboot.c    **** #else
+1387:optiboot.c    ****     TCNT1 = -(F_CPU/(1024*16));
+ 870               	.LM97:
+ 871 00fa 84E8      		ldi r24,lo8(-124)
+ 872 00fc 90E0      		ldi r25,0
+ 873 00fe 20E3      		ldi r18,lo8(48)
+ 874 0100 3CEF      		ldi r19,lo8(-4)
+ 875 0102 FC01      		movw r30,r24
+ 876 0104 3183      		std Z+1,r19
+ 877 0106 2083      		st Z,r18
+1388:optiboot.c    ****     TIFR1 = _BV(TOV1);
+ 879               	.LM98:
+ 880 0108 86E3      		ldi r24,lo8(54)
+ 881 010a 90E0      		ldi r25,0
+ 882 010c 21E0      		ldi r18,lo8(1)
+ 883 010e FC01      		movw r30,r24
+ 884 0110 2083      		st Z,r18
+1389:optiboot.c    ****     while (!(TIFR1 & _BV(TOV1)));
+ 886               	.LM99:
+ 887 0112 0000      		nop
+ 888               	.L34:
+ 890               	.LM100:
+ 891 0114 86E3      		ldi r24,lo8(54)
+ 892 0116 90E0      		ldi r25,0
+ 893 0118 FC01      		movw r30,r24
+ 894 011a 8081      		ld r24,Z
+ 895 011c 882F      		mov r24,r24
+ 896 011e 90E0      		ldi r25,0
+ 897 0120 8170      		andi r24,1
+ 898 0122 9927      		clr r25
+ 899 0124 892B      		or r24,r25
+ 900 0126 01F0      		breq .L34
+1390:optiboot.c    **** #endif
+1391:optiboot.c    **** 
+1392:optiboot.c    ****     toggle_led();
+ 902               	.LM101:
+ 903 0128 0E94 0000 		call toggle_led
+1393:optiboot.c    ****     watchdogReset();
+ 905               	.LM102:
+ 906 012c 0E94 0000 		call watchdogReset
+1394:optiboot.c    **** #if (SOFT_UART == 0)
+1395:optiboot.c    ****     /*
+1396:optiboot.c    ****      * While in theory, the STK500 initial commands would be buffered
+1397:optiboot.c    ****      *  by the UART hardware, avrdude sends several attempts in rather
+1398:optiboot.c    ****      *  quick succession, some of which will be lost and cause us to
+1399:optiboot.c    ****      *  get out of sync.  So if we see any data; stop blinking.
+1400:optiboot.c    ****      */
+1401:optiboot.c    **** #ifndef LIN_UART
+1402:optiboot.c    ****     if (UART_SRA & _BV(RXC0))
+ 908               	.LM103:
+ 909 0130 80EC      		ldi r24,lo8(-64)
+ 910 0132 90E0      		ldi r25,0
+ 911 0134 FC01      		movw r30,r24
+ 912 0136 8081      		ld r24,Z
+ 913 0138 8823      		tst r24
+ 914 013a 04F0      		brlt .L38
+1403:optiboot.c    **** #else
+1404:optiboot.c    ****       if (LINSIR & _BV(LRXOK))
+1405:optiboot.c    **** #endif
+1406:optiboot.c    ****         break;
+1407:optiboot.c    **** #else
+1408:optiboot.c    **** // This doesn't seem to work?
+1409:optiboot.c    **** //    if ((UART_PIN & (1<<UART_RX_BIT)) == 0)
+1410:optiboot.c    **** //      break;  // detect start bit on soft uart too.
+1411:optiboot.c    **** #endif
+1412:optiboot.c    ****   } while (--count);
+ 916               	.LM104:
+ 917 013c 8981      		ldd r24,Y+1
+ 918 013e 8150      		subi r24,lo8(-(-1))
+ 919 0140 8983      		std Y+1,r24
+ 920 0142 8981      		ldd r24,Y+1
+ 921 0144 8823      		tst r24
+ 922 0146 01F4      		brne .L37
+1413:optiboot.c    **** }
+ 924               	.LM105:
+ 925 0148 00C0      		rjmp .L36
+ 926               	.L38:
+1406:optiboot.c    **** #else
+ 928               	.LM106:
+ 929 014a 0000      		nop
+ 930               	.L36:
+ 932               	.LM107:
+ 933 014c 0000      		nop
+ 934               	/* epilogue start */
+ 935 014e 0F90      		pop __tmp_reg__
+ 936 0150 DF91      		pop r29
+ 937 0152 CF91      		pop r28
+ 938 0154 0895      		ret
+ 940               	.Lscope9:
+ 942               		.stabd	78,0,0
+ 945               	watchdogReset:
+ 946               		.stabd	46,0,0
+1414:optiboot.c    **** #endif
+1415:optiboot.c    **** 
+1416:optiboot.c    **** // Watchdog functions. These are only safe with interrupts turned off.
+1417:optiboot.c    **** void watchdogReset() {
+ 948               	.LM108:
+ 949               	.LFBB10:
+ 950 0156 CF93      		push r28
+ 951 0158 DF93      		push r29
+ 952 015a CDB7      		in r28,__SP_L__
+ 953 015c DEB7      		in r29,__SP_H__
+ 954               	/* prologue: function */
+ 955               	/* frame size = 0 */
+ 956               	/* stack size = 2 */
+ 957               	.L__stack_usage = 2
+1418:optiboot.c    ****   __asm__ __volatile__ (
+ 959               	.LM109:
+ 960               	/* #APP */
+ 961               	 ;  1418 "optiboot.c" 1
+ 962 015e A895      		  wdr
+ 963               	
+ 964               	 ;  0 "" 2
+1419:optiboot.c    ****     "  wdr\n"
+1420:optiboot.c    ****     );
+1421:optiboot.c    **** }
+ 966               	.LM110:
+ 967               	/* #NOAPP */
+ 968 0160 0000      		nop
+ 969               	/* epilogue start */
+ 970 0162 DF91      		pop r29
+ 971 0164 CF91      		pop r28
+ 972 0166 0895      		ret
+ 974               	.Lscope10:
+ 976               		.stabd	78,0,0
+ 979               	.global	watchdogConfig
+ 981               	watchdogConfig:
+ 982               		.stabd	46,0,0
+1422:optiboot.c    **** 
+1423:optiboot.c    **** void watchdogConfig(uint8_t x) {
+ 984               	.LM111:
+ 985               	.LFBB11:
+ 986 0168 CF93      		push r28
+ 987 016a DF93      		push r29
+ 988 016c 1F92      		push __zero_reg__
+ 989 016e CDB7      		in r28,__SP_L__
+ 990 0170 DEB7      		in r29,__SP_H__
+ 991               	/* prologue: function */
+ 992               	/* frame size = 1 */
+ 993               	/* stack size = 3 */
+ 994               	.L__stack_usage = 3
+ 995 0172 8983      		std Y+1,r24
+1424:optiboot.c    **** #ifdef WDCE //does it have a Watchdog Change Enable?
+1425:optiboot.c    **** #ifdef WDTCSR
+1426:optiboot.c    ****   WDTCSR = _BV(WDCE) | _BV(WDE);
+ 997               	.LM112:
+ 998 0174 80E6      		ldi r24,lo8(96)
+ 999 0176 90E0      		ldi r25,0
+ 1000 0178 28E1      		ldi r18,lo8(24)
+ 1001 017a FC01      		movw r30,r24
+ 1002 017c 2083      		st Z,r18
+1427:optiboot.c    **** #else
+1428:optiboot.c    ****   WDTCR= _BV(WDCE) | _BV(WDE);
+1429:optiboot.c    **** #endif
+1430:optiboot.c    **** #else //then it must be one of those newfangled ones that use CCP
+1431:optiboot.c    ****   CCP=0xD8; //so write this magic number to CCP
+1432:optiboot.c    **** #endif
+1433:optiboot.c    **** 
+1434:optiboot.c    **** #ifdef WDTCSR
+1435:optiboot.c    ****   WDTCSR = x;
+ 1004               	.LM113:
+ 1005 017e 80E6      		ldi r24,lo8(96)
+ 1006 0180 90E0      		ldi r25,0
+ 1007 0182 2981      		ldd r18,Y+1
+ 1008 0184 FC01      		movw r30,r24
+ 1009 0186 2083      		st Z,r18
+1436:optiboot.c    **** #else
+1437:optiboot.c    ****   WDTCR= x;
+1438:optiboot.c    **** #endif
+1439:optiboot.c    **** }
+ 1011               	.LM114:
+ 1012 0188 0000      		nop
+ 1013               	/* epilogue start */
+ 1014 018a 0F90      		pop __tmp_reg__
+ 1015 018c DF91      		pop r29
+ 1016 018e CF91      		pop r28
+ 1017 0190 0895      		ret
+ 1019               	.Lscope11:
+ 1021               		.stabd	78,0,0
+ 1028               	writebuffer:
+ 1029               		.stabd	46,0,0
+1440:optiboot.c    **** 
+1441:optiboot.c    **** 
+1442:optiboot.c    **** /*
+1443:optiboot.c    ****  * void writebuffer(memtype, buffer, address, length)
+1444:optiboot.c    ****  */
+1445:optiboot.c    **** static inline void writebuffer(int8_t memtype, addr16_t mybuff,
+1446:optiboot.c    ****                                addr16_t address, pagelen_t len)
+1447:optiboot.c    **** {
+ 1031               	.LM115:
+ 1032               	.LFBB12:
+ 1033 0192 CF93      		push r28
+ 1034 0194 DF93      		push r29
+ 1035 0196 CDB7      		in r28,__SP_L__
+ 1036 0198 DEB7      		in r29,__SP_H__
+ 1037 019a 2897      		sbiw r28,8
+ 1038 019c 0FB6      		in __tmp_reg__,__SREG__
+ 1039 019e F894      		cli
+ 1040 01a0 DEBF      		out __SP_H__,r29
+ 1041 01a2 0FBE      		out __SREG__,__tmp_reg__
+ 1042 01a4 CDBF      		out __SP_L__,r28
+ 1043               	/* prologue: function */
+ 1044               	/* frame size = 8 */
+ 1045               	/* stack size = 10 */
+ 1046               	.L__stack_usage = 10
+ 1047 01a6 8B83      		std Y+3,r24
+ 1048 01a8 7D83      		std Y+5,r23
+ 1049 01aa 6C83      		std Y+4,r22
+ 1050 01ac 5F83      		std Y+7,r21
+ 1051 01ae 4E83      		std Y+6,r20
+ 1052 01b0 2887      		std Y+8,r18
+1448:optiboot.c    ****   switch (memtype) {
+ 1054               	.LM116:
+ 1055 01b2 8B81      		ldd r24,Y+3
+ 1056 01b4 082E      		mov __tmp_reg__,r24
+ 1057 01b6 000C      		lsl r0
+ 1058 01b8 990B      		sbc r25,r25
+ 1059 01ba 8534      		cpi r24,69
+ 1060 01bc 9105      		cpc r25,__zero_reg__
+ 1061 01be 01F4      		brne .L47
+ 1062               	.L43:
+1449:optiboot.c    ****   case 'E': // EEPROM
+1450:optiboot.c    **** #if SUPPORT_EEPROM || BIGBOOT
+1451:optiboot.c    ****     while (len--) {
+1452:optiboot.c    ****       eeprom_write_byte((address.bptr++), *(mybuff.bptr++));
+1453:optiboot.c    ****     }
+1454:optiboot.c    **** #else
+1455:optiboot.c    ****     /*
+1456:optiboot.c    ****      * On systems where EEPROM write is not supported, just busy-loop
+1457:optiboot.c    ****      * until the WDT expires, which will eventually cause an error on
+1458:optiboot.c    ****      * host system (which is what it should do.)
+1459:optiboot.c    ****      */
+1460:optiboot.c    ****     while (1)
+1461:optiboot.c    ****       ; // Error: wait for WDT
+ 1064               	.LM117:
+ 1065 01c0 00C0      		rjmp .L43
+ 1066               	.L47:
+ 1067               	.LBB5:
+1462:optiboot.c    **** #endif
+1463:optiboot.c    ****     break;
+1464:optiboot.c    ****   default:  // FLASH
+1465:optiboot.c    ****     /*
+1466:optiboot.c    ****      * Default to writing to Flash program memory.  By making this
+1467:optiboot.c    ****      * the default rather than checking for the correct code, we save
+1468:optiboot.c    ****      * space on chips that don't support any other memory types.
+1469:optiboot.c    ****      */
+1470:optiboot.c    ****     {
+1471:optiboot.c    ****       // Copy buffer into programming buffer
+1472:optiboot.c    ****       uint16_t addrPtr = address.word;
+ 1069               	.LM118:
+ 1070 01c2 8E81      		ldd r24,Y+6
+ 1071 01c4 9F81      		ldd r25,Y+7
+ 1072 01c6 9A83      		std Y+2,r25
+ 1073 01c8 8983      		std Y+1,r24
+1473:optiboot.c    **** 
+1474:optiboot.c    ****       /*
+1475:optiboot.c    ****        * Start the page erase and wait for it to finish.  There
+1476:optiboot.c    ****        * used to be code to do this while receiving the data over
+1477:optiboot.c    ****        * the serial link, but the performance improvement was slight,
+1478:optiboot.c    ****        * and we needed the space back.
+1479:optiboot.c    ****        */
+1480:optiboot.c    **** #ifdef FOURPAGEERASE
+1481:optiboot.c    ****       if ((address.bytes[0] & ((SPM_PAGESIZE<<2)-1))==0) {
+1482:optiboot.c    **** #endif
+1483:optiboot.c    ****         __boot_page_erase_short(address.word);
+ 1075               	.LM119:
+ 1076 01ca 8E81      		ldd r24,Y+6
+ 1077 01cc 9F81      		ldd r25,Y+7
+ 1078 01ce 23E0      		ldi r18,lo8(3)
+ 1079 01d0 FC01      		movw r30,r24
+ 1080               	/* #APP */
+ 1081               	 ;  1483 "optiboot.c" 1
+ 1082 01d2 27BF      		__wr_spmcsr 87, r18
+ 1083 01d4 E895      		spm
+ 1084               		
+ 1085               	 ;  0 "" 2
+ 1086               	/* #NOAPP */
+ 1087               	.L44:
+1484:optiboot.c    ****         boot_spm_busy_wait();
+ 1089               	.LM120:
+ 1090 01d6 87E5      		ldi r24,lo8(87)
+ 1091 01d8 90E0      		ldi r25,0
+ 1092 01da FC01      		movw r30,r24
+ 1093 01dc 8081      		ld r24,Z
+ 1094 01de 882F      		mov r24,r24
+ 1095 01e0 90E0      		ldi r25,0
+ 1096 01e2 8170      		andi r24,1
+ 1097 01e4 9927      		clr r25
+ 1098 01e6 892B      		or r24,r25
+ 1099 01e8 01F4      		brne .L44
+ 1100               	.L45:
+1485:optiboot.c    **** #ifdef FOURPAGEERASE
+1486:optiboot.c    ****       }
+1487:optiboot.c    **** #endif
+1488:optiboot.c    **** 
+1489:optiboot.c    ****       /*
+1490:optiboot.c    ****        * Copy data from the buffer into the flash write buffer.
+1491:optiboot.c    ****        */
+1492:optiboot.c    ****       do {
+1493:optiboot.c    ****         __boot_page_fill_short((uint16_t)(void*)addrPtr, *(mybuff.wptr++));
+ 1102               	.LM121:
+ 1103 01ea 8C81      		ldd r24,Y+4
+ 1104 01ec 9D81      		ldd r25,Y+5
+ 1105 01ee 9C01      		movw r18,r24
+ 1106 01f0 2E5F      		subi r18,-2
+ 1107 01f2 3F4F      		sbci r19,-1
+ 1108 01f4 3D83      		std Y+5,r19
+ 1109 01f6 2C83      		std Y+4,r18
+ 1110 01f8 FC01      		movw r30,r24
+ 1111 01fa 2081      		ld r18,Z
+ 1112 01fc 3181      		ldd r19,Z+1
+ 1113 01fe 41E0      		ldi r20,lo8(1)
+ 1114 0200 8981      		ldd r24,Y+1
+ 1115 0202 9A81      		ldd r25,Y+2
+ 1116 0204 FC01      		movw r30,r24
+ 1117               	/* #APP */
+ 1118               	 ;  1493 "optiboot.c" 1
+ 1119 0206 0901      		movw  r0, r18
+ 1120 0208 47BF      		__wr_spmcsr 87, r20
+ 1121 020a E895      		spm
+ 1122 020c 1124      		clr  r1
+ 1123               		
+ 1124               	 ;  0 "" 2
+1494:optiboot.c    ****         addrPtr += 2;
+ 1126               	.LM122:
+ 1127               	/* #NOAPP */
+ 1128 020e 8981      		ldd r24,Y+1
+ 1129 0210 9A81      		ldd r25,Y+2
+ 1130 0212 0296      		adiw r24,2
+ 1131 0214 9A83      		std Y+2,r25
+ 1132 0216 8983      		std Y+1,r24
+1495:optiboot.c    ****       } while (len -= 2);
+ 1134               	.LM123:
+ 1135 0218 8885      		ldd r24,Y+8
+ 1136 021a 8250      		subi r24,lo8(-(-2))
+ 1137 021c 8887      		std Y+8,r24
+ 1138 021e 8885      		ldd r24,Y+8
+ 1139 0220 8823      		tst r24
+ 1140 0222 01F4      		brne .L45
+1496:optiboot.c    **** 
+1497:optiboot.c    ****       /*
+1498:optiboot.c    ****        * Actually Write the buffer to flash (and wait for it to finish.)
+1499:optiboot.c    ****        */
+1500:optiboot.c    ****       __boot_page_write_short(address.word);
+ 1142               	.LM124:
+ 1143 0224 8E81      		ldd r24,Y+6
+ 1144 0226 9F81      		ldd r25,Y+7
+ 1145 0228 25E0      		ldi r18,lo8(5)
+ 1146 022a FC01      		movw r30,r24
+ 1147               	/* #APP */
+ 1148               	 ;  1500 "optiboot.c" 1
+ 1149 022c 27BF      		__wr_spmcsr 87, r18
+ 1150 022e E895      		spm
+ 1151               		
+ 1152               	 ;  0 "" 2
+ 1153               	/* #NOAPP */
+ 1154               	.L46:
+1501:optiboot.c    ****       boot_spm_busy_wait();
+ 1156               	.LM125:
+ 1157 0230 87E5      		ldi r24,lo8(87)
+ 1158 0232 90E0      		ldi r25,0
+ 1159 0234 FC01      		movw r30,r24
+ 1160 0236 8081      		ld r24,Z
+ 1161 0238 882F      		mov r24,r24
+ 1162 023a 90E0      		ldi r25,0
+ 1163 023c 8170      		andi r24,1
+ 1164 023e 9927      		clr r25
+ 1165 0240 892B      		or r24,r25
+ 1166 0242 01F4      		brne .L46
+1502:optiboot.c    **** #if defined(RWWSRE)
+1503:optiboot.c    ****       // Reenable read access to flash
+1504:optiboot.c    ****       __boot_rww_enable_short();
+ 1168               	.LM126:
+ 1169 0244 81E1      		ldi r24,lo8(17)
+ 1170               	/* #APP */
+ 1171               	 ;  1504 "optiboot.c" 1
+ 1172 0246 87BF      		__wr_spmcsr 87, r24
+ 1173 0248 E895      		spm
+ 1174               		
+ 1175               	 ;  0 "" 2
+ 1176               	/* #NOAPP */
+ 1177               	.LBE5:
+1505:optiboot.c    **** #endif
+1506:optiboot.c    ****     } // default block
+1507:optiboot.c    ****     break;
+ 1179               	.LM127:
+ 1180 024a 0000      		nop
+1508:optiboot.c    ****   } // switch
+1509:optiboot.c    **** }
+ 1182               	.LM128:
+ 1183 024c 0000      		nop
+ 1184               	/* epilogue start */
+ 1185 024e 2896      		adiw r28,8
+ 1186 0250 0FB6      		in __tmp_reg__,__SREG__
+ 1187 0252 F894      		cli
+ 1188 0254 DEBF      		out __SP_H__,r29
+ 1189 0256 0FBE      		out __SREG__,__tmp_reg__
+ 1190 0258 CDBF      		out __SP_L__,r28
+ 1191 025a DF91      		pop r29
+ 1192 025c CF91      		pop r28
+ 1193 025e 0895      		ret
+ 1198               	.Lscope12:
+ 1200               		.stabd	78,0,0
+ 1206               	read_mem:
+ 1207               		.stabd	46,0,0
+1510:optiboot.c    **** 
+1511:optiboot.c    **** static inline void read_mem(uint8_t memtype, addr16_t address, pagelen_t length)
+1512:optiboot.c    **** {
+ 1209               	.LM129:
+ 1210               	.LFBB13:
+ 1211 0260 CF93      		push r28
+ 1212 0262 DF93      		push r29
+ 1213 0264 00D0      		rcall .
+ 1214 0266 00D0      		rcall .
+ 1215 0268 1F92      		push __zero_reg__
+ 1216 026a CDB7      		in r28,__SP_L__
+ 1217 026c DEB7      		in r29,__SP_H__
+ 1218               	/* prologue: function */
+ 1219               	/* frame size = 5 */
+ 1220               	/* stack size = 7 */
+ 1221               	.L__stack_usage = 7
+ 1222 026e 8A83      		std Y+2,r24
+ 1223 0270 7C83      		std Y+4,r23
+ 1224 0272 6B83      		std Y+3,r22
+ 1225 0274 4D83      		std Y+5,r20
+ 1226               	.L49:
+1513:optiboot.c    ****   uint8_t ch;
+1514:optiboot.c    **** 
+1515:optiboot.c    ****   switch (memtype) {
+1516:optiboot.c    **** 
+1517:optiboot.c    **** #if SUPPORT_EEPROM || BIGBOOT
+1518:optiboot.c    ****   case 'E': // EEPROM
+1519:optiboot.c    ****     do {
+1520:optiboot.c    ****       putch(eeprom_read_byte((address.bptr++)));
+1521:optiboot.c    ****     } while (--length);
+1522:optiboot.c    ****     break;
+1523:optiboot.c    **** #endif
+1524:optiboot.c    ****   default:
+1525:optiboot.c    ****     do {
+1526:optiboot.c    **** #ifdef VIRTUAL_BOOT_PARTITION
+1527:optiboot.c    ****       // Undo vector patch in bottom page so verify passes
+1528:optiboot.c    ****       if (address.word == rstVect0) ch = rstVect0_sav;
+1529:optiboot.c    ****       else if (address.word == rstVect1) ch = rstVect1_sav;
+1530:optiboot.c    ****       else if (address.word == saveVect0) ch = saveVect0_sav;
+1531:optiboot.c    ****       else if (address.word == saveVect1) ch = saveVect1_sav;
+1532:optiboot.c    ****       else ch = pgm_read_byte_near(address.bptr);
+1533:optiboot.c    ****       address.bptr++;
+1534:optiboot.c    **** #elif defined(RAMPZ)
+1535:optiboot.c    ****       // Since RAMPZ should already be set, we need to use EPLM directly.
+1536:optiboot.c    ****       // Also, we can use the autoincrement version of lpm to update "address"
+1537:optiboot.c    ****       //      do putch(pgm_read_byte_near(address++));
+1538:optiboot.c    ****       //      while (--length);
+1539:optiboot.c    ****       // read a Flash and increment the address (may increment RAMPZ)
+1540:optiboot.c    ****       __asm__ ("  elpm %0,Z+\n" : "=r" (ch), "=z" (address.bptr): "1" (address));
+1541:optiboot.c    **** #else
+1542:optiboot.c    ****       // read a Flash byte and increment the address
+1543:optiboot.c    ****       __asm__ ("  lpm %0,Z+\n" : "=r" (ch), "=z" (address.bptr): "1" (address));
+ 1228               	.LM130:
+ 1229 0276 8B81      		ldd r24,Y+3
+ 1230 0278 9C81      		ldd r25,Y+4
+ 1231 027a FC01      		movw r30,r24
+ 1232               	/* #APP */
+ 1233               	 ;  1543 "optiboot.c" 1
+ 1234 027c 2591      		  lpm r18,Z+
+ 1235               	
+ 1236               	 ;  0 "" 2
+ 1237               	/* #NOAPP */
+ 1238 027e CF01      		movw r24,r30
+ 1239 0280 2983      		std Y+1,r18
+ 1240 0282 9C83      		std Y+4,r25
+ 1241 0284 8B83      		std Y+3,r24
+1544:optiboot.c    **** #endif
+1545:optiboot.c    ****       putch(ch);
+ 1243               	.LM131:
+ 1244 0286 8981      		ldd r24,Y+1
+ 1245 0288 0E94 0000 		call putch
+1546:optiboot.c    ****     } while (--length);
+ 1247               	.LM132:
+ 1248 028c 8D81      		ldd r24,Y+5
+ 1249 028e 8150      		subi r24,lo8(-(-1))
+ 1250 0290 8D83      		std Y+5,r24
+ 1251 0292 8D81      		ldd r24,Y+5
+ 1252 0294 8823      		tst r24
+ 1253 0296 01F4      		brne .L49
+1547:optiboot.c    ****     break;
+ 1255               	.LM133:
+ 1256 0298 0000      		nop
+1548:optiboot.c    ****   } // switch
+1549:optiboot.c    **** }
+ 1258               	.LM134:
+ 1259 029a 0000      		nop
+ 1260               	/* epilogue start */
+ 1261 029c 0F90      		pop __tmp_reg__
+ 1262 029e 0F90      		pop __tmp_reg__
+ 1263 02a0 0F90      		pop __tmp_reg__
+ 1264 02a2 0F90      		pop __tmp_reg__
+ 1265 02a4 0F90      		pop __tmp_reg__
+ 1266 02a6 DF91      		pop r29
+ 1267 02a8 CF91      		pop r28
+ 1268 02aa 0895      		ret
+ 1273               	.Lscope13:
+ 1275               		.stabd	78,0,0
+ 1281               	do_spm:
+ 1282               		.stabd	46,0,0
+1550:optiboot.c    **** 
+1551:optiboot.c    **** 
+1552:optiboot.c    **** #if (APP_NOSPM == 0)
+1553:optiboot.c    **** 
+1554:optiboot.c    **** /*
+1555:optiboot.c    ****  * Separate function for doing spm stuff
+1556:optiboot.c    ****  * It's needed for application to do SPM, as SPM instruction works only
+1557:optiboot.c    ****  * from bootloader.
+1558:optiboot.c    ****  *
+1559:optiboot.c    ****  * How it works:
+1560:optiboot.c    ****  * - do SPM
+1561:optiboot.c    ****  * - wait for SPM to complete
+1562:optiboot.c    ****  * - if chip have RWW/NRWW sections it does additionaly:
+1563:optiboot.c    ****  *   - if command is WRITE or ERASE, AND data=0 then reenable RWW section
+1564:optiboot.c    ****  *
+1565:optiboot.c    ****  * In short:
+1566:optiboot.c    ****  * If you play erase-fill-write, just set data to 0 in ERASE and WRITE
+1567:optiboot.c    ****  * If you are brave, you have your code just below bootloader in NRWW section
+1568:optiboot.c    ****  *   you could do fill-erase-write sequence with data!=0 in ERASE and
+1569:optiboot.c    ****  *   data=0 in WRITE
+1570:optiboot.c    ****  */
+1571:optiboot.c    **** static void do_spm(uint16_t address, uint8_t command, uint16_t data)  __attribute__ ((used));
+1572:optiboot.c    **** static void do_spm(uint16_t address, uint8_t command, uint16_t data) {
+ 1284               	.LM135:
+ 1285               	.LFBB14:
+ 1286 02ac CF93      		push r28
+ 1287 02ae DF93      		push r29
+ 1288 02b0 00D0      		rcall .
+ 1289 02b2 00D0      		rcall .
+ 1290 02b4 1F92      		push __zero_reg__
+ 1291 02b6 CDB7      		in r28,__SP_L__
+ 1292 02b8 DEB7      		in r29,__SP_H__
+ 1293               	/* prologue: function */
+ 1294               	/* frame size = 5 */
+ 1295               	/* stack size = 7 */
+ 1296               	.L__stack_usage = 7
+ 1297 02ba 9A83      		std Y+2,r25
+ 1298 02bc 8983      		std Y+1,r24
+ 1299 02be 6B83      		std Y+3,r22
+ 1300 02c0 5D83      		std Y+5,r21
+ 1301 02c2 4C83      		std Y+4,r20
+1573:optiboot.c    ****   // Do spm stuff
+1574:optiboot.c    ****   asm volatile (
+ 1303               	.LM136:
+ 1304 02c4 4B81      		ldd r20,Y+3
+ 1305 02c6 8981      		ldd r24,Y+1
+ 1306 02c8 9A81      		ldd r25,Y+2
+ 1307 02ca 2C81      		ldd r18,Y+4
+ 1308 02cc 3D81      		ldd r19,Y+5
+ 1309 02ce FC01      		movw r30,r24
+ 1310               	/* #APP */
+ 1311               	 ;  1574 "optiboot.c" 1
+ 1312 02d0 0901      		  movw  r0, r18
+ 1313 02d2 47BF      	  __wr_spmcsr 87, r20
+ 1314 02d4 E895      	  spm
+ 1315 02d6 1124      	  clr  r1
+ 1316               	
+ 1317               	 ;  0 "" 2
+ 1318               	/* #NOAPP */
+ 1319               	.L51:
+1575:optiboot.c    ****     "  movw  r0, %3\n"
+1576:optiboot.c    ****     "  __wr_spmcsr %0, %1\n"
+1577:optiboot.c    ****     "  spm\n"
+1578:optiboot.c    ****     "  clr  r1\n"
+1579:optiboot.c    ****     :
+1580:optiboot.c    ****     : "i" (_SFR_MEM_ADDR(__SPM_REG)),
+1581:optiboot.c    ****       "r" ((uint8_t)command),
+1582:optiboot.c    ****       "z" ((uint16_t)address),
+1583:optiboot.c    ****       "r" ((uint16_t)data)
+1584:optiboot.c    ****     : "r0"
+1585:optiboot.c    ****     );
+1586:optiboot.c    **** 
+1587:optiboot.c    ****   // wait for spm to complete
+1588:optiboot.c    ****   //   it doesn't have much sense for __BOOT_PAGE_FILL,
+1589:optiboot.c    ****   //   but it doesn't hurt and saves some bytes on 'if'
+1590:optiboot.c    ****   boot_spm_busy_wait();
+ 1321               	.LM137:
+ 1322 02d8 87E5      		ldi r24,lo8(87)
+ 1323 02da 90E0      		ldi r25,0
+ 1324 02dc FC01      		movw r30,r24
+ 1325 02de 8081      		ld r24,Z
+ 1326 02e0 882F      		mov r24,r24
+ 1327 02e2 90E0      		ldi r25,0
+ 1328 02e4 8170      		andi r24,1
+ 1329 02e6 9927      		clr r25
+ 1330 02e8 892B      		or r24,r25
+ 1331 02ea 01F4      		brne .L51
+1591:optiboot.c    **** #if defined(RWWSRE)
+1592:optiboot.c    ****   // this 'if' condition should be: (command == __BOOT_PAGE_WRITE || command == __BOOT_PAGE_ERASE).
+1593:optiboot.c    ****   // but it's tweaked a little assuming that in every command we are interested in here, there
+1594:optiboot.c    ****   // must be also SELFPRGEN set. If we skip checking this bit, we save here 4B
+1595:optiboot.c    ****   if ((command & (_BV(PGWRT)|_BV(PGERS))) && (data == 0) ) {
+ 1333               	.LM138:
+ 1334 02ec 8B81      		ldd r24,Y+3
+ 1335 02ee 882F      		mov r24,r24
+ 1336 02f0 90E0      		ldi r25,0
+ 1337 02f2 8670      		andi r24,6
+ 1338 02f4 9927      		clr r25
+ 1339 02f6 892B      		or r24,r25
+ 1340 02f8 01F0      		breq .L53
+ 1342               	.LM139:
+ 1343 02fa 8C81      		ldd r24,Y+4
+ 1344 02fc 9D81      		ldd r25,Y+5
+ 1345 02fe 892B      		or r24,r25
+ 1346 0300 01F4      		brne .L53
+1596:optiboot.c    ****     // Reenable read access to flash
+1597:optiboot.c    ****     __boot_rww_enable_short();
+ 1348               	.LM140:
+ 1349 0302 81E1      		ldi r24,lo8(17)
+ 1350               	/* #APP */
+ 1351               	 ;  1597 "optiboot.c" 1
+ 1352 0304 87BF      		__wr_spmcsr 87, r24
+ 1353 0306 E895      		spm
+ 1354               		
+ 1355               	 ;  0 "" 2
+ 1356               	/* #NOAPP */
+ 1357               	.L53:
+1598:optiboot.c    ****   }
+1599:optiboot.c    **** #endif
+1600:optiboot.c    **** }
+ 1359               	.LM141:
+ 1360 0308 0000      		nop
+ 1361               	/* epilogue start */
+ 1362 030a 0F90      		pop __tmp_reg__
+ 1363 030c 0F90      		pop __tmp_reg__
+ 1364 030e 0F90      		pop __tmp_reg__
+ 1365 0310 0F90      		pop __tmp_reg__
+ 1366 0312 0F90      		pop __tmp_reg__
+ 1367 0314 DF91      		pop r29
+ 1368 0316 CF91      		pop r28
+ 1369 0318 0895      		ret
+ 1371               	.Lscope14:
+ 1373               		.stabd	78,0,0
+ 1377               	.Letext0:
+ 1378               		.ident	"GCC: (GNU) 5.4.0"
+ 1379               	.global __do_copy_data

@@ -1,0 +1,8 @@
+
+# LED=B5 LED_START_FLASHES=2 UART=0
+
+avr-gcc -mmcu=atmega328 -Wa,-adhln -g a.S 
+
+# \
+# -DF_CPU=16000000L -DBAUD_RATE=115200 -DLED=B5 \
+# -DLED_START_FLASHES=2 -DUART=0

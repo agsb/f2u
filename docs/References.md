@@ -268,3 +268,7 @@ I like use the terms leaf for primitives words and twig for compound words, as i
 
 2. SPI implementation reference at flashforth
 
+### Reviews
+
+about RNG, https://hackaday.com/2018/01/08/entropy-and-the-arduino/
+

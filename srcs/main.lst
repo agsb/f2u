@@ -1,0 +1,3140 @@
+   1               	# 1 "main.S"
+   1               	/*
+   0               	
+   0               	
+   2               	 *  DISCLAIMER"
+   3               	 *
+   4               	 *  Copyright © 2020, Alvaro Gomes Sobral Barcellos,
+   5               	 *
+   6               	 *  Permission is hereby granted, free of charge, to any person obtaining
+   7               	 *  a copy of this software and associated documentation files (the
+   8               	 *  "Software"), to deal in the Software without restriction, including
+   9               	 *  without limitation the rights to use, copy, modify, merge, publish,
+  10               	 *  distribute, sublicense, and/or sell copies of the Software, and to
+  11               	 *  permit persons to whom the Software is furnished to do so, subject to
+  12               	 *  the following conditions"
+  13               	 *
+  14               	 *  The above copyright notice and this permission notice shall be
+  15               	 *  included in all copies or substantial portions of the Software.
+  16               	 *
+  17               	 *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  18               	 *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  19               	 *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  20               	 *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  21               	 *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  22               	 *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+  23               	 *
+  24               	 */
+  25               	
+  26               	;---------------------------------------------------------------------
+  27               	; atmega8 avr
+  28               	;
+  29               	; sram mapped as: internal mapped 0x000 to 0x05F, free use 0x060 to 0x45F
+  30               	; flash mapped as: bios 0x000 to 0x45F, forth 0x460 to 0x1eff, boot 0x1f00 to 0x1FFF
+  31               	;---------------------------------------------------------------------
+  32               	
+  33               	;----------------------------------------------------------------------
+  34               	;
+  35               	; version information
+  36               	;
+  37               	.equ version, 10 ; 0.00.10
+  38               	
+  39               	#include "macros.S"
+   1               	
+   2               	/*
+   3               	 *  DISCLAIMER"
+   4               	 *
+   5               	 *  Copyright © 2020, Alvaro Gomes Sobral Barcellos,
+   6               	 *
+   7               	 *  Permission is hereby granted, free of charge, to any person obtaining
+   8               	 *  a copy of this software and associated documentation files (the
+   9               	 *  "Software"), to deal in the Software without restriction, including
+  10               	 *  without limitation the rights to use, copy, modify, merge, publish,
+  11               	 *  distribute, sublicense, and/or sell copies of the Software, and to
+  12               	 *  permit persons to whom the Software is furnished to do so, subject to
+  13               	 *  the following conditions"
+  14               	 *
+  15               	 *  The above copyright notice and this permission notice shall be
+  16               	 *  included in all copies or substantial portions of the Software.
+  17               	 *
+  18               	 *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  19               	 *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  20               	 *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  21               	 *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  22               	 *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  23               	 *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+  24               	 *
+  25               	 */
+  26               	
+  27               	;----------------------------------------------------------------------
+  28               	;
+  29               	;   MUST use gnu cpp 
+  30               	;   use with .S (upper S) or
+  31               	;    use with -x assembler-with-cpp
+  32               	;
+  33               	;     can't use alias 
+  34               	;----------------------------------------------------------------------
+  35               	;
+  36               	; all defines, equs, macros are defined in this file
+  37               	;
+  38               	;----------------------------------------------------------------------
+  39               	;
+  40               	;    about registers 
+  41               	;
+  42               	; r1:r0 reserved and used in self atmega8 instructions, as spm, mul, des etc
+  43               	;
+  44               	
+  45               	; generic scratch 
+  46               	#define _work_ r2
+  47               	
+  48               	; always zero, keep by interrupt
+  49               	#define _zero_ r3
+  50               	
+  51               	; sreg keep in interrupts
+  52               	#define _sreg_ r4
+  53               	
+  54               	; offset for adjust timer0 interrupt counter
+  55               	#define _offs_ r5
+  56               	
+  57               	; ticks counter for timer0 at 1 ms
+  58               	#define ticks_low r6
+  59               	#define ticks_high r7
+  60               	
+  61               	; Z generic pointer for access sram and flash memory
+  62               	#define zpm_low r30
+  63               	#define zpm_high r31
+  64               	
+  65               	; Y parameter stack pointer for access sram
+  66               	#define psp_low r28
+  67               	#define psp_high r29
+  68               	
+  69               	; X return stack pointer for access sram
+  70               	#define rsp_low r26
+  71               	#define rsp_high r27
+  72               	
+  73               	; top, Top parameter stack
+  74               	#define tos_low r24
+  75               	#define tos_high r25
+  76               	
+  77               	; nos, Next on parameter stack
+  78               	#define nos_low r22
+  79               	#define nos_high r23
+  80               	
+  81               	; wrk, Work temporary 
+  82               	#define wrk_low r20
+  83               	#define wrk_high r21
+  84               	
+  85               	; ips, instruction for jump and link return
+  86               	#define ips_low r18
+  87               	#define ips_high r19
+  88               	
+  89               	;----------------------------------------------------------------------
+  90               	;
+  91               	;  trick adapted from amforth-6.9
+  92               	;
+  93               	.macro STRINGS string
+  94               	;    .word DOSLIT
+  95               	    .byte 8f - 7f
+  96               	7:  .ascii "\\string"
+  97               	8:  .balign 2
+  98               	.endm
+  99               	
+ 100               	;----------------------------------------------------------------------
+ 101               	;
+ 102               	; header of leaf word in dictionary
+ 103               	;    flags must be 0x80, 0x40, 0x20, 0x10
+ 104               	;    size  must be 1 to 15
+ 105               	;
+ 106               	;----------------------------------------------------------------------
+ 107               	;
+ 108               	; set start reverse linked list
+ 109               	;
+ 110               	.set _link_, 0x0
+ 111               	
+ 112               	.macro HEADER name, label, flags=0x0
+ 113               	is_\label:
+ 114               	    .p2align 1, 0x00
+ 115               	7:    
+ 116               	    .word _link_
+ 117               	    .set _link_, 7b
+ 118               	    .byte (9f - 8f) + \flags
+ 119               	8:    
+ 120               	    .ascii "\name"
+ 121               	9:    
+ 122               	    .p2align 1, 0x20
+ 123               	\label:
+ 124               	.endm
+ 125               	
+ 126               	;----------------------------------------------------------------------
+ 127               	; little endian !!! AVR
+ 128               	;
+ 129               	;    A    Z (r31:r30) is used as generic address pointer
+ 130               	;    R    Y (r29:r28) is used as return stack pointer    
+ 131               	;    S    X (r27:r26) is used as data/parameter stack pointer
+ 132               	;    W    W (r25:r24) is used as generic work register
+ 133               	;    
+ 134               	;
+ 135               	;   all stacks grows downwards.
+ 136               	;
+ 137               	;----------------------------------------------------------------------
+ 138               	;    push into return stack, 
+ 139               	.macro rspush low, high 
+ 140               	    st -X, \low
+ 141               	    st -X, \high
+ 142               	.endm
+ 143               	
+ 144               	;----------------------------------------------------------------------
+ 145               	;    pull from return stack, 
+ 146               	.macro rspull low, high
+ 147               	    ld \high, X+
+ 148               	    ld \low, X+
+ 149               	.endm
+ 150               	
+ 151               	;----------------------------------------------------------------------
+ 152               	;    push into data stack, 
+ 153               	.macro pspush low, high
+ 154               	    st -Y, \low
+ 155               	    st -Y, \high
+ 156               	.endm
+ 157               	
+ 158               	;----------------------------------------------------------------------
+ 159               	;    pull from data stack, 
+ 160               	.macro pspull low, high
+ 161               	    ld \high, Y+
+ 162               	    ld \low, Y+
+ 163               	.endm
+ 164               	
+ 165               	;----------------------------------------------------------------------
+ 166               	;    load from program memory (flash)
+ 167               	;    only works with TWO lpm !!!
+ 168               	;    Z address in bytes!
+ 169               	.macro pmload low, high
+ 170               	    lsl zpm_low
+ 171               	    rol zpm_high
+ 172               	    lpm \low, Z+
+ 173               	    lpm \high, Z+
+ 174               	    ror zpm_high
+ 175               	    ror zpm_low
+ 176               	.endm
+ 177               	
+ 178               	;----------------------------------------------------------------------
+ 179               	;    load from static memory (sram), increments pointer
+ 180               	;
+ 181               	.macro srload byte
+ 182               	    ld \byte, Z+
+ 183               	.endm
+ 184               	
+ 185               	;----------------------------------------------------------------------
+ 186               	;    save to static memory (sram), increments pointer
+ 187               	;
+ 188               	.macro srsave byte
+ 189               	    st Z+, \byte 
+ 190               	.endm
+ 191               	
+ 192               	;----------------------------------------------------------------------
+ 193               	; also io@
+ 194               	;
+ 195               	.macro peek address, register
+ 196               	    .if (\address < $40)
+ 197               	    in \register, \address
+ 198               	    .else
+ 199               	    lds \register, \address
+ 200               	    .endif
+ 201               	.endm
+ 202               	
+ 203               	;----------------------------------------------------------------------
+ 204               	; also io!
+ 205               	;
+ 206               	.macro poke address, register
+ 207               	    .if (\address < $40)
+ 208               	    out \address, \register
+ 209               	    .else
+ 210               	    sts \address, \register
+ 211               	    .endif
+ 212               	.endm
+ 213               	
+ 214               	;----------------------------------------------------------------------
+ 215               	; test, skip next if not zero
+ 216               	;
+ 217               	; for Atmega8:
+ 218               	; __SREG__ is 0x3F
+ 219               	; BIT_ZERO is 1
+ 220               	;
+ 221               	.macro test_zero low, high, address
+ 222               	    mov _work_, \low
+ 223               	    or _work_, \high
+ 224               	    brbs BIT_ZERO, \address
+ 225               	.endm
+ 226               	
+ 227               	;----------------------------------------------------------------------
+ 228               	; all primitives must start with NOOP and end with POON
+ 229               	;    a  nop (0x0000) is used as a null reference, and marks all primitives
+ 230               	;    as they are really a branch and link mark
+ 231               	;
+ 232               	; many primitives saves work register at end, 
+ 233               	;    then for save bytes, ends with WOOP, 
+ 234               	;    that goes to _pushw, that goes to POON 
+ 235               	;
+ 236               	
+ 237               	.macro NOOP
+ 238               	    nop
+ 239               	.endm
+ 240               	
+ 241               	.macro WOOP
+ 242               	    rjmp _pushw
+ 243               	.endm
+ 244               	
+ 245               	.macro POON
+ 246               	    rjmp _link
+ 247               	.endm
+ 248               	
+ 249               	;**********************************************************************
+ 250               	;  constant values
+ 251               	;
+ 252               	;     %s/#define *\([^ ]*\) */ \1 = /
+ 253               	;    %s/ *\([^ ]*\) *= */#define \1 /
+ 254               	
+ 255               	;----------------------------------------------------------------------
+ 256               	;    sizes
+ 257               	;
+ 258               	; atmega8 have flash memory of 128 pages of 64 bytes
+ 259               	SPM_SIZE = 64
+ 260               	
+ 261               	; buffer for flush flash
+ 262               	FIB_SIZE = SPM_SIZE
+ 263               	
+ 264               	; "Column 72 means Continue", 72 always \0
+ 265               	; Readability is good
+ 266               	TIB_SIZE = 72
+ 267               	
+ 268               	; small collate for numbers and words
+ 269               	; no more than 16 chars in a 16bit number system
+ 270               	PIC_SIZE = 16
+ 271               	
+ 272               	; stacks 18 words deep. WISE as M00re said.
+ 273               	STACK_SIZE = 36
+ 274               	
+ 275               	; default cell size
+ 276               	CELL_SIZE = 2
+ 277               	
+ 278               	; maximum word size
+ 279               	WORD_SIZE = 15
+ 280               	
+ 281               	; default base
+ 282               	BASE_DEFAULT = 16
+ 283               	
+ 284               	;----------------------------------------------------------------------
+ 285               	;   reserved eeprom used (256 words total, 248 avaliabe) 
+ 286               	;
+ 287               	eeprom = 0x00
+ 288               	e_void = eeprom + 0  ; always zero
+ 289               	e_seed = eeprom + 2  ; seed for random
+ 290               	e_turn = eeprom + 4  ; routine after boot
+ 291               	e_rest = eeprom + 6  ; routine before reset
+ 292               	e_last = eeprom + 8  ; last link addres to dictionary 
+ 293               	e_here = eeprom + 10 ; next free flash address for dictionary
+ 294               	e_sram = eeprom + 12 ; next free sram address for variables, as stack
+ 295               	e_erom = eeprom + 14 ; next free eprom address for values, as stack
+ 296               	e_free = eeprom + 16 
+ 297               	
+ 298               	;----------------------------------------------------------------------
+ 299               	;   words can be 1 to 15 chars lenght, 
+ 300               	;   almost over for normal english ~10 letters words http://norvig.com/mayzner.html
+ 301               	;
+ 302               	;   flags 
+ 303               	;   IMMEDIATE, COMPILE, HIDEN, TOGGLE
+ 304               	;
+ 305               	F_IMMEDIATE = 0x80
+ 306               	F_COMPILE_ONLY = 0x40
+ 307               	F_HIDDEN = 0x20
+ 308               	F_TOGGLE = 0x10
+ 309               	F_COMMON = 0x00
+ 310               	
+ 311               	F_TOMASK = 0xF0
+ 312               	F_UNMASK = 0x0F
+ 313               	
+ 314               	; STATES BIT!
+ 315               	; execute  STATE == 0
+ 316               	; compile  STATE == 1
+ 317               	; postpone STATE == 2 or 3, only for next word
+ 318               	
+ 319               	BIT_POSTPONE = 1
+ 320               	BIT_COMPILE = 0
+ 321               	BIT_EXECUTE = 0
+ 322               	
+ 323               	/*
+ 324               	state       common    immediate
+ 325               	S_EXECUTE    execute   execute
+ 326               	S_COMPILE    compile   execute
+ 327               	S_POSTPONE   compile   compile
+ 328               	
+ 329               	*/
+ 330               	;---------------------------------------------------------------------
+ 331               	; status register from error codes forth 2012
+ 332               	; minimal
+ 333               	NO_ERROR = 0
+ 334               	INVALID_MEMORY = -9
+ 335               	OVERFLOW = -11
+ 336               	WRITE_TO_READ_ONLY = -20
+ 337               	NOT_A_NUMBER = -24
+ 338               	
+ 339               	;---------------------------------------------------------------------
+ 340               	; Flow Control
+ 341               	; assumes that all line edit is done at remote!
+ 342               	; no backspace, no delete, no moving cursor, just a static line.
+ 343               	; works as a screen or block, just receives a line till a CR or CR LF
+ 344               	; uses BS, ESC, CAN, XON, XOFF, for control 
+ 345               	;
+ 346               	XON_   =   0x11    ; ascii DC1 ^Q
+ 347               	XOFF_  =   0x13    ; ascii DC3 ^S
+ 348               	
+ 349               	CR_    =   0x0d    ; ascci carriage return ^M
+ 350               	LF_    =   0x0a    ; ascii line feed ^J
+ 351               	
+ 352               	CAN_   =   0x18    ; ascii cancel ^C
+ 353               	ESC_   =   0x1B    ; ascii escape ^[
+ 354               	
+ 355               	BS_    =   0x08    ; ascii backspace ^H
+ 356               	TAB_   =   0x09    ; horizontal tab
+ 357               	BL_    =   0x20    ; ascii space 
+ 358               	
+ 359               	BIT_ZERO = 1
+ 360               	BIT_CARRY = 0
+ 361               	
+ 362               	SRAM_START = 0x060  ; SRAM from AVR manual
+ 363               	SRAM_END = 0x45F  ; SRAM from AVR manual
+ 364               	
+ 365               	FLASH_RWW = 0x0000
+ 366               	FLASH_NRWW = 0x1E00    ; using optiboot in 512 bytes !!!!
+ 367               	FLASH_END = 0x1FFF 
+ 368               	
+ 369               	FLASH_START = SRAM_END + 1    ; just a offset
+ 370               	FLASH_STOP = FLASH_NRWW - 1
+ 371               	
+ 372               	/* for eeprom use */
+ 373               	
+ 374               	E2P_PAGESIZE = 4
+ 375               	E2P_START = 0x000
+ 376               	E2P_END = 0x1FF
+ 377               	
+ 378               	/* for flash flush */
+ 379               	
+ 380               	SPM_PAGE = 64    
+ 381               	
+ 382               	pagesize = (SPM_PAGE - 1)
+ 383               	pagemask = (~pagesize)
+ 384               	
+ 385               	;----------------------------------------------------------------------
+ 386               	...
+  40               	
+  41               	;----------------------------------------------------------------------
+  42               	.section data
+  43 ???? 0000 0000 	.org 0x0060
+  43      0000 0000 
+  43      0000 0000 
+  43      0000 0000 
+  43      0000 0000 
+  44               	; those are non volatile
+  45 ???? 0000      	VOID:	.word 0		; always 0x0000
+  46 ???? 0000      	SEED:	.word 0		; seed for pseudo random
+  47 ???? 0000      	TURN:	.word 0		; routine to run after boot
+  48 ???? 0000      	REST:	.word 0		; routine to run before reset
+  49               	
+  50 ???? 0000      	LAST:	.word 0		; reference to latest word in dictionary
+  51 ???? 0000      	FSHM:	.word 0		; next free cell in flash dictionary
+  52 ???? 0000      	SRAM:	.word 0		; next free cell in static ram < 740
+  53 ???? 0000      	EROM:	.word 0		; next free cell in eeprom < 480
+  54               	
+  55               	; those are volatile
+  56 ???? 0000      	STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile, 2 postpone
+  57 ???? 0000      	RADX:	.word 0		; numeric radix for convertion
+  58 ???? 0000      	TOIN:	.word 0		; next free char in terminal input buffer
+  59 ???? 0000      	PAGE:   .word 0         ; last page address from/into flash memory
+  60               	
+  61               	.equ	FIB, PIC - FIB_SIZE
+  62               	.equ	PIC, TIB - PIC_SIZE
+  63               	.equ	TIB, END - TIB_SIZE 
+  64               	.equ	END, PSP - STACK_SIZE
+  65               	.equ	PSP, RSP - STACK_SIZE
+  66               	.equ	RSP, SPZ - STACK_SIZE
+  67               	.equ	SPZ, SRAM_END		
+  68               	
+  69               	;.equ free_sram, TIB - FREE
+  70               	
+  71               	;----------------------------------------------------------------------
+  72               	.p2align 1, 0x00
+  73               	#include "bios.S"
+   1               	
+   2               	/*
+   3               	 *  DISCLAIMER"
+   4               	 *
+   5               	 *  Copyright © 2020, Alvaro Gomes Sobral Barcellos,
+   6               	 *
+   7               	 *  Permission is hereby granted, free of charge, to any person obtaining
+   8               	 *  a copy of this software and associated documentation files (the
+   9               	 *  "Software"), to deal in the Software without restriction, including
+  10               	 *  without limitation the rights to use, copy, modify, merge, publish,
+  11               	 *  distribute, sublicense, and/or sell copies of the Software, and to
+  12               	 *  permit persons to whom the Software is furnished to do so, subject to
+  13               	 *  the following conditions"
+  14               	 *
+  15               	 *  The above copyright notice and this permission notice shall be
+  16               	 *  included in all copies or substantial portions of the Software.
+  17               	 *
+  18               	 *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  19               	 *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  20               	 *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  21               	 *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  22               	 *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  23               	 *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+  24               	 *
+  25               	 */
+  26               	
+  27               	;----------------------------------------------------------------------
+  28               	;
+  29               	; code segment, flash
+  30               	;
+  31               	.section .text
+  32               	.org 0x000
+  33               	.global boot
+  34               	boot:
+  35               	
+  36               	;---------------------------------------------------------------------
+  37               	; from avr manual, for atmega8, do not change 
+  38               	; reserved I/O Memory address
+  39               	;
+  40               	__SREG__ = 0x3f
+  41               	__SP_H__ = 0x3e
+  42               	__SP_L__ = 0x3d
+  43               	
+  44               	/* USART */
+  45               	UBRRL = 0x09
+  46               	UCSRC = 0x20
+  47               	UCSRB = 0x0a
+  48               	UCSRA = 0x0b
+  49               	
+  50               	/* Watch dog */
+  51               	WDTCR = 0x21
+  52               	
+  53               	/* timer0 */
+  54               	TCNT0 = 0x32
+  55               	TCCR0 = 0x33
+  56               	TIMSK = 0x39
+  57               	
+  58               	/* SPMCR */
+  59               	SPMCR = 0x37
+  60               	
+  61               	/* SPM BITS */
+  62               	SPMIE = 7
+  63               	RWWSB = 6
+  64               	/* bit 5 reserved */
+  65               	RWWSRE = 4
+  66               	BLBSET = 3
+  67               	PGWRT = 2
+  68               	PGERS = 1
+  69               	SPMEN = 0
+  70               	
+  71               	;----------------------------------------------------------------------
+  72               	;
+  73               	; classic interrup vector table
+  74               	;
+  75               	;----------------------------------------------------------------------
+  76               	
+  77 ???? 00C0      	    rjmp RESET ; Reset Handler
+  78 ???? 1895      	    reti ; rjmp EXT_INT0 ; IRQ0 Handler
+  79 ???? 1895      	    reti ; rjmp EXT_INT1 ; IRQ1 Handler
+  80 ???? 1895      	    reti ; rjmp TIM2_COMP ; Timer2 Compare Handler
+  81 ???? 1895      	    reti ; rjmp TIM2_OVF ; Timer2 Overflow Handler
+  82 ???? 1895      	    reti ; rjmp TIM1_CAPT ; Timer1 Capture Handler
+  83 ???? 1895      	    reti ; rjmp TIM1_COMPA ; Timer1 CompareA Handler
+  84 ???? 1895      	    reti ; rjmp TIM1_COMPB ; Timer1 CompareB Handler
+  85 ???? 1895      	    reti ; rjmp TIM1_OVF ; Timer1 Overflow Handler
+  86 ???? 00C0      	    rjmp TIM0_OVF ; Timer0 Overflow Handler
+  87 ???? 1895      	    reti ; rjmp SPI_STC ; SPI Transfer Complete Handler
+  88 ???? 1895      	    reti ; rjmp USART_RXC ; USART RX Complete Handler
+  89 ???? 1895      	    reti ; rjmp USART_UDRE ; ((0x0C) + 0x20) Empty Handler
+  90 ???? 1895      	    reti ; rjmp USART_TXC ; USART TX Complete Handler
+  91 ???? 1895      	    reti ; rjmp ADC ; ADC Conversion Complete Handler
+  92 ???? 1895      	    reti ; rjmp EE_RDY ; EEPROM Ready Handler
+  93 ???? 1895      	    reti ; rjmp ANA_COMP ; Analog Comparator Handler
+  94 ???? 1895      	    reti ; rjmp TWSI ; Two-wire Serial Interface Handler
+  95 ???? 1895      	    reti ; rjmp SPM_RDY ; Store Program Memory Ready Handler;
+  96               	
+  97               	;----------------------------------------------------------------------
+  98               	; 
+  99               	RESET:
+ 100               	; clear interrupts
+ 101 ???? F894      	    cli
+ 102               	; init _zero_ as zero
+ 103 ???? 3324      	    clr r3
+ 104 ???? 3FBE      	    out __SREG__, r3 ; clear sreg
+ 105               	; init real sp at end of sram
+ 106 ???? 94E0      	    ldi r25, hi8(SRAM_END)
+ 107 ???? 9EBF      	    out __SP_H__, r25
+ 108 ???? 8FE5      	    ldi r24, lo8(SRAM_END)
+ 109 ???? 8DBF      	    out __SP_L__, r24
+ 110               	; enable interrupts
+ 111 ???? 7894      	    sei
+ 112 ???? 00C0      	    rjmp BOOT
+ 113               	
+ 114               	;----------------------------------------------------------------------
+ 115               	;
+ 116               	;   do not use r0 and r1 are scratch registers used in spm, mul, des, etc
+ 117               	;
+ 118               	;   generic:
+ 119               	;   r2 , how knows ?
+ 120               	;   r3 , always zero
+ 121               	;   r4 , offset to prescale
+ 122               	;      
+ 123               	;   for timer0:
+ 124               	;   r5 , saved SREG
+ 125               	;   r6 , counter each 1ms low byte
+ 126               	;   r7 , counter each 1ms high byte
+ 127               	;
+ 128               	;   timer0 prescale 
+ 129               	;   for 8 MHz, prescale 64, offset 131, results about 1 ms
+ 130               	;   64 * 125 = 8000 ; 
+ 131               	;   256 - 125 = 131 ; offset for miliseconds
+ 132               	;
+ 133               	; interrupt routine
+ 134               	TIM0_OVF:
+ 135               	; save flags
+ 136 ???? 5FB6      	    in r5, __SREG__
+ 137               	; disable interrups
+ 138 ???? F894      	    cli
+ 139               	; increase counter and also clear 
+ 140 ???? 8894      	    clc
+ 141               	; do not use r0 or r1 elsewhere
+ 142 ???? 3324      	    clr r3
+ 143 ???? 3394      	    inc r3
+ 144 ???? 630C      	    add ticks_low, r3
+ 145 ???? 3A94      	    dec r3
+ 146 ???? 731C      	    adc ticks_high, r3
+ 147               	
+ 148               	; offset counter 256 - 125 = 131
+ 149               	; but was 10 clocks till out, 
+ 150               	; then 131 + 10 = 141
+ 151 ???? 42BE      	    out TCNT0, r4
+ 152               	; reset watch dog
+ 153 ???? A895      	    wdr
+ 154               	; load flags and return
+ 155 ???? 5FBE      	    out __SREG__, r5
+ 156               	; enable interrups
+ 157 ???? 7894      	    sei
+ 158 ???? 1895      	    reti
+ 159               	
+ 160               	;----------------------------------------------------------------------
+ 161               	/*
+ 162               	
+ 163               	OSCAL calibration,
+ 164               	from atmel 2555 note:
+ 165               	for atmega8 theorical for 25oC at 5V, value is 168.
+ 166               	for optiboot, value is 143 as sample better for 38400 bauds, maybe less for 40oC
+ 167               	CFLAGS += '-DMAX_TIME_COUNT=F_CPU>>4' '-DOSC_CAL=142' '-DNUM_LED_FLASHES=2' -DBAUD_RATE=38400
+ 168               	*/
+ 169               	
+ 170               	;----------------------------------------------------------------------
+ 171               	; hook to init hardware
+ 172               	BOOT:
+ 173 ???? F894      	   cli
+ 174               	
+ 175               	;----------------------------------------------------------------------
+ 176               	; init timer0, with internal clock 8MHz, from gcc public code, io ports as constants
+ 177               	;
+ 178               	; preset of timer0, with internal clock 8MHz ; cycle 64 ; offset 131
+ 179               	; timer cycle * offset / clock = 8k/8M = 1ms
+ 180               	;
+ 181               	TIMER0_SET:
+ 182               	; enable pre-escaler
+ 183 ???? 03B7      	    in r16, TCCR0
+ 184 ???? 0360      	    ori r16, (1 << 1) | (1 << 0)
+ 185 ???? 03BF      	    out TCCR0, r16
+ 186               	; offset counter, so it counts 125 clocks inside the interrup routines
+ 187 ???? 0DE8      	    ldi r16, 141
+ 188               	; preserve offset
+ 189 ???? 402E      	    mov r4, r16
+ 190 ???? 02BF      	    out TCNT0, r16
+ 191               	; enable counter
+ 192 ???? 09B7      	    in r16, TIMSK
+ 193 ???? 0160      	    ori r16, (1 << 0) 
+ 194 ???? 09BF      	    out TIMSK, r16
+ 195               	; clear timer0 counter
+ 196 ???? 2224      	    clr r2
+ 197 ???? 3324      	    clr r3
+ 198               	
+ 199               	;----------------------------------------------------------------------
+ 200               	; init watch dog, from avr-gcc public code, io ports as constants
+ 201               	;
+ 202               	; write logical one to WDCE and WDE, set WDP2, WDP1, WDP0 to ~ 2.0 s
+ 203               	;
+ 204               	WATCHDOG_SET:
+ 205 ???? 01B5      	    in r16, WDTCR
+ 206 ???? 0861      	    ori r16, (1 << 4) | (1 << 3)
+ 207 ???? 0760      	    ori r16, (1 << 2) | (1 << 1) | (1 << 0)
+ 208 ???? 01BD      	    out WDTCR, r16
+ 209               	
+ 210               	;----------------------------------------------------------------------
+ 211               	; init usart, from avr-gcc public code
+ 212               	;
+ 213               	;   defaults to 9600, 8N1, no control
+ 214               	;
+ 215               	USART_SET:
+ 216 ???? 4427      	    clr wrk_low
+ 217 ???? 40BD      	    out UCSRC, wrk_low
+ 218 ???? 44E3      	    ldi wrk_low, lo8(52)
+ 219 ???? 49B9      	    out UBRRL, wrk_low
+ 220 ???? 4AB1      	    in wrk_low, UCSRB
+ 221 ???? 4861      	    ori wrk_low, lo8(24)
+ 222 ???? 4AB9      	    out UCSRB, wrk_low
+ 223 ???? 4EE8      	    ldi wrk_low, lo8(-114)
+ 224 ???? 40BD      	    out UCSRC, wrk_low
+ 225 ???? 40B5      	    in wrk_low, UCSRC
+ 226 ???? 4064      	    ori wrk_low,lo8(64)
+ 227 ???? 40BD      	    out UCSRC, wrk_low
+ 228               	
+ 229               	;----------------------------------------------------------------------
+ 230               	; enable interrupts
+ 231               	GOOD:
+ 232 ???? 7894      	    sei
+ 233 ???? 00C0      	    rjmp COLD 
+ 234               	
+ 235               	.equ bios_end, .
+ 236               	
+  74               	
+  75               	;----------------------------------------------------------------------
+  76               	.p2align 1, 0x00
+  77               	#include "forth.S"
+   1               	/* 
+   2               	 *  DISCLAIMER" 
+   3               	 * 
+   4               	 *  Copyright © 2020, Alvaro Gomes Sobral Barcellos, 
+   5               	 * 
+   6               	 *  Permission is hereby granted, free of charge, to any person obtaining 
+   7               	 *  a copy of this software and associated documentation files (the 
+   8               	 *  "Software"), to deal in the Software without restriction, including 
+   9               	 *  without limitation the rights to use, copy, modify, merge, publish, 
+  10               	 *  distribute, sublicense, and/or sell copies of the Software, and to 
+  11               	 *  permit persons to whom the Software is furnished to do so, subject to 
+  12               	 *  the following conditions" 
+  13               	 * 
+  14               	 *  The above copyright notice and this permission notice shall be 
+  15               	 *  included in all copies or substantial portions of the Software. 
+  16               	 * 
+  17               	 *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+  18               	 *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+  19               	 *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+  20               	 *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE 
+  21               	 *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION 
+  22               	 *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION 
+  23               	 * 
+  24               	 */ 
+  25               	 
+  26               	;--------------------------------------------------------------------- 
+  27               	; 
+  28               	;    A small Forth for ATmega8 
+  29               	; 
+  30               	;--------------------------------------------------------------------- 
+  31               	; dictionary structure 
+  32               	; 
+  33               	; cell size is a word of 16 bits 
+  34               	; 
+  35               	; .word  link    link to previous 
+  36               	; .byte  size    sizeof name OR flags 
+  37               	; .ascii "name"  name, plus a pad byte with BL (0x32) if size is odd 
+  38               	; .word  param,  many references 
+  39               	; 
+  40               	;---------------------------------------------------------------------- 
+  41               	 
+  42               	; 
+  43               	; classics 
+  44               	; 
+  46               	.LIST 
+  47               	 
+  48               	;---------------------------------------------------------------------- 
+  49               	; start of dictionary 
+  50               	; 
+  51               	 
+  52               	;---------------------------------------------------------------------- 
+  53               	; 
+  54               	; this is the forth inner engine, 
+  55               	; 
+  56               	; a compound word, aka twig, must end with a reference to ENDS 
+  57               	; 
+  58               	; a primitive work, aka leaf, must start with NOOP and ends with POON 
+  59               	; 
+  60               	; the size byte must be masked by: or 0xF0 
+  61               	; 
+  62               	; memory pointer r31:r30 as Z 
+  63               	; return stack pointer r29:r28 as Y 
+  64               	; working register r25:r24 as W 
+  65               	; temporary tos register r23:r22 
+  66               	; temporary nds register r21:r20 
+  67               	; instruction pointer r18:r19 
+  68               	; scratch register r0 
+  69               	; 
+  70               	; Can only use LPM to access flash memory ? YES! 
+  71               	; 
+  72               	; all constants in flash, all variables in sdram 
+  73               	; 
+  74               	; why ? flash memory suports only 10.000 cycles 
+  75               	; 
+  76               	 
+  77               	;---------------------------------------------------------------------- 
+  78               	; starts just above sram ends 
+  79               	;
+  80               	; use the address to determine if is flash or is sram, above is flash :)
+  81               	; 
+  82               	.section .text 
+  83 ???? 0000 0000 	.org 0x460 
+  83      0000 0000 
+  83      0000 0000 
+  83      0000 0000 
+  83      0000 0000 
+  84               	.global forth 
+  85               	_forth_: 
+  86               	;---------------------------------------------------------------------- 
+  87               	; inner interpreter, 
+  88               	; it is also a primitive word 
+  89               	; 
+  90               	; also called semis 
+  91 ???? 0000 0445 	HEADER "ENDS", "ENDS" 
+  91      4E44 5320 
+  92               	; does nothing and mark as primitive 
+  93 ???? 0000      	    NOOP 
+  94               	 
+  95               	; pull ips from rsp 
+  96               	_exit: 
+  97 ???? FD91 ED91 	    rspull zpm_low, zpm_high 
+  98               	 
+  99               	; load w with contents of cell at ips 
+ 100               	_next: 
+ 101 ???? EE0F FF1F 	    pmload wrk_low, wrk_high ; also increments zpm 
+ 101      4591 5591 
+ 101      F795 E795 
+ 102               	 
+ 103               	; if zero (NULL) is a primitive word 
+ 104               	_void:
+ 105 ???? 242E      	    mov _work_, wrk_low 
+ 106 ???? 252A      	    or _work_, wrk_high 
+ 107 ???? 01F0      	    brbs BIT_ZERO, _jump
+ 108               	 
+ 109               	; else is a reference 
+ 110               	_enter: 
+ 111 ???? EE93 FE93 	    rspush zpm_low, zpm_high ; push next reference 
+ 112 ???? FA01      	    movw zpm_low, wrk_low ; point to this reference 
+ 113 ???? 00C0      	    rjmp _next 
+ 114               	 
+ 115               	; then jump, for exec it 
+ 116               	_jump: 
+ 117 ???? 3296      	    adiw zpm_low, 2	     
+ 118 ???? 9F01      	    movw ips_low, zpm_low    
+ 119 ???? 3297      	    sbiw zpm_low, 2	     
+ 120 ???? 0994      	    ijmp 
+ 121               	 
+ 122               	; then link, for continue 
+ 123               	_link: 
+ 124 ???? F901      	    movw zpm_low, ips_low ; points to next reference 
+ 125 ???? 00C0      	    rjmp _next 
+ 126               	 
+ 127               	;---------------------------------------------------------------------- 
+ 128               	; 
+ 129               	; using cached 
+ 130               	; (Tos, 2nd, 3rd, 4th, ...) 
+ 131               	; 
+ 132               	;---------------------------------------------------------------------- 
+ 133               	 
+ 134               	;********************************************************************** 
+ 135               	; 
+ 136               	;    init of minimal words 
+ 137               	;---------------------------------------------------------------------- 
+ 138               	 
+ 139               	;---------------------------------------------------------------------- 
+ 140               	; ok 0= 
+ 141               	; 
+ 142 ???? 0000 0230 	HEADER "0=", "ZEQU" 
+ 142      3D20 
+ 143 ???? 0000      	    NOOP 
+ 144 ???? 892B      	    or tos_low, tos_high
+ 145 ???? 01F0      	    brbs BIT_ZERO, _ffalse
+ 146               	_ftrue: 
+ 147 ???? 8FEF      	    ser tos_low 
+ 148 ???? 9FEF      	    ser tos_high 
+ 149               	_ffalse:
+ 150 ???? 00C0      	    POON
+ 151               	 
+ 152               	;---------------------------------------------------------------------- 
+ 153               	; ok ! to (w a -- ) 
+ 154               	; only in sram 
+ 155 ???? 0000 0121 	HEADER "!", "TO" 
+ 156 ???? 0000      	    NOOP 
+ 157 ???? FC01      	    movw  zpm_low, tos_low
+ 158 ???? 9991 8991 	    pspull tos_low, tos_high 
+ 159               	
+ 160               	; if above _forth_ is flash 
+ 161 ???? 50E0      	    ldi wrk_high, hi8(_forth_) 
+ 162 ???? E030      	    cpi zpm_low, lo8(_forth_) 
+ 163 ???? F507      	    cpc zpm_high, wrk_high 
+ 164 ???? 04F4      	    brge _isflash_to 
+ 165               	 
+ 166               	_isram_to: 
+ 167 ???? 8193      	    srsave tos_low 
+ 168 ???? 9193      	    srsave tos_high
+ 169 ???? 9991 8991 	    pspull tos_low, tos_high 
+ 170 ???? 00C0      	    POON 
+ 171               	 
+ 172               	_isflash_to: 
+ 173               	;   do flash flush, later :( still not done 
+ 174 ???? 00C0      	    POON 
+ 175               	 
+ 176               	;---------------------------------------------------------------------- 
+ 177               	; ok @ at ( a -- w ) 
+ 178               	; only in sram 
+ 179 ???? 0000 0140 	HEADER "@", "AT" 
+ 180 ???? 0000      	    NOOP 
+ 181 ???? FC01      	    movw zpm_low, tos_low 
+ 182               	 
+ 183               	; if above _forth_ is flash 
+ 184 ???? 50E0      	    ldi wrk_high, hi8(_forth_) 
+ 185 ???? E030      	    cpi zpm_low, lo8(_forth_) 
+ 186 ???? F507      	    cpc zpm_high, wrk_high 
+ 187 ???? 04F4      	    brge _isflash_at 
+ 188               	 
+ 189               	_isram_at: 
+ 190 ???? 8191      	    srload tos_low 
+ 191 ???? 9191      	    srload tos_high 
+ 192 ???? 00C0      	    POON
+ 193               	 
+ 194               	_isflash_at: 
+ 195 ???? EE0F FF1F 	    pmload tos_low, tos_high 
+ 195      8591 9591 
+ 195      F795 E795 
+ 196 ???? 00C0      	    POON
+ 197               	 
+ 198               	;---------------------------------------------------------------------- 
+ 199               	; ok ( -- rsp) 
+ 200               	; 
+ 201 ???? 0000 0352 	HEADER "RS@", "RPAT" 
+ 201      5340 
+ 202 ???? 0000      	    NOOP 
+ 203 ???? 8A93 9A93 	    pspush tos_low, tos_high 
+ 204 ???? CD01      	    movw tos_low, rsp_low 
+ 205 ???? 00C0      	    POON 
+ 206               	 
+ 207               	;---------------------------------------------------------------------- 
+ 208               	; ok ( -- psp ) 
+ 209               	; 
+ 210 ???? 0000 0350 	HEADER "PS@", "SPAT" 
+ 210      5340 
+ 211 ???? 0000      	    NOOP 
+ 212 ???? 8A93 9A93 	    pspush tos_low, tos_high 
+ 213 ???? CE01      	    movw tos_low, psp_low 
+ 214 ???? 00C0      	    POON 
+ 215               	 
+ 216               	;---------------------------------------------------------------------- 
+ 217               	; ok ( w1 w2 -- w2 NAND w1 ) 
+ 218               	; 
+ 219 ???? 0000 044E 	HEADER "NAND", "NAND" 
+ 219      414E 4420 
+ 220 ???? 0000      	    NOOP 
+ 221 ???? 7991 6991 	    pspull nos_low, nos_high 
+ 222 ???? 8623      	    and tos_low, nos_low 
+ 223 ???? 9723      	    and tos_high, nos_high 
+ 224 ???? 6095      	    com nos_low 
+ 225 ???? 7095      	    com nos_high 
+ 226 ???? 00C0      	    POON 
+ 227               	 
+ 228               	;---------------------------------------------------------------------- 
+ 229               	; ok ( w1 w2 -- w2 + w1 ) 
+ 230 ???? 0000 012B 	HEADER "+", "PLUS" 
+ 231 ???? 0000      	    NOOP 
+ 232 ???? 7991 6991 	    pspull nos_low, nos_high 
+ 233 ???? 8894      	    clc 
+ 234 ???? 860F      	    add tos_low, nos_low 
+ 235 ???? 971F      	    adc tos_high, nos_high 
+ 236 ???? 00C0      	    POON 
+ 237               	 
+ 238               	;---------------------------------------------------------------------- 
+ 239               	;    end of minimal words 
+ 240               	; 
+ 241               	;********************************************************************** 
+ 242               	 
+ 243               	 
+ 244               	;********************************************************************** 
+ 245               	;    load variables 
+ 246               	; 
+ 247               	;---------------------------------------------------------------------- 
+ 248               	; ok ( -- w) 
+ 249               	; 
+ 250 ???? 0000 0354 	HEADER "TIB", "tib_" 
+ 250      4942 
+ 251 ???? 0000      	    NOOP
+ 252 ???? 8A93 9A93 	    pspush tos_low, tos_high
+ 253 ???? 8BEA      	    ldi tos_low, lo8(TIB) 
+ 254 ???? 93E0      	    ldi tos_high, hi8(TIB) 
+ 255 ???? 00C0      	    POON 
+ 256               	 
+ 257               	;---------------------------------------------------------------------- 
+ 258               	; ok ( -- w) 
+ 259               	; 
+ 260 ???? 0000 064C 	HEADER "LATEST", "LATEST" 
+ 260      4154 4553 
+ 260      5420 
+ 261 ???? 0000      	    NOOP 
+ 262 ???? 8A93 9A93 	    pspush tos_low, tos_high
+ 263 ???? 80E0      	    ldi tos_low, lo8(LAST) 
+ 264 ???? 90E0      	    ldi tos_high, hi8(LAST) 
+ 265 ???? 00C0      	    POON 
+ 266               	 
+ 267               	;---------------------------------------------------------------------- 
+ 268               	; ok ( -- w) 
+ 269               	; 
+ 270 ???? 0000 0553 	HEADER "STATE", "STATE" 
+ 270      5441 5445 
+ 271 ???? 0000      	    NOOP 
+ 272 ???? 8A93 9A93 	    pspush tos_low, tos_high
+ 273 ???? 80E0      	    ldi tos_low, lo8(STAT) 
+ 274 ???? 90E0      	    ldi tos_high, hi8(STAT) 
+ 275 ???? 00C0      	    POON 
+ 276               	 
+ 277               	;---------------------------------------------------------------------- 
+ 278               	; ok ( -- w) 
+ 279               	; 
+ 280 ???? 0000 0442 	HEADER "BASE", "BASE" 
+ 280      4153 4520 
+ 281 ???? 0000      	    NOOP 
+ 282 ???? 8A93 9A93 	    pspush tos_low, tos_high
+ 283 ???? 80E0      	    ldi tos_low, lo8(RADX) 
+ 284 ???? 90E0      	    ldi tos_high, hi8(RADX) 
+ 285 ???? 00C0      	    POON 
+ 286               	 
+ 287               	;---------------------------------------------------------------------- 
+ 288               	; ok ( -- w) 
+ 289               	; 
+ 290 ???? 0000 0628 	HEADER "(sram)", "sram_" 
+ 290      7372 616D 
+ 290      2920 
+ 291 ???? 0000      	    NOOP 
+ 292 ???? 8A93 9A93 	    pspush tos_low, tos_high
+ 293 ???? 80E0      	    ldi tos_low, lo8(SRAM) 
+ 294 ???? 90E0      	    ldi tos_high, hi8(SRAM) 
+ 295 ???? 00C0      	    POON 
+ 296               	 
+ 297               	;---------------------------------------------------------------------- 
+ 298               	; ok ( -- w) 
+ 299               	; 
+ 300 ???? 0000 0628 	HEADER "(erom)", "erom_" 
+ 300      6572 6F6D 
+ 300      2920 
+ 301 ???? 0000      	    NOOP 
+ 302 ???? 8A93 9A93 	    pspush tos_low, tos_high
+ 303 ???? 80E0      	    ldi tos_low, lo8(EROM) 
+ 304 ???? 90E0      	    ldi tos_high, hi8(EROM) 
+ 305 ???? 00C0      	    POON 
+ 306               	 
+ 307               	;---------------------------------------------------------------------- 
+ 308               	; ok ( -- w) 
+ 309               	; 
+ 310 ???? 0000 0446 	HEADER "FSHM", "here_" 
+ 310      5348 4D20 
+ 311 ???? 0000      	    NOOP 
+ 312 ???? 8A93 9A93 	    pspush tos_low, tos_high
+ 313 ???? 80E0      	    ldi tos_low, lo8(FSHM) 
+ 314 ???? 90E0      	    ldi tos_high, hi8(FSHM) 
+ 315 ???? 00C0      	    POON 
+ 316               	 
+ 317               	;********************************************************************** 
+ 318               	;   usart i/O 
+ 319               	; 
+ 320               	;---------------------------------------------------------------------- 
+ 321               	; 
+ 322               	; ok ( -- w) 
+ 323               	; beware, it blocks while test if can receive a char 
+ 324               	; 
+ 325 ???? 0000 036B 	HEADER "key", "key_" 
+ 325      6579 
+ 326 ???? 0000      	    NOOP 
+ 327               	1: 
+ 328 ???? 5F9B      	    sbis 0x0b, 7 
+ 329 ???? 00C0      	    rjmp 1b 
+ 330               	2: 
+ 331 ???? 8A93 9A93 	    pspush tos_low, tos_high
+ 332 ???? 8CB1      	    in tos_low, 0x0c 
+ 333 ???? 9927      	    clr tos_high 
+ 334 ???? 00C0      	    POON 
+ 335               	 
+ 336               	;---------------------------------------------------------------------- 
+ 337               	; ok ( -- 0 | w) 
+ 338               	; test if can receive a char, or return FALSE 
+ 339               	; 
+ 340 ???? 0000 046B 	HEADER "key?", "qkey_" 
+ 340      6579 3F20 
+ 341 ???? 0000      	    NOOP 
+ 342               	3: 
+ 343 ???? 5F9B      	    sbis 0x0b, 7 
+ 344 ???? 00C0      	    rjmp _ffalse 
+ 345 ???? 00C0      	    rjmp 2b 
+ 346               	 
+ 347               	;---------------------------------------------------------------------- 
+ 348               	; ok ( w -- ) 
+ 349               	; beware, it blocks while test if can send a char 
+ 350               	; 
+ 351 ???? 0000 0465 	HEADER "emit", "emit_" 
+ 351      6D69 7420 
+ 352 ???? 0000      	    NOOP 
+ 353               	1: 
+ 354 ???? 5D9B      	    sbis 0x0b, 5 
+ 355 ???? 00C0      	    rjmp 1b 
+ 356               	2: 
+ 357 ???? 8CB9      	    out 0x0c, tos_low 
+ 358 ???? 9991 8991 	    pspull tos_low, tos_high
+ 359 ???? 00C0      	    POON 
+ 360               	 
+ 361               	;---------------------------------------------------------------------- 
+ 362               	; ok ( w -- w 0) 
+ 363               	; test if can send a char, or return FALSE 
+ 364               	; 
+ 365 ???? 0000 0565 	HEADER "emit?", "qemit_" 
+ 365      6D69 743F 
+ 366 ???? 0000      	    NOOP 
+ 367               	3: 
+ 368 ???? 5D9B      	    sbis 0x0b, 5 
+ 369 ???? 00C0      	    rjmp _ffalse 
+ 370 ???? 00C0      	    rjmp 2b 
+ 371               	 
+ 372               	;---------------------------------------------------------------------- 
+ 373               	; ok ( -- w) 
+ 374               	; push timer counter 
+ 375               	; 
+ 376 ???? 0000 066D 	HEADER "millis", "millis_" 
+ 376      696C 6C69 
+ 376      7320 
+ 377 ???? 0000      	    NOOP 
+ 378 ???? 8A93 9A93 	    pspush tos_low, tos_high 
+ 379 ???? C301      	    movw tos_low, ticks_low 
+ 380 ???? 00C0      	    POON 
+ 381               	 
+ 382               	;********************************************************************** 
+ 383               	;---------------------------------------------------------------------- 
+ 384               	; ok ( -- -1 ) 
+ 385               	; 
+ 386 ???? 0000 0454 	HEADER "TRUE", "FTRUE" 
+ 386      5255 4520 
+ 387 ???? 0000      	    NOOP 
+ 388               	_iftrue: 
+ 389 ???? 8FEF      	    ser tos_low 
+ 390 ???? 9FEF      	    ser tos_high 
+ 391 ???? 00C0      	    POON 
+ 392               	 
+ 393               	;---------------------------------------------------------------------- 
+ 394               	; ok ( -- 0 ) 
+ 395               	; 
+ 396 ???? 0000 0546 	HEADER "FALSE", "FFALSE" 
+ 396      414C 5345 
+ 397 ???? 0000      	    NOOP 
+ 398               	_iffalse: 
+ 399 ???? 8827      	    clr tos_low 
+ 400 ???? 9927      	    clr tos_high 
+ 401 ???? 00C0      	    POON 
+ 402               	 
+ 403               	;---------------------------------------------------------------------- 
+ 404               	; ok ( -- 0 ) 
+ 405               	;
+ 406 ???? 0000 0130 	HEADER "0", "ZERO" 
+ 407 ???? 0000      	    NOOP 
+ 408 ???? 8A93 9A93 	    pspush tos_low, tos_high 
+ 409 ???? 8827      	    clr tos_low 
+ 410 ???? 9927      	    clr tos_high 
+ 411 ???? 00C0      	    POON 
+ 412               	 
+ 413               	;---------------------------------------------------------------------- 
+ 414               	; ok (  -- 1) 
+ 415 ???? 0000 0131 	HEADER "1", "ONE" 
+ 416 ???? 0000      	    NOOP 
+ 417 ???? 8A93 9A93 	    pspush tos_low, tos_high 
+ 418 ???? 9927      	    clr tos_high 
+ 419 ???? 8827      	    clr tos_low 
+ 420 ???? 8395      	    inc tos_low 
+ 421 ???? 00C0      	    POON 
+ 422               	 
+ 423               	;---------------------------------------------------------------------- 
+ 424               	; ok ( w1 w2 -- 0 | -1 ) 
+ 425               	; 
+ 426 ???? 0000 013C 	HEADER "<", "LTHAN" 
+ 427 ???? 0000      	    NOOP 
+ 428 ???? 7991 6991 	    pspull nos_low, nos_high 
+ 429 ???? 8617      	    cp tos_low, nos_low 
+ 430 ???? 9707      	    cpc tos_high, nos_high 
+ 431 ???? 04F0      	    brlt _iftrue 
+ 432 ???? 00C0      	    rjmp _iffalse 
+ 433               	 
+ 434               	;---------------------------------------------------------------------- 
+ 435               	; ok ( w -- ) ( -- W) 
+ 436               	;      
+ 437 ???? 0000 023E 	HEADER ">R", "TOR" 
+ 437      5220 
+ 438 ???? 0000      	    NOOP 
+ 439 ???? 8E93 9E93 	    rspush tos_low, tos_high 
+ 440 ???? 9991 8991 	    pspull tos_low, tos_high 
+ 441 ???? 00C0      	    POON 
+ 442               	 
+ 443               	;---------------------------------------------------------------------- 
+ 444               	; ok ( -- w ) ( w -- ) 
+ 445               	;     
+ 446 ???? 0000 0252 	HEADER "R>", "RTO" 
+ 446      3E20 
+ 447 ???? 0000      	    NOOP 
+ 448 ???? 8A93 9A93 	    pspush tos_low, tos_high 
+ 449 ???? 9D91 8D91 	    rspull tos_low, tos_high 
+ 450 ???? 00C0      	    POON 
+ 451               	 
+ 452               	;---------------------------------------------------------------------- 
+ 453               	; ok ( -- w ) ( w -- w ) 
+ 454               	;
+ 455 ???? 0000 0252 	HEADER "R@", "RAT" 
+ 455      4020 
+ 456 ???? 0000      	    NOOP 
+ 457 ???? 8E93 9E93 	    rspush tos_low, tos_high 
+ 458 ???? 8C91      	    ld tos_low, X
+ 459 ???? 9C91      	    ld tos_high, X
+ 460 ???? 00C0      	    POON 
+ 461               	 
+ 462               	;---------------------------------------------------------------------- 
+ 463               	; ok ( rsp -- ) 
+ 464               	;
+ 465 ???? 0000 0352 	HEADER "RS!", "RPTO" 
+ 465      5321 
+ 466 ???? 0000      	    NOOP 
+ 467 ???? DC01      	    movw rsp_low, tos_low 
+ 468 ???? 9991 8991 	    pspull tos_low, tos_high 
+ 469 ???? 00C0      	    POON 
+ 470               	 
+ 471               	;---------------------------------------------------------------------- 
+ 472               	; ok ( psp -- ) 
+ 473               	;
+ 474 ???? 0000 0350 	HEADER "PS!", "SPTO" 
+ 474      5321 
+ 475 ???? 0000      	    NOOP 
+ 476 ???? EC01      	    movw psp_low, tos_low 
+ 477 ???? 9991 8991 	    pspull tos_low, tos_high 
+ 478 ???? 00C0      	    POON 
+ 479               	 
+ 480               	;---------------------------------------------------------------------- 
+ 481               	; ok ( w -- ) 
+ 482               	;     
+ 483 ???? 0000 0444 	HEADER "DROP", "DROP" 
+ 483      524F 5020 
+ 484 ???? 0000      	    NOOP
+ 485               	PULL: 
+ 486 ???? 9991 8991 	    pspull tos_low, tos_high 
+ 487 ???? 00C0      	    POON 
+ 488               	 
+ 489               	;---------------------------------------------------------------------- 
+ 490               	; ok ( w -- w w) 
+ 491               	;
+ 492 ???? 0000 0344 	HEADER "DUP", "DUP" 
+ 492      5550 
+ 493 ???? 0000      	    NOOP 
+ 494               	PUSH:
+ 495 ???? 8A93 9A93 	    pspush tos_low, tos_high 
+ 496 ???? 00C0      	    POON 
+ 497               	 
+ 498               	;---------------------------------------------------------------------- 
+ 499               	; ok ( w2 w1 -- w1 w2 ) 
+ 500               	;
+ 501 ???? 0000 0453 	HEADER "SWAP", "SWAP" 
+ 501      5741 5020 
+ 502 ???? 0000      	    NOOP 
+ 503 ???? 7991 6991 	    pspull nos_low, nos_high 
+ 504 ???? 8A93 9A93 	    pspush tos_low, tos_high 
+ 505 ???? CB01      	    movw tos_low, nos_low
+ 506 ???? 00C0      	    POON 
+ 507               	 
+ 508               	;---------------------------------------------------------------------- 
+ 509               	; ok ( 0 | w -- 0 | w w ) 
+ 510               	; dup if tos not zero 
+ 511               	; 
+ 512 ???? 0000 043F 	HEADER "?DUP", "ZDUP" 
+ 512      4455 5020 
+ 513 ???? 0000      	    NOOP 
+ 514 ???? 282E 292A 	    test_zero tos_low, tos_high, 1f 
+ 514      01F0 
+ 515 ???? 8A93 9A93 	    pspush tos_low, tos_high 
+ 516               	1: 
+ 517 ???? 00C0      	    POON 
+ 518               	 
+ 519               	;---------------------------------------------------------------------- 
+ 520               	; ok ( u -- ) 
+ 521               	; branch IF tos IS zero 
+ 522               	; 
+ 523 ???? 0000 073F 	HEADER "?BRANCH", "ZBRANCH" 
+ 523      4252 414E 
+ 523      4348 
+ 524 ???? 0000      	    NOOP 
+ 525 ???? 282E 292A 	    test_zero tos_low, tos_high, _branch 
+ 525      01F0 
+ 526 ???? F901      	    movw zpm_low, ips_low 
+ 527 ???? 3296      	    adiw zpm_low, 2 
+ 528 ???? 9F01      	    movw ips_low, zpm_low 
+ 529 ???? 9991 8991 	    pspull tos_low, tos_high 
+ 530 ???? 00C0      	    POON 
+ 531               	 
+ 532               	;---------------------------------------------------------------------- 
+ 533               	; ok ( branch next reference ) 
+ 534               	; 
+ 535               	; doing offsets in bytes 
+ 536 ???? 0000 0642 	HEADER "BRANCH", "BRANCH" 
+ 536      5241 4E43 
+ 536      4820 
+ 537 ???? 0000      	    NOOP 
+ 538               	_branch: 
+ 539 ???? F901      	    movw zpm_low, ips_low 
+ 540 ???? EE0F FF1F 	    pmload wrk_low, wrk_high 
+ 540      4591 5591 
+ 540      F795 E795 
+ 541 ???? 240F      	    add ips_low, wrk_low 
+ 542 ???? 351F      	    adc ips_high, wrk_high 
+ 543 ???? 9991 8991 	    pspull tos_low, tos_high 
+ 544 ???? 00C0      	    POON 
+ 545               	 
+ 546               	;---------------------------------------------------------------------- 
+ 547               	; ok ( branch next reference ) 
+ 548               	; is >R
+ 549 ???? 0000 0745 	HEADER "EXECUTE", "EXECUTE" 
+ 549      5845 4355 
+ 549      5445 
+ 550 ???? 0000      	    NOOP 
+ 551 ???? 8E93 9E93 	    rspush tos_low, tos_high 
+ 552 ???? 9991 8991 	    pspull tos_low, tos_high 
+ 553 ???? 00C0      	    POON 
+ 554               	 
+ 555               	;---------------------------------------------------------------------- 
+ 556               	; ok ( w1 w2 -- w2-w1 ) 
+ 557               	; 
+ 558 ???? 0000 012D 	HEADER "-", "MINUS" 
+ 559 ???? 0000      	    NOOP 
+ 560 ???? 7991 6991 	    pspull nos_low, nos_high 
+ 561 ???? 8894      	    clc 
+ 562 ???? 861B      	    sub tos_low, nos_low 
+ 563 ???? 970B      	    sbc tos_high, nos_high 
+ 564 ???? 00C0      	    POON 
+ 565               	 
+ 566               	;---------------------------------------------------------------------- 
+ 567               	; ok ( w1 w2 -- w2 AND w1 ) 
+ 568               	; 
+ 569 ???? 0000 0341 	HEADER "AND", "AND" 
+ 569      4E44 
+ 570 ???? 0000      	    NOOP 
+ 571 ???? 7991 6991 	    pspull nos_low, nos_high 
+ 572 ???? 8623      	    and  tos_low, nos_low 
+ 573 ???? 9723      	    and  tos_high, nos_high 
+ 574 ???? 00C0      	    POON 
+ 575               	 
+ 576               	;---------------------------------------------------------------------- 
+ 577               	; ok ( w1 w2 -- w2 OR w1 ) 
+ 578               	; 
+ 579 ???? 0000 024F 	HEADER "OR", "OR" 
+ 579      5220 
+ 580 ???? 0000      	    NOOP 
+ 581 ???? 7991 6991 	    pspull nos_low, nos_high 
+ 582 ???? 862B      	    or   tos_low, nos_low 
+ 583 ???? 972B      	    or   tos_high, nos_high 
+ 584 ???? 00C0      	    POON 
+ 585               	 
+ 586               	;---------------------------------------------------------------------- 
+ 587               	; ok ( w1 w2 -- w2 XOR w1 ) 
+ 588               	; 
+ 589 ???? 0000 0358 	HEADER "XOR", "XOR" 
+ 589      4F52 
+ 590 ???? 0000      	    NOOP 
+ 591 ???? 7991 6991 	    pspull nos_low, nos_high 
+ 592 ???? 8627      	    eor  tos_low, nos_low 
+ 593 ???? 9727      	    eor  tos_high, nos_high 
+ 594 ???? 00C0      	    POON 
+ 595               	 
+ 596               	;---------------------------------------------------------------------- 
+ 597               	; ok ( w -- w * 2 ) same as shift left << 1, unsigned 
+ 598               	; 
+ 599 ???? 0000 0232 	HEADER "2*", "SHL" 
+ 599      2A20 
+ 600 ???? 0000      	    NOOP 
+ 601               	_shl: 
+ 602 ???? 8894      	    clc 
+ 603 ???? 880F      	    lsl   tos_low 
+ 604 ???? 991F      	    rol   tos_high 
+ 605 ???? 00C0      	    POON 
+ 606               	 
+ 607               	;---------------------------------------------------------------------- 
+ 608               	; ok ( w -- w / 2 ) same as shift right >> 1, unsigned 
+ 609               	; 
+ 610 ???? 0000 0232 	HEADER "2/", "SHR" 
+ 610      2F20 
+ 611 ???? 0000      	    NOOP 
+ 612               	_shr: 
+ 613 ???? 8894      	    clc 
+ 614 ???? 8695      	    lsr tos_low 
+ 615 ???? 9795      	    ror tos_high 
+ 616 ???? 00C0      	    POON 
+ 617               	 
+ 618               	;---------------------------------------------------------------------- 
+ 619               	; ok ( nAnB -- nBnA ) swap bytes in a word 
+ 620 ???? 0000 023E 	HEADER "><", "ENDIAN" 
+ 620      3C20 
+ 621 ???? 0000      	    NOOP 
+ 622 ???? 282E      	    mov _work_, tos_low
+ 623 ???? 892F      	    mov tos_low, tos_high
+ 624 ???? 922D      	    mov tos_high, _work_
+ 625 ???? 00C0      	    POON 
+ 626               	 
+ 627               	;---------------------------------------------------------------------- 
+ 628               	;  os DOCON ( -- w ), (IP++) -> Tos
+ 629               	;   inverse of comma 
+ 630               	;   from flash to data stack 
+ 631               	;   was DOLIT
+ 632 ???? 0000 0544 	HEADER "DOCON", "DOCON" 
+ 632      4F43 4F4E 
+ 633 ???? 0000      	    NOOP 
+ 634 ???? 8A93 9A93 	    pspush tos_low, tos_high
+ 635 ???? F901      	    movw zpm_low, ips_low 
+ 636 ???? EE0F FF1F 	    pmload tos_low, tos_high 
+ 636      8591 9591 
+ 636      F795 E795 
+ 637 ???? 9F01      	    movw ips_low, zpm_low 
+ 638 ???? 00C0      	    POON 
+ 639               	 
+ 640               	;---------------------------------------------------------------------- 
+ 641               	;  os DOVAR ( -- w ), IP++ -> Tos 
+ 642               	;  from flash to data stack 
+ 643               	; 
+ 644 ???? 0000 0544 	HEADER "DOVAR", "DOVAR" 
+ 644      4F56 4152 
+ 645 ???? 0000      	    NOOP 
+ 646 ???? 8A93 9A93 	    pspush tos_low, tos_high
+ 647 ???? C901      	    movw tos_low, ips_low 
+ 648 ???? 0296      	    adiw tos_low, 2
+ 649 ???? 9C01      	    movw ips_low, tos_low
+ 650 ???? 0297      	    sbiw tos_low, 2
+ 651 ???? 00C0      	    POON 
+ 652               	 
+ 653               	;---------------------------------------------------------------------- 
+ 654               	; ok C! ( c a -- ) 
+ 655               	; only works in sram
+ 656 ???? 0000 0243 	HEADER "C!", "CTO" 
+ 656      2120 
+ 657 ???? 0000      	    NOOP 
+ 658 ???? FC01      	    movw zpm_low, tos_low
+ 659 ???? 9991 8991 	    pspull tos_low, tos_high
+ 660 ???? 8083      	    st Z, tos_low
+ 661 ???? 9991 8991 	    pspull tos_low, tos_high 
+ 662 ???? 00C0      	    rjmp TO 
+ 663               	 
+ 664               	;---------------------------------------------------------------------- 
+ 665               	; ok C@ ( a -- c ) 
+ 666               	; only works in sram
+ 667 ???? 0000 0243 	HEADER "C@", "CAT" 
+ 667      4020 
+ 668 ???? 0000      	    NOOP 
+ 669 ???? FC01      	    movw zpm_low, tos_low
+ 670 ???? 8081      	    ld tos_low, Z
+ 671 ???? 9927      	    clr tos_high
+ 672 ???? 00C0      	    rjmp AT 
+ 673               	 
+ 674               	;---------------------------------------------------------------------- 
+ 675               	; ok INV 
+ 676 ???? 0000 0649 	HEADER "INVERT", "INVERT" 
+ 676      4E56 4552 
+ 676      5420 
+ 677 ???? 0000      	    NOOP 
+ 678               	_inv: 
+ 679 ???? 8095      	    com tos_low 
+ 680 ???? 9095      	    com tos_high 
+ 681 ???? 00C0      	    POON 
+ 682               	 
+ 683               	;---------------------------------------------------------------------- 
+ 684               	; ok NEG 
+ 685 ???? 0000 064E 	HEADER "NEGATE", "NEGATE" 
+ 685      4547 4154 
+ 685      4520 
+ 686 ???? 0000      	    NOOP 
+ 687               	_neg: 
+ 688 ???? 8195      	    neg tos_low 
+ 689 ???? 9195      	    neg tos_high 
+ 690 ???? 00C0      	    POON 
+ 691               	 
+ 692               	;---------------------------------------------------------------------- 
+ 693               	; ok ( w -- w ) 
+ 694               	;  data space pointer align to CELL, atmega is always 
+ 695               	 
+ 696 ???? 0000 0541 	HEADER "ALIGN", "ALLIGN" 
+ 696      4C49 474E 
+ 697 ???? 0000      	    NOOP 
+ 698 ???? 0196      	    adiw tos_low, 1 
+ 699 ???? 8F7F      	    cbr tos_low, 0 
+ 700 ???? 00C0      	    POON 
+ 701               	 
+ 702               	;---------------------------------------------------------------------- 
+ 703               	; ok ( -- CELL ) 
+ 704               	; CELL is 2 ; size of a cell 
+ 705               	; 
+ 706 ???? 0000 0443 	HEADER "CELL", "CELL" 
+ 706      454C 4C20 
+ 707 ???? 0000      	    NOOP 
+ 708 ???? 82E0      	    ldi tos_low, CELL_SIZE 
+ 709 ???? 9927      	    clr tos_high 
+ 710 ???? 00C0      	    POON 
+ 711               	 
+ 712               	;---------------------------------------------------------------------- 
+ 713               	; ok ( a1 a2 u -- 0 | 1) 
+ 714               	; compare bytes from source++ to destination++, decrease count-- 
+ 715               	; returns 0 if equal (no differ) 
+ 716               	; 
+ 717 ???? 0000 0543 	HEADER "CSAME", "CSAME" 
+ 717      5341 4D45 
+ 718 ???? 0000      	    NOOP 
+ 719               	    ; WARNING No bound check and counter equal 0 moves nothing 
+ 720               	 
+ 721               	    ; pull address source 
+ 722 ???? F991 E991 	    pspull zpm_low, zpm_high 
+ 723               	 
+ 724               	    ; pull address destin 
+ 725 ???? 7991 6991 	    pspull nos_low, nos_high 
+ 726               	 
+ 727               	    ; no offset 
+ 728               	 
+ 729               	    ; free Y
+ 730 ???? CE93 DE93 	    rspush psp_low, psp_high
+ 731 ???? EB01      	    movw psp_low, nos_low
+ 732               	
+ 733               	1: 
+ 734 ???? 282E      	    mov _work_, tos_low
+ 735 ???? 292A      	    or _work_, tos_high
+ 736 ???? 01F0      	    brbs BIT_ZERO, 2f
+ 737               	 
+ 738 ???? 4991      	    ld wrk_low, Y+ 
+ 739 ???? 5191      	    ld wrk_high, Z+ 
+ 740 ???? 452B      	    or wrk_low, wrk_high 
+ 741 ???? 01F4      	    brbc BIT_ZERO, 3f 
+ 742               	 
+ 743               	    ; again 
+ 744 ???? 0197      	    sbiw tos_low, 1
+ 745 ???? 00C0      	    rjmp 1b 
+ 746               	 
+ 747               	2: 
+ 748               	    ; equal 
+ 749 ???? 4427      	    clr wrk_low 
+ 750 ???? 5527      	    clr wrk_high 
+ 751 ???? 00C0      	    rjmp 4f 
+ 752               	3: 
+ 753               	    ; not equal 
+ 754 ???? 4FEF      	    ser wrk_low 
+ 755 ???? 5FEF      	    ser wrk_high 
+ 756               	4: 
+ 757               	    ; pull psp 
+ 758 ???? DD91 CD91 	    rspull psp_low, psp_high 
+ 759 ???? 00C0      	    POON 
+ 760               	 
+ 761               	;---------------------------------------------------------------------- 
+ 762               	; ok ( s d u -- ) 
+ 763               	; 
+ 764               	; MOVE (forward) copy bytes from source++ to destination++, decrease count-- 
+ 765 ???? 0000 0543 	HEADER "CMOVE", "CMOVE" 
+ 765      4D4F 5645 
+ 766 ???? 0000      	    NOOP 
+ 767               	    ; WARNING No bound check and counter equal 0 moves nothing 
+ 768               	 
+ 769               	    ; pull address source 
+ 770 ???? F991 E991 	    pspull zpm_low, zpm_high 
+ 771               	 
+ 772               	    ; pull address destin 
+ 773 ???? 7991 6991 	    pspull nos_low, nos_high 
+ 774               	 
+ 775               	    ; free Y
+ 776 ???? CE93 DE93 	    rspush psp_low, psp_high
+ 777 ???? EB01      	    movw psp_low, nos_low
+ 778               	
+ 779               	    ; no offset 
+ 780               	 
+ 781               	1: 
+ 782 ???? 282E      	    mov _work_, tos_low
+ 783 ???? 292A      	    or _work_, tos_high
+ 784 ???? 01F0      	    brbs BIT_ZERO, 2f
+ 785               	 
+ 786               	    ; move a cell 
+ 787 ???? 2990      	    ld _work_, Y+ 
+ 788 ???? 2192      	    st Z+, _work_ 
+ 789               	 
+ 790               	    ; again 
+ 791 ???? 0197      	    sbiw tos_low, 1
+ 792 ???? 00C0      	    rjmp 1b 
+ 793               	 
+ 794               	2: 
+ 795               	    ; pull psp 
+ 796 ???? DD91 CD91 	    rspull psp_low, psp_high 
+ 797 ???? 00C0      	    POON 
+ 798               	 
+ 799               	;---------------------------------------------------------------------- 
+ 800               	; ok ( s d u -- ) 
+ 801               	; 
+ 802               	; MOVE (backward) copy bytes from source-- to destination--, decrease count-- 
+ 803 ???? 0000 0542 	HEADER "BMOVE", "BMOVE" 
+ 803      4D4F 5645 
+ 804 ???? 0000      	    NOOP 
+ 805               	    ; WARNING No bound check and counter equal 0 moves nothing 
+ 806               	 
+ 807               	    ; pull address source 
+ 808 ???? F991 E991 	    pspull zpm_low, zpm_high 
+ 809               	 
+ 810               	    ; pull address destin 
+ 811 ???? 7991 6991 	    pspull nos_low, nos_high 
+ 812               	 
+ 813               	    ; free Y
+ 814 ???? CE93 DE93 	    rspush psp_low, psp_high
+ 815 ???? EB01      	    movw psp_low, nos_low
+ 816               	
+ 817               	    ; do offset
+ 818 ???? E80F      	    add zpm_low, tos_low
+ 819 ???? F91F      	    adc zpm_high, tos_high
+ 820 ???? C80F      	    add psp_low, tos_low
+ 821 ???? D91F      	    adc psp_high, tos_high
+ 822               	 
+ 823               	    ; move a byte
+ 824               	1:
+ 825 ???? 282E      	    mov _work_, tos_low
+ 826 ???? 292A      	    or _work_, tos_high
+ 827 ???? 01F0      	    brbs BIT_ZERO, 2f
+ 828               	 
+ 829 ???? 2A90      	    ld _work_, -Y
+ 830 ???? 2292      	    st -Z, _work_
+ 831               	
+ 832               	    ; again 
+ 833 ???? 0197      	    sbiw tos_low, 1
+ 834 ???? 00C0      	    rjmp 1b 
+ 835               	
+ 836               	2:
+ 837               	    ; pull psp
+ 838 ???? DD91 CD91 	    rspull psp_low, psp_high
+ 839 ???? 00C0      	    POON
+ 840               	
+ 841               	;********************************************************************** 
+ 842               	; FORTH
+ 843               	; 
+ 844               	;    the follow definitions of compound words 
+ 845               	;    are as already compiled into a list of references, 
+ 846               	;    that is a sequence of cells. 
+ 847               	;    No preorder because the assembler does translation 
+ 848               	;    of names to address (references) 
+ 849               	; 
+ 850               	;    (some adapted from old fig-forth listings) 
+ 851               	; 
+ 852               	;---------------------------------------------------------------------- 
+ 853               	; ok ( w3 w2 w1 -- w2 w3 w1 ) 
+ 854               	; 
+ 855 ???? 0000 0342 	HEADER "BIS", "BIS" 
+ 855      4953 
+ 856 ???? 0000 0000 	    .word TOR, SWAP, RTO, ENDS 
+ 856      0000 0000 
+ 857               	 
+ 858               	;---------------------------------------------------------------------- 
+ 859               	; ok ( w2 w1 -- w2 w1 w2 ) 
+ 860               	; 
+ 861 ???? 0000 044F 	HEADER "OVER", "OVER" 
+ 861      5645 5220 
+ 862 ???? 0000 0000 	    .word SWAP, DUP, BIS, ENDS 
+ 862      0000 0000 
+ 863               	 
+ 864               	;---------------------------------------------------------------------- 
+ 865               	; ok ( w3 w2 w1 -- w2 w1 w3 ) 
+ 866               	; 
+ 867 ???? 0000 0352 	HEADER "ROT", "ROTU" 
+ 867      4F54 
+ 868 ???? 0000 0000 	    .word BIS, SWAP, ENDS 
+ 868      0000 
+ 869               	 
+ 870               	;---------------------------------------------------------------------- 
+ 871               	; ok ( w3 w2 w1 -- w1 w3 w2 ) 
+ 872               	; 
+ 873 ???? 0000 042D 	HEADER "-ROT", "ROTD" 
+ 873      524F 5420 
+ 874 ???? 0000 0000 	    .word SWAP, BIS, ENDS 
+ 874      0000 
+ 875               	 
+ 876               	;---------------------------------------------------------------------- 
+ 877               	; ok ( w2 w1 --  w1 w2 w1 ) 
+ 878               	; 
+ 879 ???? 0000 0454 	HEADER "TUCK", "TUCK" 
+ 879      5543 4B20 
+ 880 ???? 0000 0000 	    .word DUP, BIS, ENDS 
+ 880      0000 
+ 881               	 
+ 882               	;---------------------------------------------------------------------- 
+ 883               	; ok ( w3 w2 w1 --  w1 w2 w3 ) 
+ 884               	; 
+ 885 ???? 0000 0446 	HEADER "FLIP", "FLIP" 
+ 885      4C49 5020 
+ 886 ???? 0000 0000 	    .word SWAP, BIS, SWAP, ENDS 
+ 886      0000 0000 
+ 887               	
+ 888               	;---------------------------------------------------------------------- 
+ 889               	; ok (  -- 2) 
+ 890 ???? 0000 0132 	HEADER "2", "TWO" 
+ 891 ???? 0000 0000 	    .word ONE, SHL, ENDS 
+ 891      0000 
+ 892               	 
+ 893               	;---------------------------------------------------------------------- 
+ 894               	; ok ( w1 w2 -- 0 | -1) 
+ 895               	; 
+ 896 ???? 0000 013D 	HEADER "=", "EQUAL" 
+ 897 ???? 0000 0000 	    .word MINUS, ZEQU, ENDS 
+ 897      0000 
+ 898               	 
+ 899               	;---------------------------------------------------------------------- 
+ 900               	; ok ( w1 w2 -- 0 | -1) 
+ 901               	; 
+ 902 ???? 0000 023C 	HEADER "<>", "NOTEQUAL" 
+ 902      3E20 
+ 903 ???? 0000 0000 	    .word EQUAL, INVERT, ENDS 
+ 903      0000 
+ 904               	 
+ 905               	;---------------------------------------------------------------------- 
+ 906               	; ok ( w1 w2 -- 0 | -1 ) 
+ 907               	; 
+ 908 ???? 0000 013E 	HEADER ">", "GTHAN" 
+ 909 ???? 0000 0000 	    .word SWAP, LTHAN, ENDS 
+ 909      0000 
+ 910               	 
+ 911               	;---------------------------------------------------------------------- 
+ 912               	;  ok 0>  must be signed 
+ 913               	; 
+ 914 ???? 0000 0230 	HEADER "0>", "ZEROGT" 
+ 914      3E20 
+ 915 ???? 0000 0000 	     .word ZERO, LTHAN, ENDS 
+ 915      0000 
+ 916               	 
+ 917               	;---------------------------------------------------------------------- 
+ 918               	;  ok 0< must be signed 
+ 919               	; 
+ 920 ???? 0000 0230 	HEADER "0<", "ZEROLT" 
+ 920      3C20 
+ 921 ???? 0000 0000 	    .word ZERO, SWAP, LTHAN, ENDS 
+ 921      0000 0000 
+ 922               	 
+ 923               	;---------------------------------------------------------------------- 
+ 924               	; ok ( w -- w * CELL  ) 
+ 925               	; CELL is 2, multiply by 2, easy way 
+ 926               	; 
+ 927 ???? 0000 0543 	HEADER "CELLS", "CELLS" 
+ 927      454C 4C53 
+ 928 ???? 0000 0000 	    .word SHL, ENDS 
+ 929               	 
+ 930               	;---------------------------------------------------------------------- 
+ 931               	; 
+ 932               	; ok ( w -- w + CELL ) 
+ 933               	; 
+ 934 ???? 0000 0543 	HEADER "CELL+", "CELLPLUS" 
+ 934      454C 4C2B 
+ 935 ???? 0000 0000 	    .word CELL, PLUS, ENDS 
+ 935      0000 
+ 936               	 
+ 937               	;---------------------------------------------------------------------- 
+ 938               	; 
+ 939               	; ok ( w -- w - CELL ) 
+ 940               	; 
+ 941 ???? 0000 0543 	HEADER "CELL-", "CELLMINUS" 
+ 941      454C 4C2D 
+ 942 ???? 0000 0000 	    .word CELL, MINUS, ENDS 
+ 942      0000 
+ 943               	 
+ 944               	;---------------------------------------------------------------------- 
+ 945               	; 
+ 946               	; ok ( w -- w + 1 ) 
+ 947               	; 
+ 948 ???? 0000 0231 	HEADER "1+", "ONEPLUS" 
+ 948      2B20 
+ 949 ???? 0000 0000 	     .word ONE, PLUS, ENDS 
+ 949      0000 
+ 950               	 
+ 951               	;---------------------------------------------------------------------- 
+ 952               	; 
+ 953               	; ok ( w -- w - 1 ) 
+ 954               	; 
+ 955 ???? 0000 0231 	HEADER "1-", "ONEMINUS" 
+ 955      2D20 
+ 956 ???? 0000 0000 	     .word ONE, MINUS, ENDS 
+ 956      0000 
+ 957               	 
+ 958               	;---------------------------------------------------------------------- 
+ 959               	; 
+ 960               	; ok ( w -- w + 2 ) 
+ 961               	; 
+ 962 ???? 0000 0232 	HEADER "2+", "TWOPLUS" 
+ 962      2B20 
+ 963 ???? 0000 0000 	     .word TWO, PLUS, ENDS 
+ 963      0000 
+ 964               	 
+ 965               	;---------------------------------------------------------------------- 
+ 966               	; 
+ 967               	; ok ( w -- w - 2 ) 
+ 968               	; 
+ 969 ???? 0000 0232 	HEADER "2-", "TWOMINUS" 
+ 969      2D20 
+ 970 ???? 0000 0000 	     .word TWO, MINUS, ENDS 
+ 970      0000 
+ 971               	 
+ 972               	;---------------------------------------------------------------------- 
+ 973               	; 
+ 974               	; ok ( u w -- ) 
+ 975               	; 
+ 976 ???? 0000 022B 	HEADER "+!", "PLUSTO" 
+ 976      2120 
+ 977 ???? 0000 0000 	    .word SWAP, OVER, AT, PLUS, SWAP, TO, ENDS 
+ 977      0000 0000 
+ 977      0000 0000 
+ 977      0000 
+ 978               	 
+ 979               	;**********************************************************************
+ 980               	;---------------------------------------------------------------------- 
+ 981               	; 
+ 982               	; ok \] 
+ 983               	; 
+ 984 ???? 0000 015D 	HEADER  "]", "RBRAC", 
+ 985 ???? 0000 0000 	    .word ONE, STATE, TO, ENDS 
+ 985      0000 0000 
+ 986               	 
+ 987               	;---------------------------------------------------------------------- 
+ 988               	; 
+ 989               	; ok \[ 
+ 990               	; 
+ 991 ???? 0000 815B 	HEADER  "[", "LBRAC", F_IMMEDIATE 
+ 992 ???? 0000 0000 	    .word ZERO, STATE, TO, ENDS 
+ 992      0000 0000 
+ 993               	 
+ 994               	;---------------------------------------------------------------------- 
+ 995               	; 
+ 996               	; ok TOGGLE ( a f -- )
+ 997               	; 
+ 998 ???? 0000 0654 	HEADER  "TOGGLE", "TOGGLE", 
+ 998      4F47 474C 
+ 998      4520 
+ 999 ???? 0000 0000 	    .word OVER, AT, XOR, SWAP, TO, ENDS 
+ 999      0000 0000 
+ 999      0000 0000 
+ 1000               	 
+ 1001               	;---------------------------------------------------------------------- 
+ 1002               	; 
+ 1003               	; ok >NFA ( a f -- )
+ 1004               	; 
+ 1005 ???? 0000 043E 	HEADER  ">NFA", "TONFA", 
+ 1005      4E46 4120 
+ 1006 ???? 0000 0000 	    .word CELL, PLUS, ENDS
+ 1006      0000 
+ 1007               	
+ 1008               	;---------------------------------------------------------------------- 
+ 1009               	; 
+ 1010               	; ok >CFA ( a f -- )
+ 1011               	; 
+ 1012 ???? 0000 043E 	HEADER  ">CFA", "TOCFA", 
+ 1012      4346 4120 
+ 1013 ???? 0000 0000 	    .word CELL, PLUS, DUP, AT, F_UNMASK, AND, PLUS, ENDS
+ 1013      0000 0000 
+ 1013      0F00 0000 
+ 1013      0000 0000 
+ 1014               	
+ 1015               	;---------------------------------------------------------------------- 
+ 1016               	; 
+ 1017               	; ok HIDDEN 
+ 1018               	; 
+ 1019 ???? 0000 0648 	HEADER  "HIDDEN", "HIDDEN", 
+ 1019      4944 4445 
+ 1019      4E20 
+ 1020 ???? 0000 0000 	    .word LATEST, TONFA, F_HIDDEN, TOGGLE, ENDS 
+ 1020      2000 0000 
+ 1020      0000 
+ 1021               	
+ 1022               	;---------------------------------------------------------------------- 
+ 1023               	; 
+ 1024               	; ok IMMEDIATE 
+ 1025               	; 
+ 1026 ???? 0000 0949 	HEADER  "IMMEDIATE", "IMMEDIATE", 
+ 1026      4D4D 4544 
+ 1026      4941 5445 
+ 1027 ???? 0000 0000 	    .word LATEST, TONFA, F_IMMEDIATE, TOGGLE, ENDS 
+ 1027      8000 0000 
+ 1027      0000 
+ 1028               	
+ 1029               	;---------------------------------------------------------------------- 
+ 1030               	; 
+ 1031               	; ok COMPILE_ONLY 
+ 1032               	; 
+ 1033 ???? 0000 0C43 	HEADER  "COMPILE_ONLY", "COMPILE_ONLY", 
+ 1033      4F4D 5049 
+ 1033      4C45 5F4F 
+ 1033      4E4C 5920 
+ 1034 ???? 0000 0000 	    .word LATEST, TONFA, F_COMPILE_ONLY, TOGGLE, ENDS 
+ 1034      4000 0000 
+ 1034      0000 
+ 1035               	
+ 1036               	;---------------------------------------------------------------------- 
+ 1037               	; 
+ 1038               	; ok HERE 
+ 1039               	; 
+ 1040 ???? 0000 0448 	HEADER  "HERE", "HERE", 
+ 1040      4552 4520 
+ 1041 ???? 0000 0000 	    .word FSHM, AT, ENDS 
+ 1041      0000 
+ 1042               	 
+ 1043               	;---------------------------------------------------------------------- 
+ 1044               	; 
+ 1045               	; ok ALLOT 
+ 1046               	; 
+ 1047 ???? 0000 0541 	HEADER  "ALLOT", "ALLOT", 
+ 1047      4C4C 4F54 
+ 1048 ???? 0000 0000 	    .word FSHM, PLUSTO, ENDS 
+ 1048      0000 
+ 1049               	 
+ 1050               	;---------------------------------------------------------------------- 
+ 1051               	; 
+ 1052               	; ok COMMMA ( w -- ) 
+ 1053 ???? 0000 012C 	HEADER  ",", "COMMA", 
+ 1054 ???? 0000 0000 	    .word HERE, TO, CELL, ALLOT, ENDS 
+ 1054      0000 0000 
+ 1054      0000 
+ 1055               	 
+ 1056               	;---------------------------------------------------------------------- 
+ 1057               	; 
+ 1058               	; ok this puts next cell into stack and compiles into HERE 
+ 1059               	; 
+ 1060 ???? 0000 0443 	HEADER  "COMP", "COMP", 
+ 1060      4F4D 5020 
+ 1061 ???? 0000 0000 	    .word DOCON, COMMA, ENDS 
+ 1061      0000 
+ 1062               	 
+ 1063               	;----------------------------------------------------------------------
+ 1064               	; ok compile a eow 
+ 1065 ???? 0000 0646 	HEADER "FINITE", "FINITE"
+ 1065      494E 4954 
+ 1065      4520 
+ 1066 ???? 0000 0000 	    .word COMP, ENDS, ENDS
+ 1066      0000 
+ 1067               	
+ 1068               	;----------------------------------------------------------------------
+ 1069               	; ok compile a header 
+ 1070 ???? 0000 0643 	HEADER "CREATE", "CREATE"
+ 1070      5245 4154 
+ 1070      4520 
+ 1071 ???? 0000      	    .word ENDS
+ 1072               	
+ 1073               	;----------------------------------------------------------------------
+ 1074               	; ok gets a cc<chars>cc from source
+ 1075               	;   ( -- a n )
+ 1076 ???? 0000 0550 	HEADER "PARSE", "PARSE"
+ 1076      4152 5345 
+ 1077 ???? 0000      	    .word ENDS
+ 1078               	/*
+ 1079               	          TOIN @ TIB @ TIB_SIZE PLUS MINUS <0 IF REFILL THEN
+ 1080               	          TOIN @ 
+ 1081               	          BEGIN DUP C@ 
+ 1082               	            DUP ZERO = IF REFILL ??? THEN 
+ 1083               	            BL = IF 1+ FALSE ELSE TRUE THEN UNTIL
+ 1084               	          DUP BEGIN DUP C@ 
+ 1085               	            DUP ZERO = IF REFILL ??? THEN 
+ 1086               	            BL = INVERT IF 1+ FALSE ELSE TRUE THEN UNTIL
+ 1087               	          DUP TOIN ! MINUS ENDS
+ 1088               	*/
+ 1089               	
+ 1090               	;---------------------------------------------------------------------- 
+ 1091               	; ok  
+ 1092 ???? 0000 013A 	HEADER  ":", "COLON", 
+ 1093 ???? 0000 0000 	    .word CREATE, RBRAC, ENDS 
+ 1093      0000 
+ 1094               	 
+ 1095               	;---------------------------------------------------------------------- 
+ 1096               	; ok  
+ 1097 ???? 0000 013B 	HEADER  ";", "SEMMI", 
+ 1098 ???? 0000 0000 	    .word FINITE, LBRAC, ENDS 
+ 1098      0000 
+ 1099               	  
+ 1100               	;---------------------------------------------------------------------- 
+ 1101               	; 
+ 1102               	; ok BACK 
+ 1103 ???? 0000 8442 	HEADER  "BACK", "BACK", F_IMMEDIATE 
+ 1103      4143 4B20 
+ 1104 ???? 0000 0000 	    .word HERE, SWAP, MINUS, COMMA, ENDS 
+ 1104      0000 0000 
+ 1104      0000 
+ 1105               	 
+ 1106               	;---------------------------------------------------------------------- 
+ 1107               	; 
+ 1108               	; ok MARK 
+ 1109 ???? 0000 844D 	HEADER  "MARK", "MARK", F_IMMEDIATE 
+ 1109      4152 4B20 
+ 1110 ???? 0000 0000 	    .word HERE, 0, COMMA, ENDS 
+ 1110      0000 0000 
+ 1111               	 
+ 1112               	;---------------------------------------------------------------------- 
+ 1113               	; 
+ 1114               	; ok BEGIN 
+ 1115 ???? 0000 8542 	HEADER  "BEGIN", "BEGIN", F_IMMEDIATE 
+ 1115      4547 494E 
+ 1116 ???? 0000 0000 	    .word HERE, ENDS 
+ 1117               	 
+ 1118               	;---------------------------------------------------------------------- 
+ 1119               	; 
+ 1120               	; ok AGAIN resolves a backward branch 
+ 1121 ???? 0000 8541 	HEADER  "AGAIN", "AGAIN", F_IMMEDIATE 
+ 1121      4741 494E 
+ 1122 ???? 0000 0000 	    .word COMP, BRANCH, BACK, ENDS 
+ 1122      0000 0000 
+ 1123               	 
+ 1124               	;---------------------------------------------------------------------- 
+ 1125               	; 
+ 1126               	; ok UNTIL 
+ 1127 ???? 0000 8555 	HEADER  "UNTIL", "UNTIL", F_IMMEDIATE 
+ 1127      4E54 494C 
+ 1128 ???? 0000 0000 	    .word COMP, ZBRANCH, BACK, ENDS 
+ 1128      0000 0000 
+ 1129               	 
+ 1130               	;---------------------------------------------------------------------- 
+ 1131               	; 
+ 1132               	; ok UNLESS 
+ 1133 ???? 0000 8655 	HEADER  "UNLESS", "UNLESS", F_IMMEDIATE 
+ 1133      4E4C 4553 
+ 1133      5320 
+ 1134 ???? 0000 0000 	    .word INVERT, UNTIL, ENDS 
+ 1134      0000 
+ 1135               	 
+ 1136               	;---------------------------------------------------------------------- 
+ 1137               	; 
+ 1138               	; ok IF 
+ 1139 ???? 0000 8249 	HEADER  "IF", "IF", F_IMMEDIATE 
+ 1139      4620 
+ 1140 ???? 0000 0000 	    .word COMP, ZBRANCH, MARK, ENDS 
+ 1140      0000 0000 
+ 1141               	 
+ 1142               	;---------------------------------------------------------------------- 
+ 1143               	; 
+ 1144               	; ok ENDIF resolves a forward branch 
+ 1145               	; note: use of store if addres is not 'here' 
+ 1146 ???? 0000 8545 	HEADER  "ENDIF", "ENDIF", F_IMMEDIATE 
+ 1146      4E44 4946 
+ 1147 ???? 0000 0000 	    .word DUP, HERE, MINUS, SWAP, TO, ENDS 
+ 1147      0000 0000 
+ 1147      0000 0000 
+ 1148               	 
+ 1149               	;---------------------------------------------------------------------- 
+ 1150               	; 
+ 1151               	; ok THEN 
+ 1152 ???? 0000 8454 	HEADER  "THEN", "THEN", F_IMMEDIATE 
+ 1152      4845 4E20 
+ 1153 ???? 0000 0000 	    .word ENDIF, ENDS 
+ 1154               	 
+ 1155               	;---------------------------------------------------------------------- 
+ 1156               	; 
+ 1157               	; ok ELSE 
+ 1158 ???? 0000 8445 	HEADER  "ELSE", "ELSE", F_IMMEDIATE 
+ 1158      4C53 4520 
+ 1159 ???? 0000 0000 	    .word COMP, BRANCH, MARK, SWAP, ENDIF, ENDS 
+ 1159      0000 0000 
+ 1159      0000 0000 
+ 1160               	 
+ 1161               	;---------------------------------------------------------------------- 
+ 1162               	; 
+ 1163               	; ok WHILE 
+ 1164 ???? 0000 8557 	HEADER  "WHILE", "WHILE", F_IMMEDIATE 
+ 1164      4849 4C45 
+ 1165 ???? 0000 0000 	    .word IF, ENDS 
+ 1166               	 
+ 1167               	;---------------------------------------------------------------------- 
+ 1168               	; 
+ 1169               	; ok REPEAT 
+ 1170 ???? 0000 8652 	HEADER  "REPEAT", "REPEAT", F_IMMEDIATE 
+ 1170      4550 4541 
+ 1170      5420 
+ 1171 ???? 0000 0000 	    .word TOR, TOR, AGAIN, RAT, RAT, MINUS, ENDIF, ENDS 
+ 1171      0000 0000 
+ 1171      0000 0000 
+ 1171      0000 0000 
+ 1172               	 
+ 1173               	;---------------------------------------------------------------------- 
+ 1174               	; does reset 
+ 1175               	; 
+ 1176 ???? 0000 0342 	HEADER "BYE", "BYE" 
+ 1176      5945 
+ 1177 ???? 0000      	    NOOP 
+ 1178 ???? 00C0      	    rjmp RESET 
+ 1179 ???? 00C0      	    POON 
+ 1180               	 
+ 1181               	;---------------------------------------------------------------------- 
+ 1182               	; 
+ 1183 ???? 0000 0443 	HEADER "COLD", "COLD" 
+ 1183      4F4C 4420 
+ 1184 ???? 0000      	    NOOP 
+ 1185               	; restart return stack 
+ 1186 ???? ABE3      	    ldi rsp_low, lo8(RSP) 
+ 1187 ???? B4E0      	    ldi rsp_high, hi8(RSP) 
+ 1188               	; restart parameter stack 
+ 1189 ???? C7E1      	    ldi psp_low, lo8(PSP) 
+ 1190 ???? D4E0      	    ldi psp_high, hi8(PSP) 
+ 1191               	; restart buffers etc???? 
+ 1192               	; preload to WARM 
+ 1193               	    ; next word 
+ 1194 ???? E0E0      	    ldi zpm_low, lo8(WARM) 
+ 1195 ???? F0E0      	    ldi zpm_high, hi8(WARM) 
+ 1196 ???? EE93 FE93 	    rspush zpm_low, zpm_high 
+ 1197 ???? 00C0      	    POON 
+ 1198               	 
+ 1199               	;---------------------------------------------------------------------- 
+ 1200               	; 
+ 1201 ???? 0000 0457 	HEADER  "WARM", "WARM" 
+ 1201      4152 4D20 
+ 1202 ???? 0000      	    NOOP 
+ 1203               	    ; verify error code 
+ 1204               	    ; resets etc 
+ 1205 ???? 00C0      	    POON 
+ 1206               	 
+  78               	
+  79               	;----------------------------------------------------------------------
+  80               	;.p2align 1, 0x00
+  81               	;#include "inside.S"
+  82               	
+  83               	;----------------------------------------------------------------------
+  84               	.p2align 1, 0x00
+  85               	#include "math.S"
+   1               	
+   2               	/*
+   3               	 *  DISCLAIMER"
+   4               	 *
+   5               	 *  Copyright © 2020, Alvaro Gomes Sobral Barcellos,
+   6               	 *
+   7               	 *  Permission is hereby granted, free of charge, to any person obtaining
+   8               	 *  a copy of this software and associated documentation files (the
+   9               	 *  "Software"), to deal in the Software without restriction, including
+  10               	 *  without limitation the rights to use, copy, modify, merge, publish,
+  11               	 *  distribute, sublicense, and/or sell copies of the Software, and to
+  12               	 *  permit persons to whom the Software is furnished to do so, subject to
+  13               	 *  the following conditions"
+  14               	 *
+  15               	 *  The above copyright notice and this permission notice shall be
+  16               	 *  included in all copies or substantial portions of the Software.
+  17               	 *
+  18               	 *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  19               	 *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  20               	 *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  21               	 *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  22               	 *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  23               	 *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+  24               	 *
+  25               	 */
+  26               	
+  27               	;----------------------------------------------------------------------
+  28               	;
+  29               	; great DJB hash, adapted for 16bits
+  30               	;
+  31               	; hash = (hash << 5) + str[i]
+  32               	; for ascii chars in sram, in bytes not cells
+  33               	; ( a u -- h ) djb hash
+  34               	.equ djbHASH, 5381
+  35 ???? 0000 0448 	HEADER "HASH", "HASH"
+  35      4153 4820 
+  36 ???? 0000      	    NOOP
+  37 ???? 3324      	    clr _zero_
+  38 ???? 65E0      	    ldi nos_low, lo8(djbHASH)
+  39 ???? 75E1      	    ldi nos_high, hi8(djbHASH)
+  40 ???? F991 E991 	    pspull zpm_low, zpm_high
+  41               	
+  42               	    ; get a char
+  43               	1:    
+  44               	    
+  45 ???? 282E      	    mov _work_, tos_low
+  46 ???? 292A      	    or _work_, tos_high
+  47 ???? 01F0      	    brbs BIT_ZERO, 2f
+  48               	
+  49 ???? 2190      	    ld _work_, Z+
+  50 ???? 620D      	    add nos_low, _work_
+  51 ???? 731D      	    adc nos_high, _zero_
+  52 ???? 660F      	    lsl nos_low
+  53 ???? 771F      	    rol nos_high
+  54 ???? 660F      	    lsl nos_low
+  55 ???? 771F      	    rol nos_high
+  56 ???? 660F      	    lsl nos_low
+  57 ???? 771F      	    rol nos_high
+  58 ???? 660F      	    lsl nos_low
+  59 ???? 771F      	    rol nos_high
+  60 ???? 660F      	    lsl nos_low
+  61 ???? 771F      	    rol nos_high
+  62               	
+  63 ???? 0197      	    sbiw tos_low, 1
+  64 ???? 00C0      	    rjmp 1b
+  65               	    
+  66               	2:
+  67 ???? CB01      	    movw tos_low, nos_low
+  68 ???? 00C0      	    POON
+  69               	
+  70               	;----------------------------------------------------------------------
+  71               	;
+  72               	;     ©2000-2021 by Gerhard Schmidt,
+  73               	;      http://www.avr-asm-tutorial.net/avr_en/apps/random_tn13/random_calc_tn13.html
+  74               	;
+  75               	;    seed ~ 0x02A8
+  76               	;
+  77               	;     also good seeds
+  78               	;
+  79               	;    B167 4A3C 9879 B61E 7B26 
+  80               	;    A858 1F88 50D5 419D 5537
+  81               	;    0224 0527 5EB6 1E6D BCDC
+  82               	;    92FF C206 0ECD 9361 2823
+  83               	;    BE0B B303 6462 0E4C 3D24
+  84               	;
+  85 ???? 0000 0652 	HEADER "RANDOM", "RANDOM"
+  85      414E 444F 
+  85      4D20 
+  86 ???? 0000      	    NOOP
+  87               	;    load seed
+  88 ???? 4091 0000 	    lds wrk_low, SEED
+  89 ???? 5091 0000 	    lds wrk_high, SEED
+  90               	;    run magics
+  91 ???? 4527      	    eor wrk_low, wrk_high
+  92 ???? 4295      	    swap wrk_low
+  93 ???? 540F      	    add wrk_high, wrk_low
+  94 ???? 4A93 5A93 	    pspush wrk_low, wrk_high
+  95 ???? 00C0      	    rjmp _seed
+  96               	
+  97               	;----------------------------------------------------------------------
+  98               	;
+  99               	; sets seed for rand
+ 100               	;
+ 101 ???? 0000 0452 	HEADER "RAND", "RAND"
+ 101      414E 4420 
+ 102 ???? 0000      	    NOOP
+ 103 ???? 5991 4991 	    pspull wrk_low, wrk_high
+ 104               	_seed:
+ 105 ???? 4093 0000 	    sts SEED, wrk_low
+ 106 ???? 5093 0000 	    sts SEED + 1, wrk_high
+ 107 ???? 00C0      	    POON
+ 108               	    
+ 109               	;----------------------------------------------------------------------
+ 110               	; a 64 bit half number, 7FFF FFFF FFFF FFFF is 9.223.372.036.854.775.807
+ 111               	;----------------------------------------------------------------------
+ 112               	;
+ 113               	; adapted from AVR-200 
+ 114               	; "mpy16u" "- 16x16 Bit Unsigned Multiplication
+ 115               	;
+ 116               	; ok UM*
+ 117 ???? 0000 0355 	HEADER "UM*", "UMUL"
+ 117      4D2A 
+ 118 ???? 0000      	    NOOP
+ 119               	;
+ 120               	;    move operanos
+ 121               	;
+ 122 ???? 9991 8991 	    pspull tos_low, tos_high    ; pull multiplicand
+ 123 ???? 7991 6991 	    pspull nos_low, nos_high    ; pull multiplier
+ 124               	;
+ 125               	;***** Code
+ 126               	;
+ 127               	mul16u: 
+ 128 ???? 40E1      	    ldi wrk_low, 16
+ 129 ???? 242E      	    mov _work_, wrk_low     ;init loop counter
+ 130 ???? 441B      	    sub wrk_low, wrk_low    ;clear high result Low byte
+ 131 ???? 551B      	    sub wrk_high, wrk_high    ;clear high result High byte and carry
+ 132               	
+ 133               	    ; multiplier shift rigth
+ 134 ???? 7695      	    lsr nos_high
+ 135 ???? 6795      	    ror nos_low
+ 136               	
+ 137               	m16u_1: 
+ 138 ???? 00F4      	    brcc noad8                 ;if carry, bit 0, of multiplier set
+ 139 ???? 480F      	    add wrk_low, tos_low     ;add multiplicand Low to byte 2 of res
+ 140 ???? 591F      	    adc wrk_high, tos_high     ;add multiplicand high to byte 3 of res
+ 141               	
+ 142               	noad8: 
+ 143 ???? 5795      	    ror wrk_high             ;shift right result byte 3
+ 144 ???? 4795      	    ror wrk_low             ;rotate right result byte 2
+ 145 ???? 7795      	    ror nos_high            ;rotate result byte 1 and multiplier High
+ 146 ???? 6795      	    ror nos_low                ;rotate result byte 0 and multiplier Low
+ 147 ???? 2A94      	    dec _work_                 ;decrement loop counter
+ 148 ???? 01F4      	    brne m16u_1             ;if not done, loop more
+ 149               	
+ 150               	m16ures: 
+ 151               	m16result:    
+ 152 ???? 4A93 5A93 	    pspush wrk_low, wrk_high    ; high bytes
+ 153 ???? 6A93 7A93 	    pspush nos_low, nos_high    ; low bytes
+ 154 ???? 00C0      	    POON
+ 155               	
+ 156               	;----------------------------------------------------------------------
+ 157               	;
+ 158               	;     adapted from AVR-200 
+ 159               	;   "div16u" "- 16/16 Bit Unsigned Division
+ 160               	;
+ 161               	; ok UM/MOD
+ 162 ???? 0000 0655 	HEADER "UM/MOD", "UMBYMOD"
+ 162      4D2F 4D4F 
+ 162      4420 
+ 163 ???? 0000      	    NOOP
+ 164               	;
+ 165               	;    move operanos
+ 166               	;
+ 167 ???? 9991 8991 	    pspull tos_low, tos_high    ; pull divisor
+ 168 ???? 7991 6991 	    pspull nos_low, nos_high    ; pull dividend
+ 169               	;
+ 170               	;***** Code
+ 171               	
+ 172               	div16u: 
+ 173 ???? 41E1      	    ldi wrk_low, 17
+ 174 ???? 242E      	    mov _work_, wrk_low     ;init loop counter
+ 175 ???? 441B      	    sub wrk_low, wrk_low    ;clear remainder Low byte
+ 176 ???? 551B      	    sub wrk_high, wrk_high    ;clear remainder High byte and carry
+ 177               	
+ 178               	d16u_1: 
+ 179 ???? 661F      	    rol nos_low             ;shift left dividend
+ 180 ???? 771F      	    rol nos_high
+ 181 ???? 2A94      	    dec _work_                 ;decrement counter
+ 182 ???? 01F0      	    breq d16ures             ;if done
+ 183               	
+ 184               	d16u_2: 
+ 185 ???? 441F      	    rol wrk_low             ;shift dividend into remainder
+ 186 ???? 551F      	    rol wrk_high
+ 187 ???? 481B      	    sub wrk_low, tos_low     ;remainder = remainder - divisor
+ 188 ???? 590B      	    sbc wrk_high, tos_high     ;
+ 189 ???? 00F4      	    brcc d16u_3             ;if result negative
+ 190 ???? 480F      	    add wrk_low, tos_low     ; restore remainder
+ 191 ???? 591F      	    adc wrk_high, tos_high
+ 192 ???? 8894      	    clc                     ; clear carry to be shifted into result
+ 193 ???? 00C0      	    rjmp d16u_1             ;else
+ 194               	d16u_3: 
+ 195 ???? 0894      	    sec                      ; set carry to be shifted into result
+ 196 ???? 00C0      	    rjmp d16u_1
+ 197               	
+ 198               	d16ures:
+ 199 ???? 00C0      	    rjmp m16result
+ 200               	
+ 201               	;----------------------------------------------------------------------
+ 202               	;
+ 203               	;     adapted from AVR-200 
+ 204               	;     "mpy16s" "- 16x16 Bit Signed Multiplication
+ 205               	; ok *
+ 206 ???? 0000 012A 	HEADER "*", "SMUL"
+ 207 ???? 0000      	    NOOP
+ 208               	;
+ 209               	;***** Code
+ 210               	;
+ 211               	;    move operanos
+ 212               	;
+ 213 ???? 9991 8991 	    pspull tos_low, tos_high        ; pull multiplicand
+ 214 ???? 7991 6991 	    pspull nos_low, nos_high        ; pull multiplier
+ 215               	;
+ 216               	;***** Code
+ 217               	mpy16s: 
+ 218 ???? 40E1      	    ldi wrk_low, 16
+ 219 ???? 242E      	    mov _work_, wrk_low     ;init loop counter
+ 220 ???? 441B      	    sub wrk_low, wrk_low    ;clear high result Low byte
+ 221 ???? 551B      	    sub wrk_high, wrk_high  ;clear high result High byte and carry
+ 222               	
+ 223               	m16s_1: 
+ 224 ???? 00F4      	    brcc m16s_2                ;if carry (previous bit) set
+ 225 ???? 480F      	    add  wrk_low, tos_low   ;    add multiplicand Low to result byte 2
+ 226 ???? 591F      	    adc  wrk_high, tos_high ;    add multiplicand High to result byte 3
+ 227               	m16s_2: 
+ 228 ???? 60FD      	    sbrc nos_low, 0          ;if current bit set
+ 229 ???? 481B      	    sub  wrk_low, tos_low   ;    sub multiplicand Low from result byte 2
+ 230 ???? 60FD      	    sbrc nos_low, 0            ;if current bit set
+ 231 ???? 590B      	    sbc  wrk_high, tos_high ;    sub multiplicand High from result byte 3
+ 232 ???? 5595      	    asr  wrk_high           ;shift right result and multiplier
+ 233 ???? 4795      	    ror  wrk_low
+ 234 ???? 7795      	    ror  nos_high
+ 235 ???? 6795      	    ror  nos_low
+ 236 ???? 2A94      	    dec  _work_                ;decrement counter
+ 237 ???? 01F4      	    brne m16s_1                ;if not done, loop more
+ 238               	
+ 239               	m16sres:
+ 240 ???? 00C0      	    rjmp m16result
+ 241               	
+ 242               	;----------------------------------------------------------------------
+ 243               	;
+ 244               	;     adapted from AVR-200 
+ 245               	;   "div16s" "- 16/16 Bit Signed Division
+ 246               	;
+ 247               	; ok /
+ 248 ???? 0000 012F 	HEADER "/", "SDIV"
+ 249 ???? 0000      	    NOOP
+ 250               	;
+ 251               	;***** Subroutine Register Variables
+ 252               	;
+ 253               	;    move operanos
+ 254               	;
+ 255 ???? 9991 8991 	    pspull tos_low, tos_high        ; pull divisor
+ 256 ???? 7991 6991 	    pspull nos_low, nos_high        ; pull dividend
+ 257               	;
+ 258               	;***** Code
+ 259               	;
+ 260               	div16s: 
+ 261 ???? 272E      	    mov    _work_, nos_high   ;move dividend High to sign register
+ 262 ???? 2926      	    eor    _work_, tos_high   ;xor divisor High with sign register
+ 263 ???? 27FA      	    bst _work_, 7                ;save it, but could be BST
+ 264               	
+ 265               	d16s_0:
+ 266 ???? 77FF      	    sbrs   nos_high, 7          ;if MSB in dividend set
+ 267 ???? 00C0      	    rjmp   d16s_1
+ 268               	    
+ 269 ???? 7095      	    com    nos_high            ;    change sign of dividend
+ 270 ???? 6095      	    com    nos_low
+ 271 ???? 6F5F      	    subi   nos_low, lo8(-1)
+ 272 ???? 6F4F      	    sbci   nos_low, hi8(-1)
+ 273               	
+ 274               	d16s_1: 
+ 275 ???? 97FF      	    sbrs   tos_high, 7    ;if MSB in divisor set
+ 276 ???? 00C0      	    rjmp   d16s_2
+ 277               	    
+ 278 ???? 9095      	    com    tos_high    ;    change sign of divisor
+ 279 ???? 8095      	    com    tos_low
+ 280 ???? 8F5F      	    subi   tos_low, lo8(-1)
+ 281 ???? 8F4F      	    sbci   tos_low, hi8(-1)
+ 282               	
+ 283               	d16s_2: 
+ 284               	
+ 285 ???? 41E1      	    ldi wrk_low, 17
+ 286 ???? 242E      	    mov _work_, wrk_low     ;init loop counter
+ 287 ???? 441B      	    sub wrk_low, wrk_low    ;clear high remainder Low byte
+ 288 ???? 551B      	    sub wrk_high, wrk_high  ;clear high remainder High byte and carry
+ 289               	
+ 290               	d16s_3: 
+ 291 ???? 661F      	    rol    nos_low    ;shift left dividend
+ 292 ???? 771F      	    rol    nos_high
+ 293 ???? 2A94      	    dec    _work_     ;decrement counter
+ 294 ???? 01F4      	    brne    d16s_5    ;if done
+ 295               	
+ 296 ???? 27F8      	    bld _work_, 7           ;save it, but could be BST
+ 297 ???? 27FE      	    sbrs    _work_, 7    ;    if MSB in sign register set
+ 298 ???? 00C0      	    rjmp    d16sres
+ 299 ???? 7095      	    com    nos_high      ;    change sign of result
+ 300 ???? 6095      	    com    nos_low
+ 301 ???? 6F5F      	    subi   nos_low,lo8(-1)
+ 302 ???? 7F4F      	    sbci   nos_high,hi8(-1)
+ 303               	
+ 304               	d16sres:
+ 305 ???? 00C0      	    rjmp m16result
+ 306               	
+ 307               	d16s_5: 
+ 308 ???? 441F      	    rol    wrk_low    ;shift dividend into remainder
+ 309 ???? 551F      	    rol    wrk_high
+ 310 ???? 481B      	    sub    wrk_low, tos_low ;remainder = remainder - divisor
+ 311 ???? 590B      	    sbc    wrk_high, tos_high ;
+ 312 ???? 00F4      	    brcc    d16s_6    ;if result negative
+ 313               	
+ 314 ???? 480F      	    add    wrk_low, tos_low ;    restore remainder
+ 315 ???? 591F      	    adc    wrk_high, tos_high
+ 316 ???? 8894      	    clc     ;    clear carry to be shifted into result
+ 317 ???? 00C0      	    rjmp    d16s_3    ;else
+ 318               	d16s_6: 
+ 319 ???? 0894      	    sec     ;    set carry to be shifted into result
+ 320 ???? 00C0      	    rjmp    d16s_3
+ 321               	
+ 322               	;----------------------------------------------------------------------
+ 323               	; 
+ 324               	;   by Peter Dannegger 
+ 325               	;     https://www.avrfreaks.net/forum/smallest-and-fastest-binary-bcd-conversion?page=all
+ 326               	;
+ 327               	; input 16 bit value 0 ... 65535
+ 328               	; output  5 digits (ASCII)
+ 329               	;
+ 330 ???? 0000 0475 	HEADER "utoa", "utoa" 
+ 330      746F 6120 
+ 331 ???? 0000      	    NOOP
+ 332               	
+ 333 ???? EBE9      	    ldi zpm_low, lo8(PIC)
+ 334 ???? F3E0      	    ldi zpm_high, hi8(PIC)
+ 335 ???? BF01      	    movw nos_low, zpm_low
+ 336 ???? 5991 4991 	    pspull wrk_low, wrk_high
+ 337               	    
+ 338               	itoa:
+ 339               	
+ 340 ???? 8FE2      	    ldi tos_low, -1 + '0'
+ 341 ???? 8395      	1:  inc tos_low
+ 342 ???? 4051      	    subi wrk_low, lo8(10000)    
+ 343 ???? 5742      	    sbci wrk_high, hi8(10000)
+ 344 ???? 00F4      	    brcc 1b
+ 345 ???? 4193      	    st    Z+, wrk_low
+ 346               	
+ 347 ???? 8AE3      	    ldi tos_low, 10 + '0'
+ 348 ???? 8A95      	2:  dec tos_low
+ 349 ???? 4851      	    subi wrk_low, lo8(-1000)  
+ 350 ???? 5C4F      	    sbci wrk_high, hi8(-1000)
+ 351 ???? 00F0      	    brcs 2b
+ 352 ???? 4193      	    st Z+, wrk_low
+ 353               	
+ 354 ???? 8FE2      	    ldi tos_low, -1 + '0'
+ 355 ???? 8395      	3:  inc tos_low
+ 356 ???? 4456      	    subi wrk_low, lo8(100)   
+ 357 ???? 5040      	    sbci wrk_high, hi8(100)
+ 358 ???? 00F4      	    brcc 3b
+ 359 ???? 4193      	    st Z+, wrk_low
+ 360               	
+ 361 ???? 5AE3      	    ldi wrk_high, 10 + '0'
+ 362 ???? 5A95      	4:  dec wrk_high
+ 363 ???? 465F      	    subi wrk_low, -10     
+ 364 ???? 00F0      	    brcs 4b
+ 365               	
+ 366 ???? 405D      	    subi wrk_low, -'0'
+ 367 ???? 4193      	    st Z+, wrk_low
+ 368               	
+ 369               	; append \0
+ 370 ???? 4427      	    clr wrk_low
+ 371 ???? 4193      	    st Z+, wrk_low
+ 372               	
+ 373 ???? 6A93 7A93 	    pspush nos_low, nos_high
+ 374 ???? 00C0      	    POON
+ 375               	
+  86               	
+  87               	;----------------------------------------------------------------------
+  88               	.p2align 1, 0x00
+  89               	#include "flush.S"
+   1               	
+   2               	/*
+   3               	
+   4               	routines for flush flash memory
+   5               	
+   6               	SPM_PAGE, page size
+   7               	page_old = 0;
+   8               	
+   9               	void flush (int value, int address) {
+  10               	
+  11               	// define flash page and position
+  12               	
+  13               	    int pos = address AND (SPM_PAGE - 1);
+  14               	    int page = address AND ~(SPM_PAGE - 1);
+  15               	
+  16               	    if ( page != page_old ) {
+  17               	            if (page_old) save_page(page_old);
+  18               	            load_page(page);
+  19               	            page_old = page;
+  20               	            }
+  21               	
+  22               	    buffer[pos] = lo8(value)
+  23               	    pos += 1;
+  24               	    buffer[pos] = hi8(value)
+  25               	}
+  26               	
+  27               	: FLUSH
+  28               	    
+  29               	    PAGE_OLD @ DUP PAGE @
+  30               	    = INVERT IF 
+  31               	        IF SAVE_PAGE THEN
+  32               	        LOAD_PAGE 
+  33               	        PAGE @ PAGE_OLD !
+  34               	        THEN
+  35               	     
+  36               	*/
+  37               	;
+  38               	;   to flash (w a -- )
+  39               	;
+  40               	
+  41               	;----------------------------------------------------------------------
+  42               	;
+  43               	;   load a flash memory page (fa sa -- )
+  44               	;   copy one flash page from flash address fa to sram address sa
+  45               	;
+  46 ???? 0000 0C28 	HEADER "(load_flash)", "LDFLASH"
+  46      6C6F 6164 
+  46      5F66 6C61 
+  46      7368 2920 
+  47 ???? 0000      	    NOOP
+  48               	
+  49               	    ; destin
+  50 ???? 7991 6991 	    pspull nos_low, nos_high
+  51               	
+  52               	    ; origin
+  53 ???? F991 E991 	    pspull zpm_low, zpm_high
+  54               	
+  55               	    ; preserve stack
+  56 ???? CE93 DE93 	    rspush psp_low, psp_high
+  57               	
+  58 ???? EB01      	    movw psp_low, nos_low
+  59               	
+  60               	    ; make round down pagesize, pagemask is ~pagesize
+  61               	    ; andi zpm_high, hi8(pagemask) ; not need if pagesize < 256
+  62 ???? E07C      	    andi zpm_low, lo8(pagemask)
+  63               	
+  64               	    ; adjust address for lpm
+  65 ???? E695      	    lsr zpm_low
+  66 ???? FF1F      	    rol zpm_high
+  67               	
+  68               	    ; how many bytes
+  69 ???? 4091 4000 	    lds wrk_low, SPM_PAGE
+  70               	
+  71               	1:
+  72 ???? 2590      	    lpm _work_, Z+
+  73 ???? 2D92      	    st X+, _work_
+  74 ???? 4A95      	    dec wrk_low
+  75 ???? 01F4      	    brne 1b
+  76               	
+  77 ???? DD91 CD91 	    rspull psp_low, psp_high
+  78 ???? 00C0      	    POON
+  79               	
+  80               	;----------------------------------------------------------------------
+  81               	;
+  82               	;   save a flash memory page (sa fa -- )
+  83               	;   copy one flash page from sram address sa to flash address fa
+  84               	;   registers exposed are used for optiboot compiled with gcc
+  85               	;
+  86 ???? 0000 0C28 	HEADER "(save_flash)", "SVFLASH"
+  86      7361 7665 
+  86      5F66 6C61 
+  86      7368 2920 
+  87 ???? 0000      	    NOOP
+  88               	
+  89               	    ; from sram
+  90 ???? 7991 6991 	    pspull nos_low, nos_high
+  91               	
+  92               	    ; into flash
+  93 ???? 9991 8991 	    pspull r24, r25
+  94               	
+  95               	    ; save psp 
+  96 ???? CE93 DE93 	    rspush psp_low, psp_high
+  97               	
+  98 ???? EB01      	    movw psp_low, nos_low
+  99               	
+ 100               	    ; mask to match correct address
+ 101               	    ; andi r25, hi8(pagemask) ; not need if pagesize < 256
+ 102 ???? 807C      	    andi r24, lo8(pagemask)
+ 103               	
+ 104               	    ; save address
+ 105 ???? 8E93 9E93 	    rspush r24, r25
+ 106               	
+ 107               	    ; erase page
+ 108               	    ; r0:r1 is ignored, ATmega8L datasheet, pg 209
+ 109 ???? 63E0      	    ldi r22, (1<<PGERS) | (1<<SPMEN)
+ 110 ???? 00D0      	    rcall _does_spm
+ 111               	
+ 112               	    ; how many bytes, less than 256!
+ 113 ???? 70E4      	    ldi r23, SPM_PAGE
+ 114               	
+ 115               	    ; copy page, word by word
+ 116               	2:
+ 117               	    ; fill page flash from sram
+ 118 ???? 4D91      	    ld r20, X+
+ 119 ???? 5D91      	    ld r21, X+
+ 120 ???? 61E0      	    ldi r22, (1<<SPMEN)
+ 121 ???? 00D0      	    rcall _does_spm
+ 122 ???? 3296      	    adiw zpm_low, 2
+ 123               	
+ 124               	    ; count down
+ 125 ???? 7A95      	    dec r23
+ 126 ???? 7A95      	    dec r23
+ 127 ???? 01F4      	    brne 2b
+ 128               	
+ 129               	    ; load address
+ 130 ???? 9D91 8D91 	    rspull r24, r25
+ 131               	
+ 132               	    ; write page
+ 133               	    ; r0:r1 is ignored, ATmega8L datasheet, pg 209
+ 134 ???? 65E0      	    ldi r22, (1<<PGWRT) | (1<<SPMEN)
+ 135 ???? 00D0      	    rcall _does_spm
+ 136               	
+ 137               	    ; clean house
+ 138 ???? DD91 CD91 	    rspull psp_low, psp_high
+ 139 ???? 00C0      	    POON
+ 140               	
+ 141               	;----------------------------------------------------------------------
+ 142               	;
+ 143               	; wrapper around optiboot code
+ 144               	;
+ 145               	
+ 146               	#define OPTI_DO_SPM 0x1fb0
+ 147               	
+ 148               	_does_spm:
+ 149 ???? 4FB6      	    in _sreg_, __SREG__
+ 150 ???? F894      	    cli
+ 151 ???? 98D8      	    rcall OPTI_DO_SPM
+ 152 ???? 4FBE      	    out __SREG__, _sreg_
+ 153 ???? 0895      	    ret
+ 154               	
+ 155               	;----------------------------------------------------------------------
+ 156               	/* from optiboot version 8.2 listing, extra comments added
+  90               	
+  91               	;----------------------------------------------------------------------
+  92               	.equ free_flash, .
+  93               	
+  94               	
+  95               	;----------------------------------------------------------------------
+  96               	.p2align 1, 0x00
+  97               	#include "nrww.S"
+   1               	
+   2               	/*
+   3               	 *  DISCLAIMER"
+   4               	 *
+   5               	 *  Copyright © 2020, Alvaro Gomes Sobral Barcellos,
+   6               	 *
+   7               	 *  Permission is hereby granted, free of charge, to any person obtaining
+   8               	 *  a copy of this software and associated documentation files (the
+   9               	 *  "Software"), to deal in the Software without restriction, including
+  10               	 *  without limitation the rights to use, copy, modify, merge, publish,
+  11               	 *  distribute, sublicense, and/or sell copies of the Software, and to
+  12               	 *  permit persons to whom the Software is furnished to do so, subject to
+  13               	 *  the following conditions"
+  14               	 *
+  15               	 *  The above copyright notice and this permission notice shall be
+  16               	 *  included in all copies or substantial portions of the Software.
+  17               	 *
+  18               	 *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  19               	 *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  20               	 *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  21               	 *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  22               	 *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  23               	 *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+  24               	 *
+  25               	 */
+  26               	
+  27               	;
+  28               	;    those are to stay at NRWW flash memory of atmega8
+  29               	;
+  30 ???? 0000 0000 	.org FLASH_NRWW
+  30      0000 0000 
+  30      0000 0000 
+  30      0000 0000 
+  30      0000 0000 
+  31               	.align 2
+  32               	;
+  33               	; spm instruction uses:
+  34               	; r31:r30 address in bytes, r1:r0 data, 
+  35               	; uses register r22 as command and scratch
+  36               	; uses register r23 as keeper of SREG
+  37               	;
+  38               	;#ifndef _WORK_
+  39               		_swork_ = r22
+  40               		_ssreg_ = r23
+  41               	;#endif
+  42               	
+  43               	doin_spm:
+  44 ???? 0FB6      		in _ssreg_, __SREG__
+****  Error: constant value required
+  45 ???? F894      		cli
+  46 ???? 0092 3700 	    sts SPMCR, _swork_
+****  Error: constant value required
+  47 ???? E895      	    spm
+  48               	
+  49               	10:
+  50               	;   wait spm done
+  51 ???? 0090 3700 	    lds _swork_, SPMCR
+****  Error: constant value required
+  52 ???? 00FC      	    sbrc _swork_, SPMEN
+****  Error: constant value required
+  53 ???? 00C0      	    rjmp 10b
+  54               	
+  55               	; if erase or write, force enable RWW section 
+  56               	
+  57 ???? 06FF      	    andi _swork_, ((1<<PGERS) | (1<<PGWRT))
+****  Error: constant value required
+****  Error: register number above 15 required
+  58 ???? 01F0      	    breq 10f
+  59               	
+  60               	; enable rww 
+  61 ???? 01FF      	    ldi _swork_, ((1<<RWWSRE) | (1<<SPMEN))
+****  Error: constant value required
+****  Error: register number above 15 required
+  62 ???? 0092 3700 	    sts SPMCR, _swork_
+****  Error: constant value required
+  63 ???? E895      	    spm 
+  64               	10:
+  65 ???? 0FBE      		out __SREG__, _ssreg_
+****  Error: constant value required
+  66 ???? 0895      	    ret
+  67               	
+  68               	.equ nrww_end, .
+  69               	
+  98               	
+  99 ???? 2222      	.equ nrww_flash, .
+DEFINED SYMBOLS
+              main.S:37     *ABS*:000000000000000a version
+             flush.S:86     .text:0000000000000e30 _link_
+            macros.S:259    *ABS*:0000000000000040 SPM_SIZE
+            macros.S:262    *ABS*:0000000000000040 FIB_SIZE
+            macros.S:266    *ABS*:0000000000000048 TIB_SIZE
+            macros.S:270    *ABS*:0000000000000010 PIC_SIZE
+            macros.S:273    *ABS*:0000000000000024 STACK_SIZE
+            macros.S:276    *ABS*:0000000000000002 CELL_SIZE
+            macros.S:279    *ABS*:000000000000000f WORD_SIZE
+            macros.S:282    *ABS*:0000000000000010 BASE_DEFAULT
+            macros.S:287    *ABS*:0000000000000000 eeprom
+            macros.S:288    *ABS*:0000000000000000 e_void
+            macros.S:289    *ABS*:0000000000000002 e_seed
+            macros.S:290    *ABS*:0000000000000004 e_turn
+            macros.S:291    *ABS*:0000000000000006 e_rest
+            macros.S:292    *ABS*:0000000000000008 e_last
+            macros.S:293    *ABS*:000000000000000a e_here
+            macros.S:294    *ABS*:000000000000000c e_sram
+            macros.S:295    *ABS*:000000000000000e e_erom
+            macros.S:296    *ABS*:0000000000000010 e_free
+            macros.S:305    *ABS*:0000000000000080 F_IMMEDIATE
+            macros.S:306    *ABS*:0000000000000040 F_COMPILE_ONLY
+            macros.S:307    *ABS*:0000000000000020 F_HIDDEN
+            macros.S:308    *ABS*:0000000000000010 F_TOGGLE
+            macros.S:309    *ABS*:0000000000000000 F_COMMON
+            macros.S:311    *ABS*:00000000000000f0 F_TOMASK
+            macros.S:312    *ABS*:000000000000000f F_UNMASK
+            macros.S:319    *ABS*:0000000000000001 BIT_POSTPONE
+            macros.S:320    *ABS*:0000000000000000 BIT_COMPILE
+            macros.S:321    *ABS*:0000000000000000 BIT_EXECUTE
+            macros.S:333    *ABS*:0000000000000000 NO_ERROR
+            macros.S:334    *ABS*:fffffffffffffff7 INVALID_MEMORY
+            macros.S:335    *ABS*:fffffffffffffff5 OVERFLOW
+            macros.S:336    *ABS*:ffffffffffffffec WRITE_TO_READ_ONLY
+            macros.S:337    *ABS*:ffffffffffffffe8 NOT_A_NUMBER
+            macros.S:346    *ABS*:0000000000000011 XON_
+            macros.S:347    *ABS*:0000000000000013 XOFF_
+            macros.S:349    *ABS*:000000000000000d CR_
+            macros.S:350    *ABS*:000000000000000a LF_
+            macros.S:352    *ABS*:0000000000000018 CAN_
+            macros.S:353    *ABS*:000000000000001b ESC_
+            macros.S:355    *ABS*:0000000000000008 BS_
+            macros.S:356    *ABS*:0000000000000009 TAB_
+            macros.S:357    *ABS*:0000000000000020 BL_
+            macros.S:359    *ABS*:0000000000000001 BIT_ZERO
+            macros.S:360    *ABS*:0000000000000000 BIT_CARRY
+            macros.S:362    *ABS*:0000000000000060 SRAM_START
+            macros.S:363    *ABS*:000000000000045f SRAM_END
+            macros.S:365    *ABS*:0000000000000000 FLASH_RWW
+            macros.S:366    *ABS*:0000000000001e00 FLASH_NRWW
+            macros.S:367    *ABS*:0000000000001fff FLASH_END
+            macros.S:369    *ABS*:0000000000000460 FLASH_START
+            macros.S:370    *ABS*:0000000000001dff FLASH_STOP
+            macros.S:374    *ABS*:0000000000000004 E2P_PAGESIZE
+            macros.S:375    *ABS*:0000000000000000 E2P_START
+            macros.S:376    *ABS*:00000000000001ff E2P_END
+            macros.S:380    *ABS*:0000000000000040 SPM_PAGE
+            macros.S:382    *ABS*:000000000000003f pagesize
+            macros.S:383    *ABS*:ffffffffffffffc0 pagemask
+              main.S:45     data:0000000000000060 VOID
+              main.S:46     data:0000000000000062 SEED
+              main.S:47     data:0000000000000064 TURN
+              main.S:48     data:0000000000000066 REST
+              main.S:50     data:0000000000000068 LAST
+              main.S:51     data:000000000000006a FSHM
+              main.S:52     data:000000000000006c SRAM
+              main.S:53     data:000000000000006e EROM
+              main.S:56     data:0000000000000070 STAT
+              main.S:57     data:0000000000000072 RADX
+              main.S:58     data:0000000000000074 TOIN
+              main.S:59     data:0000000000000076 PAGE
+              main.S:61     *ABS*:000000000000035b FIB
+                            *ABS*:000000000000039b PIC
+                            *ABS*:00000000000003ab TIB
+                            *ABS*:00000000000003f3 END
+                            *ABS*:0000000000000417 PSP
+                            *ABS*:000000000000043b RSP
+                            *ABS*:000000000000045f SPZ
+              bios.S:34     .text:0000000000000000 boot
+              bios.S:40     *ABS*:000000000000003f __SREG__
+              bios.S:41     *ABS*:000000000000003e __SP_H__
+              bios.S:42     *ABS*:000000000000003d __SP_L__
+              bios.S:45     *ABS*:0000000000000009 UBRRL
+              bios.S:46     *ABS*:0000000000000020 UCSRC
+              bios.S:47     *ABS*:000000000000000a UCSRB
+              bios.S:48     *ABS*:000000000000000b UCSRA
+              bios.S:51     *ABS*:0000000000000021 WDTCR
+              bios.S:54     *ABS*:0000000000000032 TCNT0
+              bios.S:55     *ABS*:0000000000000033 TCCR0
+              bios.S:56     *ABS*:0000000000000039 TIMSK
+              bios.S:59     *ABS*:0000000000000037 SPMCR
+              bios.S:62     *ABS*:0000000000000007 SPMIE
+              bios.S:63     *ABS*:0000000000000006 RWWSB
+              bios.S:65     *ABS*:0000000000000004 RWWSRE
+              bios.S:66     *ABS*:0000000000000003 BLBSET
+              bios.S:67     *ABS*:0000000000000002 PGWRT
+              bios.S:68     *ABS*:0000000000000001 PGERS
+              bios.S:69     *ABS*:0000000000000000 SPMEN
+              bios.S:99     .text:0000000000000026 RESET
+              bios.S:134    .text:0000000000000038 TIM0_OVF
+              bios.S:172    .text:0000000000000052 BOOT
+              bios.S:181    .text:0000000000000054 TIMER0_SET
+              bios.S:204    .text:000000000000006a WATCHDOG_SET
+              bios.S:215    .text:0000000000000072 USART_SET
+              bios.S:231    .text:000000000000008a GOOD
+             forth.S:1183   .text:0000000000000c0e COLD
+              bios.S:235    .text:000000000000008e bios_end
+             forth.S:85     .text:0000000000000460 _forth_
+             forth.S:91     .text:0000000000000460 is_ENDS
+             forth.S:91     .text:0000000000000468 ENDS
+             forth.S:96     .text:000000000000046a _exit
+             forth.S:100    .text:000000000000046e _next
+             forth.S:104    .text:000000000000047a _void
+             forth.S:116    .text:0000000000000488 _jump
+             forth.S:110    .text:0000000000000480 _enter
+             forth.S:123    .text:0000000000000490 _link
+             forth.S:142    .text:0000000000000494 is_ZEQU
+             forth.S:142    .text:000000000000049a ZEQU
+             forth.S:149    .text:00000000000004a4 _ffalse
+             forth.S:146    .text:00000000000004a0 _ftrue
+             forth.S:155    .text:00000000000004a6 is_TO
+             forth.S:155    .text:00000000000004aa TO
+             forth.S:172    .text:00000000000004c4 _isflash_to
+             forth.S:166    .text:00000000000004ba _isram_to
+             forth.S:179    .text:00000000000004c6 is_AT
+             forth.S:179    .text:00000000000004ca AT
+             forth.S:194    .text:00000000000004dc _isflash_at
+             forth.S:189    .text:00000000000004d6 _isram_at
+             forth.S:201    .text:00000000000004ea is_RPAT
+             forth.S:201    .text:00000000000004f0 RPAT
+             forth.S:210    .text:00000000000004fa is_SPAT
+             forth.S:210    .text:0000000000000500 SPAT
+             forth.S:219    .text:000000000000050a is_NAND
+             forth.S:219    .text:0000000000000512 NAND
+             forth.S:230    .text:0000000000000522 is_PLUS
+             forth.S:230    .text:0000000000000526 PLUS
+             forth.S:250    .text:0000000000000534 is_tib_
+             forth.S:250    .text:000000000000053a tib_
+             forth.S:260    .text:0000000000000546 is_LATEST
+             forth.S:260    .text:0000000000000550 LATEST
+             forth.S:270    .text:000000000000055c is_STATE
+             forth.S:270    .text:0000000000000564 STATE
+             forth.S:280    .text:0000000000000570 is_BASE
+             forth.S:280    .text:0000000000000578 BASE
+             forth.S:290    .text:0000000000000584 is_sram_
+             forth.S:290    .text:000000000000058e sram_
+             forth.S:300    .text:000000000000059a is_erom_
+             forth.S:300    .text:00000000000005a4 erom_
+             forth.S:310    .text:00000000000005b0 is_here_
+             forth.S:310    .text:00000000000005b8 here_
+             forth.S:325    .text:00000000000005c4 is_key_
+             forth.S:325    .text:00000000000005ca key_
+             forth.S:340    .text:00000000000005da is_qkey_
+             forth.S:340    .text:00000000000005e2 qkey_
+             forth.S:351    .text:00000000000005ea is_emit_
+             forth.S:351    .text:00000000000005f2 emit_
+             forth.S:365    .text:0000000000000600 is_qemit_
+             forth.S:365    .text:0000000000000608 qemit_
+             forth.S:376    .text:0000000000000610 is_millis_
+             forth.S:376    .text:000000000000061a millis_
+             forth.S:386    .text:0000000000000624 is_FTRUE
+             forth.S:386    .text:000000000000062c FTRUE
+             forth.S:388    .text:000000000000062e _iftrue
+             forth.S:396    .text:0000000000000634 is_FFALSE
+             forth.S:396    .text:000000000000063c FFALSE
+             forth.S:398    .text:000000000000063e _iffalse
+             forth.S:406    .text:0000000000000644 is_ZERO
+             forth.S:406    .text:0000000000000648 ZERO
+             forth.S:415    .text:0000000000000654 is_ONE
+             forth.S:415    .text:0000000000000658 ONE
+             forth.S:426    .text:0000000000000666 is_LTHAN
+             forth.S:426    .text:000000000000066a LTHAN
+             forth.S:437    .text:0000000000000678 is_TOR
+             forth.S:437    .text:000000000000067e TOR
+             forth.S:446    .text:000000000000068a is_RTO
+             forth.S:446    .text:0000000000000690 RTO
+             forth.S:455    .text:000000000000069c is_RAT
+             forth.S:455    .text:00000000000006a2 RAT
+             forth.S:465    .text:00000000000006ae is_RPTO
+             forth.S:465    .text:00000000000006b4 RPTO
+             forth.S:474    .text:00000000000006be is_SPTO
+             forth.S:474    .text:00000000000006c4 SPTO
+             forth.S:483    .text:00000000000006ce is_DROP
+             forth.S:483    .text:00000000000006d6 DROP
+             forth.S:485    .text:00000000000006d8 PULL
+             forth.S:492    .text:00000000000006de is_DUP
+             forth.S:492    .text:00000000000006e4 DUP
+             forth.S:494    .text:00000000000006e6 PUSH
+             forth.S:501    .text:00000000000006ec is_SWAP
+             forth.S:501    .text:00000000000006f4 SWAP
+             forth.S:512    .text:0000000000000702 is_ZDUP
+             forth.S:512    .text:000000000000070a ZDUP
+             forth.S:523    .text:0000000000000718 is_ZBRANCH
+             forth.S:523    .text:0000000000000722 ZBRANCH
+             forth.S:538    .text:0000000000000742 _branch
+             forth.S:536    .text:0000000000000736 is_BRANCH
+             forth.S:536    .text:0000000000000740 BRANCH
+             forth.S:549    .text:000000000000075a is_EXECUTE
+             forth.S:549    .text:0000000000000764 EXECUTE
+             forth.S:558    .text:0000000000000770 is_MINUS
+             forth.S:558    .text:0000000000000774 MINUS
+             forth.S:569    .text:0000000000000782 is_AND
+             forth.S:569    .text:0000000000000788 AND
+             forth.S:579    .text:0000000000000794 is_OR
+             forth.S:579    .text:000000000000079a OR
+             forth.S:589    .text:00000000000007a6 is_XOR
+             forth.S:589    .text:00000000000007ac XOR
+             forth.S:599    .text:00000000000007b8 is_SHL
+             forth.S:599    .text:00000000000007be SHL
+             forth.S:601    .text:00000000000007c0 _shl
+             forth.S:610    .text:00000000000007c8 is_SHR
+             forth.S:610    .text:00000000000007ce SHR
+             forth.S:612    .text:00000000000007d0 _shr
+             forth.S:620    .text:00000000000007d8 is_ENDIAN
+             forth.S:620    .text:00000000000007de ENDIAN
+             forth.S:632    .text:00000000000007e8 is_DOCON
+             forth.S:632    .text:00000000000007f0 DOCON
+             forth.S:644    .text:0000000000000808 is_DOVAR
+             forth.S:644    .text:0000000000000810 DOVAR
+             forth.S:656    .text:0000000000000820 is_CTO
+             forth.S:656    .text:0000000000000826 CTO
+             forth.S:667    .text:0000000000000836 is_CAT
+             forth.S:667    .text:000000000000083c CAT
+             forth.S:676    .text:0000000000000846 is_INVERT
+             forth.S:676    .text:0000000000000850 INVERT
+             forth.S:678    .text:0000000000000852 _inv
+             forth.S:685    .text:0000000000000858 is_NEGATE
+             forth.S:685    .text:0000000000000862 NEGATE
+             forth.S:687    .text:0000000000000864 _neg
+             forth.S:696    .text:000000000000086a is_ALLIGN
+             forth.S:696    .text:0000000000000872 ALLIGN
+             forth.S:706    .text:000000000000087a is_CELL
+             forth.S:706    .text:0000000000000882 CELL
+             forth.S:717    .text:000000000000088a is_CSAME
+             forth.S:717    .text:0000000000000892 CSAME
+             forth.S:765    .text:00000000000008c4 is_CMOVE
+             forth.S:765    .text:00000000000008cc CMOVE
+             forth.S:803    .text:00000000000008f0 is_BMOVE
+             forth.S:803    .text:00000000000008f8 BMOVE
+             forth.S:855    .text:0000000000000924 is_BIS
+             forth.S:855    .text:000000000000092a BIS
+             forth.S:861    .text:0000000000000932 is_OVER
+             forth.S:861    .text:000000000000093a OVER
+             forth.S:867    .text:0000000000000942 is_ROTU
+             forth.S:867    .text:0000000000000948 ROTU
+             forth.S:873    .text:000000000000094e is_ROTD
+             forth.S:873    .text:0000000000000956 ROTD
+             forth.S:879    .text:000000000000095c is_TUCK
+             forth.S:879    .text:0000000000000964 TUCK
+             forth.S:885    .text:000000000000096a is_FLIP
+             forth.S:885    .text:0000000000000972 FLIP
+             forth.S:890    .text:000000000000097a is_TWO
+             forth.S:890    .text:000000000000097e TWO
+             forth.S:896    .text:0000000000000984 is_EQUAL
+             forth.S:896    .text:0000000000000988 EQUAL
+             forth.S:902    .text:000000000000098e is_NOTEQUAL
+             forth.S:902    .text:0000000000000994 NOTEQUAL
+             forth.S:908    .text:000000000000099a is_GTHAN
+             forth.S:908    .text:000000000000099e GTHAN
+             forth.S:914    .text:00000000000009a4 is_ZEROGT
+             forth.S:914    .text:00000000000009aa ZEROGT
+             forth.S:920    .text:00000000000009b0 is_ZEROLT
+             forth.S:920    .text:00000000000009b6 ZEROLT
+             forth.S:927    .text:00000000000009be is_CELLS
+             forth.S:927    .text:00000000000009c6 CELLS
+             forth.S:934    .text:00000000000009ca is_CELLPLUS
+             forth.S:934    .text:00000000000009d2 CELLPLUS
+             forth.S:941    .text:00000000000009d8 is_CELLMINUS
+             forth.S:941    .text:00000000000009e0 CELLMINUS
+             forth.S:948    .text:00000000000009e6 is_ONEPLUS
+             forth.S:948    .text:00000000000009ec ONEPLUS
+             forth.S:955    .text:00000000000009f2 is_ONEMINUS
+             forth.S:955    .text:00000000000009f8 ONEMINUS
+             forth.S:962    .text:00000000000009fe is_TWOPLUS
+             forth.S:962    .text:0000000000000a04 TWOPLUS
+             forth.S:969    .text:0000000000000a0a is_TWOMINUS
+             forth.S:969    .text:0000000000000a10 TWOMINUS
+             forth.S:976    .text:0000000000000a16 is_PLUSTO
+             forth.S:976    .text:0000000000000a1c PLUSTO
+             forth.S:984    .text:0000000000000a2a is_RBRAC
+             forth.S:984    .text:0000000000000a2e RBRAC
+             forth.S:991    .text:0000000000000a36 is_LBRAC
+             forth.S:991    .text:0000000000000a3a LBRAC
+             forth.S:998    .text:0000000000000a42 is_TOGGLE
+             forth.S:998    .text:0000000000000a4c TOGGLE
+             forth.S:1005   .text:0000000000000a58 is_TONFA
+             forth.S:1005   .text:0000000000000a60 TONFA
+             forth.S:1012   .text:0000000000000a66 is_TOCFA
+             forth.S:1012   .text:0000000000000a6e TOCFA
+             forth.S:1019   .text:0000000000000a7e is_HIDDEN
+             forth.S:1019   .text:0000000000000a88 HIDDEN
+             forth.S:1026   .text:0000000000000a92 is_IMMEDIATE
+             forth.S:1026   .text:0000000000000a9e IMMEDIATE
+             forth.S:1033   .text:0000000000000aa8 is_COMPILE_ONLY
+             forth.S:1033   .text:0000000000000ab8 COMPILE_ONLY
+             forth.S:1040   .text:0000000000000ac2 is_HERE
+             forth.S:1040   .text:0000000000000aca HERE
+             forth.S:1047   .text:0000000000000ad0 is_ALLOT
+             forth.S:1047   .text:0000000000000ad8 ALLOT
+             forth.S:1053   .text:0000000000000ade is_COMMA
+             forth.S:1053   .text:0000000000000ae2 COMMA
+             forth.S:1060   .text:0000000000000aec is_COMP
+             forth.S:1060   .text:0000000000000af4 COMP
+             forth.S:1065   .text:0000000000000afa is_FINITE
+             forth.S:1065   .text:0000000000000b04 FINITE
+             forth.S:1070   .text:0000000000000b0a is_CREATE
+             forth.S:1070   .text:0000000000000b14 CREATE
+             forth.S:1076   .text:0000000000000b16 is_PARSE
+             forth.S:1076   .text:0000000000000b1e PARSE
+             forth.S:1092   .text:0000000000000b20 is_COLON
+             forth.S:1092   .text:0000000000000b24 COLON
+             forth.S:1097   .text:0000000000000b2a is_SEMMI
+             forth.S:1097   .text:0000000000000b2e SEMMI
+             forth.S:1103   .text:0000000000000b34 is_BACK
+             forth.S:1103   .text:0000000000000b3c BACK
+             forth.S:1109   .text:0000000000000b46 is_MARK
+             forth.S:1109   .text:0000000000000b4e MARK
+             forth.S:1115   .text:0000000000000b56 is_BEGIN
+             forth.S:1115   .text:0000000000000b5e BEGIN
+             forth.S:1121   .text:0000000000000b62 is_AGAIN
+             forth.S:1121   .text:0000000000000b6a AGAIN
+             forth.S:1127   .text:0000000000000b72 is_UNTIL
+             forth.S:1127   .text:0000000000000b7a UNTIL
+             forth.S:1133   .text:0000000000000b82 is_UNLESS
+             forth.S:1133   .text:0000000000000b8c UNLESS
+             forth.S:1139   .text:0000000000000b92 is_IF
+             forth.S:1139   .text:0000000000000b98 IF
+             forth.S:1146   .text:0000000000000ba0 is_ENDIF
+             forth.S:1146   .text:0000000000000ba8 ENDIF
+             forth.S:1152   .text:0000000000000bb4 is_THEN
+             forth.S:1152   .text:0000000000000bbc THEN
+             forth.S:1158   .text:0000000000000bc0 is_ELSE
+             forth.S:1158   .text:0000000000000bc8 ELSE
+             forth.S:1164   .text:0000000000000bd4 is_WHILE
+             forth.S:1164   .text:0000000000000bdc WHILE
+             forth.S:1170   .text:0000000000000be0 is_REPEAT
+             forth.S:1170   .text:0000000000000bea REPEAT
+             forth.S:1176   .text:0000000000000bfa is_BYE
+             forth.S:1176   .text:0000000000000c00 BYE
+             forth.S:1183   .text:0000000000000c06 is_COLD
+             forth.S:1201   .text:0000000000000c2a WARM
+             forth.S:1201   .text:0000000000000c22 is_WARM
+              math.S:34     *ABS*:0000000000001505 djbHASH
+              math.S:35     .text:0000000000000c2e is_HASH
+              math.S:35     .text:0000000000000c36 HASH
+              math.S:85     .text:0000000000000c6a is_RANDOM
+              math.S:85     .text:0000000000000c74 RANDOM
+              math.S:104    .text:0000000000000c98 _seed
+              math.S:101    .text:0000000000000c8a is_RAND
+              math.S:101    .text:0000000000000c92 RAND
+              math.S:117    .text:0000000000000ca2 is_UMUL
+              math.S:117    .text:0000000000000ca8 UMUL
+              math.S:127    .text:0000000000000cb2 mul16u
+              math.S:137    .text:0000000000000cbe m16u_1
+              math.S:142    .text:0000000000000cc4 noad8
+              math.S:150    .text:0000000000000cd0 m16ures
+              math.S:151    .text:0000000000000cd0 m16result
+              math.S:162    .text:0000000000000cda is_UMBYMOD
+              math.S:162    .text:0000000000000ce4 UMBYMOD
+              math.S:172    .text:0000000000000cee div16u
+              math.S:178    .text:0000000000000cf6 d16u_1
+              math.S:198    .text:0000000000000d14 d16ures
+              math.S:184    .text:0000000000000cfe d16u_2
+              math.S:194    .text:0000000000000d10 d16u_3
+              math.S:206    .text:0000000000000d16 is_SMUL
+              math.S:206    .text:0000000000000d1a SMUL
+              math.S:217    .text:0000000000000d24 mpy16s
+              math.S:223    .text:0000000000000d2c m16s_1
+              math.S:227    .text:0000000000000d32 m16s_2
+              math.S:239    .text:0000000000000d46 m16sres
+              math.S:248    .text:0000000000000d48 is_SDIV
+              math.S:248    .text:0000000000000d4c SDIV
+              math.S:260    .text:0000000000000d56 div16s
+              math.S:265    .text:0000000000000d5c d16s_0
+              math.S:274    .text:0000000000000d68 d16s_1
+              math.S:283    .text:0000000000000d74 d16s_2
+              math.S:290    .text:0000000000000d7c d16s_3
+              math.S:307    .text:0000000000000d94 d16s_5
+              math.S:304    .text:0000000000000d92 d16sres
+              math.S:318    .text:0000000000000da6 d16s_6
+              math.S:330    .text:0000000000000daa is_utoa
+              math.S:330    .text:0000000000000db2 utoa
+              math.S:338    .text:0000000000000dbe itoa
+             flush.S:46     .text:0000000000000df8 is_LDFLASH
+             flush.S:46     .text:0000000000000e08 LDFLASH
+             flush.S:86     .text:0000000000000e30 is_SVFLASH
+             flush.S:86     .text:0000000000000e40 SVFLASH
+             flush.S:148    .text:0000000000000e7a _does_spm
+              main.S:92     .text:0000000000000e84 free_flash
+              nrww.S:43     .text:0000000000001e00 doin_spm
+              nrww.S:68     .text:0000000000001e22 nrww_end
+              main.S:99     .text:0000000000001e22 nrww_flash
+
+UNDEFINED SYMBOLS
+forth
+r22
+r23

@@ -32,24 +32,39 @@
 ;
 ; spm instruction uses:
 ; r31:r30 address in bytes, r1:r0 data, 
-; uses register r22 as command and scratch
-; uses register r23 as keeper of SREG
+; uses register r2 as command and scratch
+; uses register r4 as keeper of SREG
 ;
-	_swork_ = r16
-	_ssreg_ = r17
+#ifndef _WORK_
+	_work_ = r2
+	_sreg_ = r4
+#endif
 
-doin_spm:
-	in _ssreg_, __SREG__
+do_spm:
+	in _sreg_, __SREG__
 	cli
-    sts SPMCR, _swork_
+    sts SPMCR, _work_
     spm
+
+10:
 ;   wait spm done
-10: lds _swork_, SPMCR
-    sbrc _swork_, SPMEN
+    lds _work_, SPMCR
+    sbrc _work_, SPMEN
     rjmp 10b
-;   return
-	out __SREG__, _ssreg_
+
+; if erase or write, force enable RWW section 
+
+    andi _work_, (1<<PGERS) | (1<<PGWRT)
+    breq 10f
+
+; enable rww 
+    ldi _work_, (1<<RWWSRE) | (1<<SPMEN)
+    sts SPMCR, _work_
+    spm 
+10:
+	out __SREG__, _sreg_
+	sei
     ret
 
-.equ nrww_end, .
+.equ free_nrww, .
 

@@ -1,0 +1,43 @@
+optiboot_flash.c:300:48: error: division by zero in #if
+ #define BAUD_ACTUAL (F_CPU/(8 * ((BAUD_SETTING)+1)))
+                                                ^
+optiboot_flash.c:302:5: note: in expansion of macro ‘BAUD_ACTUAL’
+ #if BAUD_ACTUAL <= BAUD_RATE
+     ^
+optiboot_flash.c:300:48: error: division by zero in #if
+ #define BAUD_ACTUAL (F_CPU/(8 * ((BAUD_SETTING)+1)))
+                                                ^
+optiboot_flash.c:303:40: note: in expansion of macro ‘BAUD_ACTUAL’
+ #define BAUD_ERROR (( 100*(BAUD_RATE - BAUD_ACTUAL) ) / BAUD_RATE)
+                                        ^
+optiboot_flash.c:304:5: note: in expansion of macro ‘BAUD_ERROR’
+ #if BAUD_ERROR >= 5
+     ^
+optiboot_flash.c:305:2: error: #error BAUD_RATE error greater than -5%
+ #error BAUD_RATE error greater than -5%
+  ^
+optiboot_flash.c:300:48: error: division by zero in #if
+ #define BAUD_ACTUAL (F_CPU/(8 * ((BAUD_SETTING)+1)))
+                                                ^
+optiboot_flash.c:303:40: note: in expansion of macro ‘BAUD_ACTUAL’
+ #define BAUD_ERROR (( 100*(BAUD_RATE - BAUD_ACTUAL) ) / BAUD_RATE)
+                                        ^
+optiboot_flash.c:322:5: note: in expansion of macro ‘BAUD_ERROR’
+ #if BAUD_ERROR != 0 // permit high bitrates (ie 1Mbps@16MHz) if error is zero
+     ^
+optiboot_flash.c:323:2: error: #error Unachievable baud rate (too fast) BAUD_RATE
+ #error Unachievable baud rate (too fast) BAUD_RATE 
+  ^
+optiboot_flash.c: In function ‘main’:
+optiboot_flash.c:299:26: error: ‘F_CPU’ undeclared (first use in this function)
+ #define BAUD_SETTING (( (F_CPU + BAUD_RATE * 4L) / ((BAUD_RATE * 8L))) - 1 )
+                          ^
+optiboot_flash.c:605:23: note: in expansion of macro ‘BAUD_SETTING’
+   UART_SRL = (uint8_t)BAUD_SETTING;
+                       ^
+optiboot_flash.c:299:26: note: each undeclared identifier is reported only once for each function it appears in
+ #define BAUD_SETTING (( (F_CPU + BAUD_RATE * 4L) / ((BAUD_RATE * 8L))) - 1 )
+                          ^
+optiboot_flash.c:605:23: note: in expansion of macro ‘BAUD_SETTING’
+   UART_SRL = (uint8_t)BAUD_SETTING;
+                       ^
