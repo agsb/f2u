@@ -27,22 +27,31 @@
 ;
 ;    those are to stay at NRWW flash memory of atmega8
 ;
-.org FLASH_NRWW
-.align 2
+;   this is from a patch request to optiboot/optiboot, called bb_spm
+;   must stay in NRWW flash pages
+;   will go in interrupt table at 0x004 "external interrupt 1"
+;   
+;.org FLASH_NRWW
+;.align 2
 ;
 ; spm instruction uses:
-; r31:r30 address in bytes, r1:r0 data, 
 ;
-; uses register r16 as command and scratch
-; uses register r17 as keeper of SREG
+; must be defined by caller:
+; r31:r30 page/word address, r1:r0 data, 
 ;
-    _swork_ = r16
-    _ssreg_ = r17
+; uses register r24 as command and scratch
+; uses register r25 as keeper of SREG
+;
+
+#ifdef BB_SPM
+
+    _swork_ = r24
+    _ssreg_ = r25
 
 ;
 ; bare bones 
 ; 
-does_spm:
+bb_spm:
     in _ssreg_, __SREG__
     cli
     sts SPMCR, _swork_
@@ -54,6 +63,13 @@ does_spm:
 ;   return
     out __SREG__, _ssreg_
     ret
+
+#elseif
+
+does_spm:
+    call 0x004
+
+#endif
 
 .equ nrww_end, .
 
