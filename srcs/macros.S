@@ -39,7 +39,7 @@
 ;
 ;    about registers 
 ;
-; r1:r0 reserved and used in self atmega8 instructions, as spm, mul, des etc
+; r1:r0 reserved and used in self atmega8 instructions, as spm, mul, des, etc
 ;
 
 ; generic scratch 
@@ -54,11 +54,11 @@
 ; offset for adjust timer0 interrupt counter
 #define _offs_ r5
 
-; ticks counter for timer0 at 1 ms
+; ticks counter for timer0 at 1 ms, (count 65 sec)
 #define ticks_low r6
 #define ticks_high r7
 
-; Z generic pointer for access sram and flash memory
+; Z generic pointer for access sram and flash memory, lpm, spm, index, etc
 #define zpm_low r30
 #define zpm_high r31
 
@@ -85,6 +85,8 @@
 ; ips, instruction for jump and link return
 #define ips_low r18
 #define ips_high r19
+
+; r8 to r17 free
 
 ;----------------------------------------------------------------------
 ;
@@ -163,8 +165,8 @@ is_\label:
 .endm
 
 ;----------------------------------------------------------------------
-;    load from program memory (flash)
-;    only works with TWO lpm !!!
+;    load a word from program memory (flash)
+;    ( only works with TWO lpm !!! )
 ;    Z address in bytes!
 .macro pmload low, high
     lsl zpm_low
@@ -263,7 +265,8 @@ FIB_SIZE = SPM_SIZE
 
 ; "Column 72 means Continue", 72 always \0
 ; Readability is good
-TIB_SIZE = 72
+; standart is 80
+TIB_SIZE = 80
 
 ; small collate for numbers and words
 ; no more than 16 chars in a 16bit number system
@@ -282,7 +285,7 @@ WORD_SIZE = 15
 BASE_DEFAULT = 16
 
 ;----------------------------------------------------------------------
-;   reserved eeprom used (256 words total, 248 avaliabe) 
+;   reserved eeprom used  
 ;
 eeprom = 0x00
 e_void = eeprom + 0  ; always zero
@@ -303,7 +306,7 @@ e_free = eeprom + 16
 ;   IMMEDIATE, COMPILE, HIDEN, TOGGLE
 ;
 F_IMMEDIATE = 0x80
-F_COMPILE_ONLY = 0x40
+F_COMPILE = 0x40
 F_HIDDEN = 0x20
 F_TOGGLE = 0x10
 F_COMMON = 0x00
@@ -350,7 +353,7 @@ CR_    =   0x0d    ; ascci carriage return ^M
 LF_    =   0x0a    ; ascii line feed ^J
 
 CAN_   =   0x18    ; ascii cancel ^C
-ESC_   =   0x1B    ; ascii escape ^[
+ESC_   =   0x1b    ; ascii escape ^[
 
 BS_    =   0x08    ; ascii backspace ^H
 TAB_   =   0x09    ; horizontal tab
@@ -359,12 +362,23 @@ BL_    =   0x20    ; ascii space
 BIT_ZERO = 1
 BIT_CARRY = 0
 
+#ifdef atmega8
 SRAM_START = 0x060  ; SRAM from AVR manual
 SRAM_END = 0x45F  ; SRAM from AVR manual
 
 FLASH_RWW = 0x0000
 FLASH_NRWW = 0x1E00    ; using optiboot in 512 bytes !!!!
 FLASH_END = 0x1FFF 
+#endif
+
+#ifdef atmega328
+SRAM_START = 0x0100  ; SRAM from AVR manual
+SRAM_END = 0x08FF  ; SRAM from AVR manual
+
+FLASH_RWW = 0x0000
+FLASH_NRWW = 0x3E00    ; using optiboot in 512 bytes !!!!
+FLASH_END = 0x3FFF 
+#endif
 
 FLASH_START = SRAM_END + 1    ; just a offset
 FLASH_STOP = FLASH_NRWW - 1
