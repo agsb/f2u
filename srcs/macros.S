@@ -28,7 +28,7 @@
 ;
 ;   MUST use gnu cpp 
 ;   use with .S (upper S) or
-;    use with -x assembler-with-cpp
+;   use with -x assembler-with-cpp
 ;
 ;     can't use alias 
 ;----------------------------------------------------------------------
@@ -39,8 +39,11 @@
 ;
 ;    about registers 
 ;
-; r1:r0 reserved and used in self atmega8 instructions, as spm, mul, des, etc
+; r1:r0 reserved and used in internal atmega8 instructions, as spm, mul, des, etc
 ;
+
+#define _reserved_r0_ r0
+#define _reserved_r1_ r1
 
 ; generic scratch 
 #define _work_ r2
@@ -48,16 +51,23 @@
 ; always zero, keep by interrupt
 #define _zero_ r3
 
-; sreg keep in interrupts
-#define _sreg_ r4
-
 ; offset for adjust timer0 interrupt counter
-#define _offs_ r5
+#define _offs_ r4
+
+; sreg keep in interrupts
+#define _sreg_ r5
 
 ; ticks counter for timer0 at 1 ms, (count 65 sec)
 #define ticks_low r6
 #define ticks_high r7
 
+; work used only at boot in pseudo bios
+#define bios_work r16
+
+;-----------------------------------------------------------------------
+;
+; forth model (like pdp-11)
+;
 ; Z generic pointer for access sram and flash memory, lpm, spm, index, etc
 #define zpm_low r30
 #define zpm_high r31
@@ -85,6 +95,7 @@
 ; ips, instruction for jump and link return
 #define ips_low r18
 #define ips_high r19
+
 
 ; r8 to r17 free
 
@@ -128,11 +139,14 @@ is_\label:
 ;----------------------------------------------------------------------
 ; little endian !!! AVR
 ;
-;    A    Z (r31:r30) is used as generic address pointer
-;    R    Y (r29:r28) is used as return stack pointer    
-;    S    X (r27:r26) is used as data/parameter stack pointer
-;    W    W (r25:r24) is used as generic work register
-;    
+;    A    Z (r31:r30) is used as generic address pointer, deed by avr ISA
+;
+;    R    Y (r29:r28) used as return stack pointer    
+;    S    X (r27:r26) used as data/parameter stack pointer
+;    T    T (r25:r24) used as top in stack
+;    N    N (r22:r23) used as second in stack
+;    W    W (r20:r21) used as work            
+;    I    I (r18:r19) used as ip when link and jump    
 ;
 ;   all stacks grows downwards.
 ;
@@ -266,7 +280,7 @@ FIB_SIZE = SPM_SIZE
 ; "Column 72 means Continue", 72 always \0
 ; Readability is good
 ; standart is 80
-TIB_SIZE = 80
+TIB_SIZE = 72
 
 ; small collate for numbers and words
 ; no more than 16 chars in a 16bit number system
@@ -362,26 +376,30 @@ BL_    =   0x20    ; ascii space
 BIT_ZERO = 1
 BIT_CARRY = 0
 
-#ifdef atmega8
-SRAM_START = 0x060  ; SRAM from AVR manual
-SRAM_END = 0x45F  ; SRAM from AVR manual
+;#ifdef MCU 
+;SRAM_START = 0x060  ; SRAM from AVR manual
+;SRAM_END = 0x45F  ; SRAM from AVR manual
+;
+;FLASH_RWW = 0x0000
+;FLASH_NRWW = 0x1E00    ; using optiboot in 512 bytes !!!!
+;FLASH_END = 0x1FFF 
+;#endif
 
-FLASH_RWW = 0x0000
-FLASH_NRWW = 0x1E00    ; using optiboot in 512 bytes !!!!
-FLASH_END = 0x1FFF 
-#endif
-
-#ifdef atmega328
+;#ifdef MCU 
 SRAM_START = 0x0100  ; SRAM from AVR manual
 SRAM_END = 0x08FF  ; SRAM from AVR manual
 
 FLASH_RWW = 0x0000
 FLASH_NRWW = 0x3E00    ; using optiboot in 512 bytes !!!!
 FLASH_END = 0x3FFF 
-#endif
+;#endif
 
 FLASH_START = SRAM_END + 1    ; just a offset
 FLASH_STOP = FLASH_NRWW - 1
+
+# start forth at next address over end of sram, 
+# leave space for bios and texts
+FORTH_START = FLASH_START
 
 /* for eeprom use */
 

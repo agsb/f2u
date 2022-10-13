@@ -26,37 +26,36 @@
 ;---------------------------------------------------------------------
 ; atmega8 avr
 ;
-; sram mapped as: internal mapped 0x000 to 0x05F, free use 0x060 to 0x45F
-; flash mapped as: bios 0x000 to 0x45F, forth 0x460 to 0x1eff, boot 0x1f00 to 0x1FFF
+;   UPDATE: 10/2022 to atmega328 
 ;---------------------------------------------------------------------
 
 ;----------------------------------------------------------------------
 ;
 ; version information
 ;
-.equ version, 10 ; 0.00.10
+.equ version, 12 ; 0.00.10
 
 #include "macros.S"
 
 ;----------------------------------------------------------------------
 .section data
-.org 0x0060
-; those are non volatile
+.org SRAM_START
+; those are non volatile, must be saved in eeprom
 VOID:	.word 0		; always 0x0000
 SEED:	.word 0		; seed for pseudo random
 TURN:	.word 0		; routine to run after boot
 REST:	.word 0		; routine to run before reset
 
-LAST:	.word 0		; reference to latest word in dictionary
-FSHM:	.word 0		; next free cell in flash dictionary
-SRAM:	.word 0		; next free cell in static ram < 740
-EROM:	.word 0		; next free cell in eeprom < 480
+WORD_LAST:	    .word 0		; reference to latest word in dictionary
+FLASH_LAST:	    .word 0		; next free cell in flash dictionary
+SRAM_LAST:	    .word 0		; next free cell in static ram 
+EEPROM_LAST:	.word 0		; next free cell in eeprom
 
-; those are volatile
+; those are volatile, dont care
 STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile, 2 postpone
 RADX:	.word 0		; numeric radix for convertion
 TOIN:	.word 0		; next free char in terminal input buffer
-PAGE:   .word 0         ; last page address from/into flash memory
+PAGE:   .word 0     ; last page address from/into flash memory
 
 .equ	FIB, PIC - FIB_SIZE
 .equ	PIC, TIB - PIC_SIZE

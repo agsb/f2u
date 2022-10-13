@@ -65,11 +65,13 @@
 ; temporary tos register r23:r22 
 ; temporary nds register r21:r20 
 ; instruction pointer r18:r19 
-; scratch register r0 
+; scratch register r16:r17 
 ; 
 ; Can only use LPM to access flash memory ? YES! 
 ; 
-; all constants in flash, all variables in sdram 
+; forth: all constants in flash
+;
+; user: all constants and all variables in sdram 
 ; 
 ; why ? flash memory suports only 10.000 cycles 
 ; 
@@ -80,7 +82,7 @@
 ; use the address to determine if is flash or is sram, above is flash :)
 ; 
 .section .text 
-.org 0x460 
+.org FORTH_START 
 .global forth 
 _forth_: 
 ;---------------------------------------------------------------------- 
@@ -112,22 +114,19 @@ _enter:
     movw zpm_low, wrk_low ; point to this reference 
     rjmp _next 
  
-; then jump, for exec it 
+; then jump, for exec it, save next return into ips 
 _jump: 
     adiw zpm_low, 2	     
     movw ips_low, zpm_low    
     sbiw zpm_low, 2	     
     ijmp 
  
-; then link, for continue 
+; then link, for continue, load return from ips 
 _link: 
     movw zpm_low, ips_low ; points to next reference 
     rjmp _next 
  
 ;---------------------------------------------------------------------- 
-; 
-; using cached 
-; (Tos, 2nd, 3rd, 4th, ...) 
 ; 
 ;---------------------------------------------------------------------- 
  
@@ -142,11 +141,14 @@ _link:
 HEADER "0=", "ZEQU" 
     NOOP 
     or tos_low, tos_high
-    brbs BIT_ZERO, _ffalse
+    brbs BIT_ZERO, _ftrue
+_ffalse:
+    clr tos_low 
+    clr tos_high 
+    POON
 _ftrue: 
     ser tos_low 
     ser tos_high 
-_ffalse:
     POON
  
 ;---------------------------------------------------------------------- 
@@ -170,7 +172,7 @@ _isram_to:
     POON 
  
 _isflash_to: 
-;   do flash flush, later :( still not done 
+;   do flash flush, later :( still not done zzzz
     POON 
  
 ;---------------------------------------------------------------------- 
@@ -290,28 +292,28 @@ HEADER "BASE", "BASE"
 HEADER "(sram)", "sram_" 
     NOOP 
     pspush tos_low, tos_high
-    ldi tos_low, lo8(SRAM) 
-    ldi tos_high, hi8(SRAM) 
+    ldi tos_low, lo8(SRAM_LAST) 
+    ldi tos_high, hi8(SRAM_LAST) 
     POON 
  
 ;---------------------------------------------------------------------- 
 ; ok ( -- w) 
 ; 
-HEADER "(erom)", "erom_" 
+HEADER "(eeprom)", "eeprom_" 
     NOOP 
     pspush tos_low, tos_high
-    ldi tos_low, lo8(EROM) 
-    ldi tos_high, hi8(EROM) 
+    ldi tos_low, lo8(EEPROM_LAST) 
+    ldi tos_high, hi8(EEPROM_LAST) 
     POON 
  
 ;---------------------------------------------------------------------- 
 ; ok ( -- w) 
 ; 
-HEADER "FSHM", "here_" 
+HEADER "(flash)", "flash_" 
     NOOP 
     pspush tos_low, tos_high
-    ldi tos_low, lo8(FSHM) 
-    ldi tos_high, hi8(FSHM) 
+    ldi tos_low, lo8(FLASH_LAST) 
+    ldi tos_high, hi8(FLASH_LAST) 
     POON 
  
 ;********************************************************************** 
@@ -385,6 +387,7 @@ HEADER "millis", "millis_"
 ; 
 HEADER "TRUE", "FTRUE" 
     NOOP 
+    pspush tos_low, tos_high 
 _iftrue: 
     ser tos_low 
     ser tos_high 
@@ -395,6 +398,7 @@ _iftrue:
 ; 
 HEADER "FALSE", "FFALSE" 
     NOOP 
+    pspush tos_low, tos_high 
 _iffalse: 
     clr tos_low 
     clr tos_high 
@@ -545,7 +549,7 @@ _branch:
  
 ;---------------------------------------------------------------------- 
 ; ok ( branch next reference ) 
-; is >R
+; is as >R
 HEADER "EXECUTE", "EXECUTE" 
     NOOP 
     rspush tos_low, tos_high 
@@ -705,6 +709,7 @@ HEADER "ALIGN", "ALLIGN"
 ; 
 HEADER "CELL", "CELL" 
     NOOP 
+    pspush tos_low, tos_high
     ldi tos_low, CELL_SIZE 
     clr tos_high 
     POON 
@@ -1031,21 +1036,21 @@ HEADER  "IMMEDIATE", "IMMEDIATE",
 ; ok COMPILE_ONLY 
 ; 
 HEADER  "COMPILE_ONLY", "COMPILE_ONLY", 
-    .word LATEST, TONFA, F_COMPILE_ONLY, TOGGLE, ENDS 
+    .word LATEST, TONFA, F_COMPILE, TOGGLE, ENDS 
 
 ;---------------------------------------------------------------------- 
 ; 
 ; ok HERE 
 ; 
 HEADER  "HERE", "HERE", 
-    .word FSHM, AT, ENDS 
+    .word FLASH_LAST, AT, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 
 ; ok ALLOT 
 ; 
 HEADER  "ALLOT", "ALLOT", 
-    .word FSHM, PLUSTO, ENDS 
+    .word FLASH_LAST, PLUSTO, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 

@@ -25,6 +25,10 @@
  */
 
 ;----------------------------------------------------------------------
+; review for atmega328
+;   10/2022 @agsb
+
+;----------------------------------------------------------------------
 ;
 ; code segment, flash
 ;
@@ -34,7 +38,7 @@
 boot:
 
 ;---------------------------------------------------------------------
-; from avr manual, for atmega8, do not change 
+; from avr manual, do not change 
 ; reserved I/O Memory address
 ;
 __SREG__ = 0x3f
@@ -130,10 +134,12 @@ RESET:
 ;   64 * 125 = 8000 ; 
 ;   256 - 125 = 131 ; offset for miliseconds
 ;
+;   ticks counts till 65 seconds
+;
 ; interrupt routine
 TIM0_OVF:
 ; save flags
-    in r5, __SREG__
+    in r2, __SREG__
 ; disable interrups
     cli
 ; increase counter and also clear 
@@ -144,15 +150,15 @@ TIM0_OVF:
     add ticks_low, r3
     dec r3
     adc ticks_high, r3
-
 ; offset counter 256 - 125 = 131
 ; but was 10 clocks till out, 
 ; then 131 + 10 = 141
+OFFSETCNT = 141
     out TCNT0, r4
 ; reset watch dog
     wdr
 ; load flags and return
-    out __SREG__, r5
+    out __SREG__, r2
 ; enable interrups
     sei
     reti
@@ -184,7 +190,7 @@ TIMER0_SET:
     ori r16, (1 << 1) | (1 << 0)
     out TCCR0, r16
 ; offset counter, so it counts 125 clocks inside the interrup routines
-    ldi r16, 141
+    ldi r16, OFFSETCNT
 ; preserve offset
     mov r4, r16
     out TCNT0, r16
@@ -192,9 +198,6 @@ TIMER0_SET:
     in r16, TIMSK
     ori r16, (1 << 0) 
     out TIMSK, r16
-; clear timer0 counter
-    clr r2
-    clr r3
 
 ;----------------------------------------------------------------------
 ; init watch dog, from avr-gcc public code, io ports as constants
@@ -235,16 +238,18 @@ GOOD:
 #ifdef EEPS
 
 ;----------------------------------------------------------------------
-;   Assembly Code Example
+;
+;   Assembly Code Example, from AVR manual
+;
 EEPROM_write:
 ; Wait for completion of previous write
     sbic EECR, EEPE
     rjmp EEPROM_write
 ; Set up address (r18:r17) in address register
-    out EEARH, r18
-    out EEARL, r17
+    out EEARH, r25
+    out EEARL, r24
 ; Write data (r16) to Data Register
-    out EEDR,r16
+    out EEDR, r22
 ; Write logical one to EEMPE
     sbi EECR, EEMPE
 ; Start eeprom write by setting EEPE
@@ -256,15 +261,14 @@ EEPROM_read:
     sbic EECR, EEPE
     rjmp EEPROM_read
 ; Set up address (r18:r17) in address register
-    out EEARH, r18
-    out EEARL, r17
+    out EEARH, r25
+    out EEARL, r24
 ; Start eeprom read by writing EERE
     sbi EECR, EERE
 ; Read data from Data Register
-    in r16, EEDR
+    in r22, EEDR
     ret
 
 #endif
 
 .equ bios_end, .
-

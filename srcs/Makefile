@@ -34,6 +34,7 @@
 
 # MCU name
 MCU = atmega8
+MCU = atmega328
 
 # Optimization level, can be [0, 1, 2, 3, s]. 
 # 0 = turn off optimization. s = optimize for size.
