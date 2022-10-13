@@ -69,7 +69,7 @@ In back 1968, Charles H. Moore creates Forth in a IBM-1130, <https://github.com/
 
 There are also Forth implementations for many AVR RISCs, mostly for the larger ones like Amforth, Avrforth, CamelForth, Eforth, Flashforth. Studying these codes, as references for models and styles, has been an excellent learning experience for comparing solutions and techniques. 
 
-## Forth
+## ForthS
 
 amForth: Matthias Trute - http://amforth.sourceforge.net/
 
