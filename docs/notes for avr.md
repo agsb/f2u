@@ -13,7 +13,7 @@
     T(R24, R25) : TOS 
     N(R22, R23) : used as NOS, when need
     W(R20, R21) : used as work
-    I(R18, R19) : used as IP for next instruction, jump and link
+    I(R18, R19) : used as IP, hold next instruction, jump and link
   
   used in bios and interrupts:
   
@@ -26,8 +26,6 @@
   
 ## flash forth https://flashforth.com/atmega.html
 
-Register usage and memory usage
-
     SP: The return stack pointer
     Y(R28, R29) : The parameter stack pointer
     X(R26, R27), Z(R30, R31): Temporary data and pointers
@@ -39,3 +37,14 @@ Register usage and memory usage
     R4, R12, R13: CPU load measurement result (optional).
     R14, R15: Millisecond counter.
     R10, R11: Buffered flash page address.
+    
+## am-forth https://amforth.sourceforge.net/TG/AVR8.html#avr8-register-mappings
+
+    Forth Register 	ATmega Register(s)
+    W: Working Register 	R22:R23
+    IP: Instruction Pointer 	XH:XL (R27:R26)
+    RSP: Return Stack Pointer 	SPH:SPL
+    PSP: Parameter Stack Pointer 	YH:YL (R29:R28)
+    UP: User Pointer 	R4:R5
+    TOS: Top Of Stack 	R24:R25
+    X: temporary register 	ZH:ZL (R31:R30)
