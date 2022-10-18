@@ -41,6 +41,7 @@ I want a forth with:
 The dictionary then will a unique linked list composed by  a) a link for previous word's link, b) a byte with size of name plus flags, c) a sequence of characters of name and d) a sequence of, or references or assembler code.
 
 The word names are full preserved, not hashed, not lowered, for trace back compound words, word by word.
+
 # Size or Speed
 
 *"Keep it Simple"*
@@ -51,7 +52,7 @@ A MCU 32 bits, as ARM Cortex-M4 STM32L4+ with 2048k bytes flash and 640k bytes s
 
 But my choice for design is a small AVR Atmega8, a complete RISC MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, with 32 (R0 to R31) 8 bits registers, with some that could be used as eight (R16 to R31) 16 bits registers. 
 
-UPDATE: changed from ATMEGA8 to ATMEGA328 due need of more flash for instructions (4k words to 16k words) and SRAM memory
+UPDATE: will change from ATMEGA8 to ATMEGA328 if need of more flash for instructions (4k words to 16k words) and SRAM memory
 
 ## A challenge.
 
