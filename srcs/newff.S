@@ -1,28 +1,53 @@
+
+
+/*
+ *  DISCLAIMER"
+ *
+ *  Copyright © 2020, Alvaro Gomes Sobral Barcellos,
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining
+ *  a copy of this software and associated documentation files (the
+ *  "Software"), to deal in the Software without restriction, including
+ *  without limitation the rights to use, copy, modify, merge, publish,
+ *  distribute, sublicense, and/or sell copies of the Software, and to
+ *  permit persons to whom the Software is furnished to do so, subject to
+ *  the following conditions"
+ *
+ *  The above copyright notice and this permission notice shall be
+ *  included in all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ *
+ */
+
 ;---------------------------------------------------------------------
-;	for easy do_spm at optiboot 
+;	for easy using spm from optiboot 
 ;
 ;	spm instruction uses r31:r30 for address and r1:r0 for data
 ;
-;   when using optiboot do spm, it uses gcc standart function layout that
-;   r24:r25 (W) for address, as r30:r31
-;	r22:r23 (T) for code operation erase/fill/write, r23 not used
-;	r20:r21 (N) for data, as r0:r1
-;	 
-;	when erase or write, r0:r1 is ignored, ATmega8L datasheet, pg 209
+;	when erase or write, r0:r1 is ignored, 
+;   ATmega8L datasheet, pg 209
 ;
-;   but, optiboot do_spm carry all stack "overflow" from compiler
+;   command passed in r24
 ;
-;   then rewrite a simple does_spm without stack stuff and using
-;   r24,
+;   in optiboot.c version 8.3 :
 ;
-;   re-enable the RWW section 
-;   (already done by do_spm in optiboot, BUT NOT in doin_spm() )
-;   enable rww 
-;    ldi _swork_, ((1<<RWWSRE) | (1<<SPMEN))
-;    sts SPMCR, _swork_
-;    spm 
+;    __boot_rww_enable_short();
+;    7fd2:       87 bf           out     0x37, r24       ; 55
+;    7fd4:       e8 95           spm
+;    7fd6:       08 95           ret
 ;
 ;	do not expeculate, only one page to "flash flush"
+;   minimal optiboot uses last 256 words at 7e00 ( 3F00 words) 
+;   and the sequence: bf 87 95 e8 95 08
+;
+;   commands are: 0x03 erase page, 0x01 fill buffer, 0x05 write page
+;   set SPMCR and do a SPM whithin 4 cycles
 ;---------------------------------------------------------------------
 ;    
 ; ok copy a flash page into sram buffer  

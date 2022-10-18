@@ -14,7 +14,7 @@ For the AVR Atmega8, by Harvard architeture, memory is separed in 512 bytes eepr
 
 2. Flash memory layout
 
-- 0x000 to 0x1fff 128 program memory, as pages of 64 bytes, 
+- 0x000 to 0x1fff 128 program memory, as pages of 32 bytes, 
     
 - 0x000 to 0x1dff RWWM read, erase, write flash memory
     
@@ -24,6 +24,7 @@ For the AVR Atmega8, by Harvard architeture, memory is separed in 512 bytes eepr
 
     0x1e00 optiboot main, handles boot and flash updates
     0x1fb0 do_spm routine for runtime update flash memory
+
 # Memory Model
 
 ## the sram are mapped as:

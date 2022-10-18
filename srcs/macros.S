@@ -265,18 +265,12 @@ is_\label:
 ;**********************************************************************
 ;  constant values
 ;
-;     %s/#define *\([^ ]*\) */ \1 = /
+;    %s/#define *\([^ ]*\) */ \1 = /
 ;    %s/ *\([^ ]*\) *= */#define \1 /
 
 ;----------------------------------------------------------------------
 ;    sizes
 ;
-; atmega8 have flash memory of 128 pages of 64 bytes
-SPM_SIZE = 64
-
-; buffer for flush flash
-FIB_SIZE = SPM_SIZE
-
 ; "Column 72 means Continue", 72 always \0
 ; Readability is good
 ; standart is 80
@@ -376,23 +370,36 @@ BL_    =   0x20    ; ascii space
 BIT_ZERO = 1
 BIT_CARRY = 0
 
-;#ifdef MCU 
-;SRAM_START = 0x060  ; SRAM from AVR manual
-;SRAM_END = 0x45F  ; SRAM from AVR manual
-;
-;FLASH_RWW = 0x0000
-;FLASH_NRWW = 0x1E00    ; using optiboot in 512 bytes !!!!
-;FLASH_END = 0x1FFF 
-;#endif
+#ifdef atmega8
 
-;#ifdef MCU 
+; atmega8 have flash memory of 128 pages of 32 bytes
+
+SPM_SIZE = 32
+
+SRAM_START = 0x060  ; SRAM from AVR manual
+SRAM_END = 0x45F  ; SRAM from AVR manual
+
+FLASH_RWW = 0x0000
+FLASH_NRWW = 0x1E00    ; using optiboot in 512 bytes !!!!
+FLASH_END = 0x1FFF 
+
+#endif
+
+#ifdef atmega328
+
+; atmega328 have flash memory of 128 pages of 64 bytes
+
+SPM_SIZE = 64
+
+SRAM_START = 0x060  ; SRAM from AVR manual
 SRAM_START = 0x0100  ; SRAM from AVR manual
 SRAM_END = 0x08FF  ; SRAM from AVR manual
 
 FLASH_RWW = 0x0000
 FLASH_NRWW = 0x3E00    ; using optiboot in 512 bytes !!!!
 FLASH_END = 0x3FFF 
-;#endif
+
+#endif
 
 FLASH_START = SRAM_END + 1    ; just a offset
 FLASH_STOP = FLASH_NRWW - 1
@@ -409,7 +416,8 @@ E2P_END = 0x1FF
 
 /* for flash flush */
 
-SPM_PAGE = 64    
+; buffer for flush flash
+FIB_SIZE = SPM_SIZE
 
 pagesize = (SPM_PAGE - 1)
 pagemask = (~pagesize)
