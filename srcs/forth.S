@@ -82,7 +82,7 @@
 ; use the address to determine if is flash or is sram, above is flash :)
 ; 
 .section .text 
-.org FORTH_START 
+.org FORTH_INI
 .global forth 
 _forth_: 
 ;---------------------------------------------------------------------- 
@@ -126,8 +126,6 @@ _link:
     movw zpm_low, ips_low ; points to next reference 
     rjmp _next 
  
-;---------------------------------------------------------------------- 
-; 
 ;---------------------------------------------------------------------- 
  
 ;********************************************************************** 
@@ -199,7 +197,8 @@ _isflash_at:
  
 ;---------------------------------------------------------------------- 
 ; ok ( -- rsp) 
-; 
+; put the top of return stack at tos
+;
 HEADER "RS@", "RPAT" 
     NOOP 
     pspush tos_low, tos_high 
@@ -208,6 +207,7 @@ HEADER "RS@", "RPAT"
  
 ;---------------------------------------------------------------------- 
 ; ok ( -- psp ) 
+; put the top of parameter stack at tos
 ; 
 HEADER "PS@", "SPAT" 
     NOOP 

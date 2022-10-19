@@ -4,100 +4,121 @@ MemoryModel.md
 
 For the AVR Atmega8, by Harvard architeture, memory is separed in 512 bytes eeprom, 1024 bytes static ram, 4096 words flash. Consider a byte is 8 bits and a word is 16 bits. A cell is a 16 bits word.
 
+By the way, this forth is not multi-user or multi-task, no memory.
+
 1. Static ram layout
     
 - 0x000 to 0x01f  registers r0 to r31
 
 - 0x020 to 0x05f  i/o memory mapped
 
-- 0x060 to 0x45f  free ram
+- 0x060 to 0x45f  free ram (1024 bytes)
 
 2. Flash memory layout
+
+    memory is accessed in bytes, but used as words by AVR instructions, 
+    then 8kb is really 4kw
 
 - 0x000 to 0x1fff 128 program memory, as pages of 32 bytes, 
     
 - 0x000 to 0x1dff RWWM read, erase, write flash memory
     
-- 0x1e00 to0x1fff NRWW read only boot area, where optiboot resides
+- 0x1e00 to0x1fff NRWW read only boot area, upper 256 words, where optiboot resides
 
-3. Optiboot 
+3. Optiboot ( version 8.3, make atmega8 ) 
 
     0x1e00 optiboot main, handles boot and flash updates
-    0x1fb0 do_spm routine for runtime update flash memory
+
+    0x1fa8 do_spm(), routine for runtime update flash memory, gcc layout
+
+    0x1fc2  __boot_rww_enable_short() + 2 bytes, runtime update flash memory,
+    direct hack for escape gcc layout
 
 # Memory Model
 
 ## the sram are mapped as:
 
-    grows downwards:
-
-    0x060   forth variables, 12 cells
-
-    0x078   start of user ram, 826 bytes
-
-    0x37b   start of picture numeric buffer, 16 bytes
-    
-    0x38b   start of flash internal buffer, 64 bytes
-    
-    0x3ab   start of terminal input buffer, 72 bytes
-    
     grows upwards:
 
-    0x3f3   start stacks area
+    0x060   start of user sram
 
-    0x417   top of parameter stack, 36 bytes, 18 cells
+            STATE, hold state of interpreter
+            BASE, hold radix for numbers
+            LATEST, hold link to last word
+            FENCE, hold value for HERE
+            TOIN, offset in TIB
+            TOFH, offset in FIB
 
-    0x43b   top of return stack, 36 bytes, 18 cells
+    0x36a   start of FIB flash internal buffer, 64 bytes
+   
+    0x3aa   start of TIB terminal input buffer, 72 bytes
+    
+    0x3f2   end of TIB
 
-    0x45f   top of stack pointer, 36 bytes, 18 cells
+    0x416   top of forth parameter stack, 36 bytes, 18 cells
+
+    0x43a   top of forth return stack, 36 bytes, 18 cells
+
+    0x45e   reserved for stack pointer, 36 bytes, 18 cells
+
+    0x45f   reserved for _SREG_
 
 note: last stack is for extra libraries, not for forth    
 
 ## Use of memory
 
+    There no way to run forth in sram only, then the dictionary goes to flash
+    and values and variables goes to sram.
+
+    For easy, any reference less than SRAM_END are mapped in sram else in flash.
+    
+    So, the bios (basic input output system) follow avr interrupt table, 
+    and forth core start at address of sram_end plus one. 
+
+    The gap between bios_end and forth_ini, could be used to expand bios
+    routines and store default messages.
+    
 ### 1. Buffers, reserved for Forth
 
     TIB     terminal input buffer, 72 bytes
     
     FIB     flash internal buffer, 64 bytes
     
-    PIC     picture numeric convertion, 16 bytes
-
     Notes:
     
     TIB is less than Forth standart, but as "column 72 is continue", is enough;
     
-    FIB is for buffer compile words and flush to flash
+    FIB is a buffer for compile words and flush to flash
     
-    PIC is for use in numeric formating
-
 ### 2. Variables non volatile, cells that need be periodic saved to eeprom
 
     void    always zero, 2 bytes
     
-    seed    seed for ramdom routine, 2 bytes
+    seed    seed for random routine, 2 bytes
 
     turn    routine to run after boot, 2 bytes
 
     rest    routine to run before rest, 2 bytes
     
-    last    last entry in dictionary, 2 bytes
+    latest  last entry in dictionary, 2 bytes
 
-    fshm    next free cell in flash memory, 2 bytes
+    e_here    next free cell in flash memory, 2 bytes
     
-    sram    next free cell in sram memory, 2 bytes
+    e_sram    next free cell in sram memory, 2 bytes
     
-    erom    next free cell in eeprom, 2 bytes
+    e_erom    next free cell in eeprom, 2 bytes
    
 ### 3. variables volatiles, use as half cells
 
     state   state of interpreter, 2 byte
     
-    radx    numeric radix, 2 byte
+    base    numeric radix, 2 byte
     
     toin    cursor in TIB as offset, 2 byte
     
-    page    last flash page in buffer. 2 bytes
+    ftoin    cursor in FIB as offset, 2 bytes
+
+    fpage    last flash page in buffer, 2 bytes
         
 ### 4. Stacks
 
@@ -111,15 +132,13 @@ note: last stack is for extra libraries, not for forth
 
     SP0     top of mcu stack reserved
 
-    PS0     top of forth parameter stack
+    P0     top of forth parameter stack
 
-    RS0     top of forth return stack
+    S0     top of forth return stack
     
     TIB0    top of terminal input buffer
     
     FIB0    top of scratch pad buffer
-    
-    PIC0    top of numeric format buffer
     
     DP0     next cell at flash memory
     
@@ -137,9 +156,7 @@ note: last stack is for extra libraries, not for forth
     
     TIBZ    size of TIB (72 bytes)
     
-    FIBZ    size of PAD (64 bytes)
-    
-    PICZ    size of HLD (16 bytes)
+    FIBZ    size of FIB (64 bytes)
     
     VERS    version (2 bytes) from 0.00.00 to 6.55.36 as release.version.revision
 
@@ -163,34 +180,24 @@ note: last stack is for extra libraries, not for forth
 
 ### 7. Ascii control, inline
 
-    NIL     0x00    \0, ^@
+    very minimal edit, 
+        
+        assuming all edition is done by terminal program at host
 
-    ETX     0x03    ^C
-
-    EOT     0x04    ^D
+        all extras are ignored,  
     
-    BELL    0x07    \a, ^G
+        all are translated to uppercase.
 
     BS      0x08    \b, ^H
 
-    TAB     0x09    \t, ^I
-
     LF      0x0A    \n, ^J
 
-    VT      0x0B    \v, ^K
-
-    FF      0x0C    \f, ^L
-
     CR      0X0D    \r, ^M
+
+    BL      0x30    whitespace
 
     XON     0x11    ^Q
 
     XOFF    0x13    ^S
-
-    CAN     0x18    ^X
-
-    ESC     0x1B    \e, ^[
-
-    SPC     0x30    whitespace
 
 

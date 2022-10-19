@@ -35,6 +35,9 @@
 ;
 ; all defines, equs, macros are defined in this file
 ;
+
+#define atmega8
+
 ;----------------------------------------------------------------------
 ;
 ;    about registers 
@@ -234,6 +237,8 @@ is_\label:
 ; __SREG__ is 0x3F
 ; BIT_ZERO is 1
 ;
+; non destructive
+;
 .macro test_zero low, high, address
     mov _work_, \low
     or _work_, \high
@@ -276,10 +281,6 @@ is_\label:
 ; standart is 80
 TIB_SIZE = 72
 
-; small collate for numbers and words
-; no more than 16 chars in a 16bit number system
-PIC_SIZE = 16
-
 ; stacks 18 words deep. WISE as M00re said.
 STACK_SIZE = 36
 
@@ -304,14 +305,17 @@ e_last = eeprom + 8  ; last link addres to dictionary
 e_here = eeprom + 10 ; next free flash address for dictionary
 e_sram = eeprom + 12 ; next free sram address for variables, as stack
 e_erom = eeprom + 14 ; next free eprom address for values, as stack
-e_free = eeprom + 16 
 
 ;----------------------------------------------------------------------
 ;   words can be 1 to 15 chars lenght, 
+;
 ;   almost over for normal english ~10 letters words http://norvig.com/mayzner.html
 ;
 ;   flags 
-;   IMMEDIATE, COMPILE, HIDEN, TOGGLE
+;
+;   IMMEDIATE, COMPILE, HIDDEN, TOGGLE
+;
+;   COMPILE is the compile only.
 ;
 F_IMMEDIATE = 0x80
 F_COMPILE = 0x40
@@ -325,9 +329,7 @@ F_UNMASK = 0x0F
 ; STATES BIT!
 ; execute  STATE == 0
 ; compile  STATE == 1
-; postpone STATE == 2 or 3, only for next word
 
-BIT_POSTPONE = 1
 BIT_COMPILE = 0
 BIT_EXECUTE = 0
 
@@ -335,7 +337,8 @@ BIT_EXECUTE = 0
 state       common    immediate
 S_EXECUTE    execute   execute
 S_COMPILE    compile   execute
-S_POSTPONE   compile   compile
+
+postpone always compiles.
 
 */
 ;---------------------------------------------------------------------
@@ -355,71 +358,78 @@ NOT_A_NUMBER = -24
 ; uses BS, ESC, CAN, XON, XOFF, for control 
 ;
 XON_   =   0x11    ; ascii DC1 ^Q
+
 XOFF_  =   0x13    ; ascii DC3 ^S
 
 CR_    =   0x0d    ; ascci carriage return ^M
+
 LF_    =   0x0a    ; ascii line feed ^J
 
-CAN_   =   0x18    ; ascii cancel ^C
-ESC_   =   0x1b    ; ascii escape ^[
-
 BS_    =   0x08    ; ascii backspace ^H
-TAB_   =   0x09    ; horizontal tab
+
 BL_    =   0x20    ; ascii space 
 
 BIT_ZERO = 1
+
 BIT_CARRY = 0
 
 #ifdef atmega8
 
-; atmega8 have flash memory of 128 pages of 32 bytes
+; atmega8 have flash memory of 128 pages of 32 words
 
-SPM_SIZE = 32
+SPM_SIZE = 64
 
 SRAM_START = 0x060  ; SRAM from AVR manual
-SRAM_END = 0x45F  ; SRAM from AVR manual
+
+SRAM_END = 0x45E  ; SRAM from AVR manual minus one
 
 FLASH_RWW = 0x0000
+
 FLASH_NRWW = 0x1E00    ; using optiboot in 512 bytes !!!!
+
 FLASH_END = 0x1FFF 
 
 #endif
 
 #ifdef atmega328
 
-; atmega328 have flash memory of 128 pages of 64 bytes
+; atmega328 have flash memory of 256 pages of 64 words
 
-SPM_SIZE = 64
+SPM_SIZE = 128
 
-SRAM_START = 0x060  ; SRAM from AVR manual
 SRAM_START = 0x0100  ; SRAM from AVR manual
+
 SRAM_END = 0x08FF  ; SRAM from AVR manual
 
 FLASH_RWW = 0x0000
+
 FLASH_NRWW = 0x3E00    ; using optiboot in 512 bytes !!!!
+
 FLASH_END = 0x3FFF 
 
 #endif
 
-FLASH_START = SRAM_END + 1    ; just a offset
-FLASH_STOP = FLASH_NRWW - 1
-
-# start forth at next address over end of sram, 
-# leave space for bios and texts
-FORTH_START = FLASH_START
-
 /* for eeprom use */
 
 E2P_PAGESIZE = 4
+
 E2P_START = 0x000
+
 E2P_END = 0x1FF
 
 /* for flash flush */
 
 ; buffer for flush flash
+
 FIB_SIZE = SPM_SIZE
 
 pagesize = (SPM_PAGE - 1)
+
 pagemask = (~pagesize)
+
+/* where start forth */
+
+FORTH_INI = SRAM_END + 1
+
 
 ;----------------------------------------------------------------------

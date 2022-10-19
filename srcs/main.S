@@ -45,7 +45,6 @@ VOID:	.word 0		; always 0x0000
 SEED:	.word 0		; seed for pseudo random
 TURN:	.word 0		; routine to run after boot
 REST:	.word 0		; routine to run before reset
-
 WORD_LAST:	    .word 0		; reference to latest word in dictionary
 FLASH_LAST:	    .word 0		; next free cell in flash dictionary
 SRAM_LAST:	    .word 0		; next free cell in static ram 
@@ -55,15 +54,15 @@ EEPROM_LAST:	.word 0		; next free cell in eeprom
 STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile, 2 postpone
 RADX:	.word 0		; numeric radix for convertion
 TOIN:	.word 0		; next free char in terminal input buffer
-PAGE:   .word 0     ; last page address from/into flash memory
+TOPG:   .word 0     ; next free char in this page flash memory
+FAGE:   .word 0     ; this page in flash memory
 
-.equ	FIB, PIC - FIB_SIZE
-.equ	PIC, TIB - PIC_SIZE
-.equ	TIB, END - TIB_SIZE 
-.equ	END, PSP - STACK_SIZE
-.equ	PSP, RSP - STACK_SIZE
+.equ	SPZ, SRAM_END - 1		
 .equ	RSP, SPZ - STACK_SIZE
-.equ	SPZ, SRAM_END		
+.equ	PSP, RSP - STACK_SIZE
+.equ	END, PSP - STACK_SIZE
+.equ	FIB, END - FIB_SIZE
+.equ	TIB, FIB - TIB_SIZE 
 
 ;.equ free_sram, TIB - FREE
 
