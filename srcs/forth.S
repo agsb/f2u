@@ -61,11 +61,11 @@
 ; 
 ; memory pointer r31:r30 as Z 
 ; return stack pointer r29:r28 as Y 
+; parameter stack pointer r27:r26 as Y 
 ; working register r25:r24 as W 
 ; temporary tos register r23:r22 
 ; temporary nds register r21:r20 
 ; instruction pointer r18:r19 
-; scratch register r16:r17 
 ; 
 ; Can only use LPM to access flash memory ? YES! 
 ; 
@@ -100,6 +100,7 @@ _exit:
  
 ; load w with contents of cell at ips 
 _next: 
+; zpm points to next word cfa
     pmload wrk_low, wrk_high ; also increments zpm 
  
 ; if zero (NULL) is a primitive word 
@@ -458,9 +459,9 @@ HEADER "R>", "RTO"
 ;
 HEADER "R@", "RAT" 
     NOOP 
+    pspush tos_low, tos_high 
+    rspull tos_low, tos_high 
     rspush tos_low, tos_high 
-    ld tos_low, X
-    ld tos_high, X
     POON 
  
 ;---------------------------------------------------------------------- 
