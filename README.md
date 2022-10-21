@@ -84,7 +84,7 @@ Fig-Forth: John S. James - http://www.forth.org/fig-forth/fig-forth_PDP-11.pdf
 
 ## More Docs ?
 
-please follow to the docs diretory
+please follow to the [docs](https://github.com/agsb/f2u/tree/main/docs) diretory
 
 ## Licensing:
 
