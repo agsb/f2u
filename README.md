@@ -40,7 +40,7 @@ I want a forth with:
 
 The dictionary then will a unique linked list composed by  a) a link for previous word's link, b) a byte with size of name plus flags, c) a sequence of characters of name and d) a sequence of, or references or assembler code.
 
-The word names are full preserved, not hashed, not lowered, for trace back compound words, word by word.
+The word names, until 15 characters, are full preserved, not hashed, not lowered, for trace back compound words, word by word.
 
 # Size or Speed
 
@@ -52,7 +52,7 @@ A MCU 32 bits, as ARM Cortex-M4 STM32L4+ with 2048k bytes flash and 640k bytes s
 
 But my choice for design is a small AVR Atmega8, a complete RISC MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, with 32 (R0 to R31) 8 bits registers, with some that could be used as eight (R16 to R31) 16 bits registers. 
 
-UPDATE: will change from ATMEGA8 to ATMEGA328 if need of more flash for instructions (4k words to 16k words) and SRAM memory
+UPDATE: will change from ATMEGA8 to ATMEGA328 if need of more flash for instructions (4k words to 16k words) and SRAM memory, not yet
 
 ## A challenge.
 
@@ -62,9 +62,9 @@ Most to refine language paradigms and understood manage memory, RAM and FLASH, a
 
 Many challenges to resolve, how make a minimal bios, what basic word must set, how update flash memory, how access internal resources, etc. Learn from previous many implementations of Forth and adapt to survive.
 
-For comparation, in 1979, the Von Newman architeture PDP-11, Programmed Data Processor, was also eight 16-bit registers, (including one stack pointer R6, and one program counter R7), memory mapped devices,but with unifed memory addressing. <http://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP11_Handbook1979.pdf>.
+For comparation, in 1979, the Von Newman architeture PDP-11, Programmed Data Processor, was also eight 16-bit registers, (including one stack pointer R6, and one program counter R7), memory mapped devices, but with unifed memory addressing. <http://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP11_Handbook1979.pdf>.
 
-The PDP-11 had successful implementations of Forth, by Charles H. Moore reported in 1974, <https://library.nrao.edu/public/memos/comp/CDIR_17.pdf>, and a Fig-Forth by Johm S. James in 1980.
+The PDP-11 had successful implementations of Forth, by Charles H. Moore reported in 1974, <https://library.nrao.edu/public/memos/comp/CDIR_17.pdf>, and a Fig-Forth by John S. James in 1980, <http://www.forth.org/fig-forth/fig-forth_PDP-11.pdf>
 
 In back 1968, Charles H. Moore creates Forth in a IBM-1130, <https://github.com/monsonite/1968-FORTH>,"The IBM 1130 was a fairly simple 16-bit computer, with a load-store architecture, a single accumulator and three index registers X1, X2, X3, stored at locations 01, 02, 03 in the core memory." <https://github.com/monsonite/1968-FORTH>
 
