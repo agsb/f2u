@@ -7,6 +7,18 @@ Collage.md
 "May the Forth be with you."
 
 ---
+## your own
+
+"You are looking for something that doesn't exist.  And if your
+objective is just to build your own, you're _really_ violating
+Chuck's philosophy, which is to keep the problem and its
+solution in the forefront.  If you have no problem to solve,
+you're just playing, so it doesn't matter where you start."
+
+Elizabeth D. Rathe, Jun 2005
+http://computer-programming-forum.com/22-forth/e05a013189430462.htm 
+
+---
 ## muforth
 
 A Forth virtual machine in C language, with basic primitives, full portable, and a Forth language in Forth.
