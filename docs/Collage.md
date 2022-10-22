@@ -2,12 +2,12 @@ Collage.md
 
 # Collage
 
-## ideas and definitions of words taken around random reads of forth groups
+## ideas and definitions taken around random reads of forth groups
 
 "May the Forth be with you."
 
 ---
-## your own
+## thread: minimal core version of forth? 
 
 "You are looking for something that doesn't exist.  And if your
 objective is just to build your own, you're _really_ violating
