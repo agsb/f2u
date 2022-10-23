@@ -1,5 +1,4 @@
 
-
 /*
  *  DISCLAIMER"
  *
@@ -29,40 +28,44 @@
 
 routines for flush flash memory
 
-SPM_PAGE, page size
-page_old = 0;
-
-void flush (int value, int address) {
-
-// define flash page and position
-
-    int pos = address AND (SPM_PAGE - 1);
-    int page = address AND ~(SPM_PAGE - 1);
-
-    if ( page != page_old ) {
-            if (page_old) save_page(page_old);
-            load_page(page);
-            page_old = page;
-            }
-
-    buffer[pos] = lo8(value)
-    pos += 1;
-    buffer[pos] = hi8(value)
-}
-
-: FLUSH
-    
-    PAGE_OLD @ DUP PAGE @
-    = INVERT IF 
-        IF SAVE_PAGE THEN
-        LOAD_PAGE 
-        PAGE @ PAGE_OLD !
-        THEN
-     
 */
+
+;---------------------------------------------------------------------
 ;
-;   to flash (w a -- )
+;	for easy using spm from optiboot 
 ;
+;	spm instruction uses r31:r30 for address and r1:r0 for data
+;
+;	when erase or write, r0:r1 is ignored, 
+;
+;   ATmega8L datasheet, pg 209
+;
+;   command passed in r24
+;
+;   in optiboot.c version 8.3 :
+;
+;    __boot_rww_enable_short();
+;    7fd2:       87 bf           out     0x37, r24       ; 55
+;    7fd4:       e8 95           spm
+;    7fd6:       08 95           ret
+;
+;   do not expeculate, only one page to "flash flush"
+;   minimal optiboot uses last 256 words at 7e00 ( 3F00 words) 
+;   and the sequence: bf 87 95 e8 95 08
+;
+;   commands are: 
+;	0x01 fill buffer, 
+;	0x03 erase page, 
+;	0x05 write page
+;   set SPMCR and do a SPM whithin 4 cycles
+;---------------------------------------------------------------------
+
+
+; small trick, in macros.S
+
+; pagesize = (SPM_PAGE - 1)
+
+; pagemask = (~pagesize)
 
 ;----------------------------------------------------------------------
 ;
@@ -72,18 +75,19 @@ void flush (int value, int address) {
 HEADER "(load_flash)", "LDFLASH"
     NOOP
 
-    ; destin
-    pspull nos_low, nos_high
+    ; origin in ps
 
-    ; origin
     pspull zpm_low, zpm_high
 
-    ; preserve stack
+    ; preserve parameter tack
+
     rspush psp_low, psp_high
 
-    movw psp_low, nos_low
+    ; move destin from tos
 
-    ; make round down pagesize, pagemask is ~pagesize
+    movw psp_low, tos_low
+
+    ; make round down pagesize, pagemask is ~(pagesize - 1)
     ; andi zpm_high, hi8(pagemask) ; not need if pagesize < 256
     andi zpm_low, lo8(pagemask)
 
@@ -95,12 +99,17 @@ HEADER "(load_flash)", "LDFLASH"
     lds wrk_low, SPM_PAGE
 
 1:
-    lpm _work_, Z+
-    st X+, _work_
+    lpm wrk_high, Z+
+    st X+, wrk_high
     dec wrk_low
     brne 1b
 
+; clean house
+
     rspull psp_low, psp_high
+
+    pspull tos_low, tos_high
+
     POON
 
 ;----------------------------------------------------------------------
@@ -112,72 +121,101 @@ HEADER "(load_flash)", "LDFLASH"
 HEADER "(save_flash)", "SVFLASH"
     NOOP
 
-    ; from sram
+	; destin
+
+	movw zpm_low, tos_low
+
+    ; origin
+
     pspull nos_low, nos_high
 
-    ; into flash
-    pspull r24, r25
-
     ; save psp 
-    rspush psp_low, psp_high
+
+    rspush psp_low, psp_high ; is X index
+
+	; load for index
 
     movw psp_low, nos_low
 
     ; mask to match correct address
-    ; andi r25, hi8(pagemask) ; not need if pagesize < 256
-    andi r24, lo8(pagemask)
+    ; andi zpm_high, hi8(pagemask) ; not need if pagesize < 256
+    andi zpm_low, lo8(pagemask)
 
-    ; save address
-    rspush r24, r25
+    ; save address twice
+    rspush zpm_low, zpm_high
+    rspush zpm_low, zpm_high
+
+;-----------------------------------------------------------------
 
     ; erase page
     ; r0:r1 is ignored, ATmega8L datasheet, pg 209
-    ldi r22, (1<<PGERS) | (1<<SPMEN)
+    ldi r24, (1<<PGERS) | (1<<SPMEN)
     rcall _does_spm
+
+;-----------------------------------------------------------------
+
+	; load flash page address
+
+    rspull zpm_low, zpm_high
 
     ; how many bytes, less than 256!
     ldi r23, SPM_PAGE
 
-    ; copy page, word by word
+    ; copy page to buffer, word by word
 2:
     ; fill page flash from sram
-    ld r20, X+
-    ld r21, X+
-    ldi r22, (1<<SPMEN)
+    ld r0, X+
+    ld r1, X+
+    ldi r24, (1<<SPMEN)
     rcall _does_spm
     adiw zpm_low, 2
-
     ; count down
     dec r23
     dec r23
     brne 2b
 
-    ; load address
-    rspull r24, r25
+;-----------------------------------------------------------------
+
+	; load flash page address
+
+    rspull zpm_low, zpm_high
 
     ; write page
     ; r0:r1 is ignored, ATmega8L datasheet, pg 209
-    ldi r22, (1<<PGWRT) | (1<<SPMEN)
+    ldi r24, (1<<PGWRT) | (1<<SPMEN)
     rcall _does_spm
+
+;-----------------------------------------------------------------
+   ; enable
+    ldi r24, 0x11
+    rcall _does_spm
+;-----------------------------------------------------------------
 
     ; clean house
     rspull psp_low, psp_high
+	pspull tos_low, tos_high
     POON
 
 ;----------------------------------------------------------------------
 ;
 ; wrapper around optiboot code
 ;
+ 
+#define OPTI_DO_SPM_SHORT 0x1fca
 
-#define OPTI_DO_SPM 0x1fb0
-
+; call spm in NWWM
 _does_spm:
     in _sreg_, __SREG__
     cli
-    rcall OPTI_DO_SPM
+    call OPTI_DO_SPM_SHORT
     out __SREG__, _sreg_
+    sei
+; wait for complete
+1:  in      r0, 0x37        ; 55
+    sbrc    r0, 0
+    rjmp    1b
     ret
-
+ 
 ;----------------------------------------------------------------------
 /* from optiboot version 8.2 listing, extra comments added
         ;
@@ -217,6 +255,9 @@ _does_spm:
         ;       static void boot_rww_enable_short()
         ;
     1fc8:       81 e1           ldi     r24, 0x11       ; 17
+
+THIS IS THE HACK
+
     1fca:       87 bf           out     0x37, r24       ; 55
     1fcc:       e8 95           spm
         ;
