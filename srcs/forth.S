@@ -196,53 +196,6 @@ _isflash_at:
     pmload tos_low, tos_high 
     POON
  
-;---------------------------------------------------------------------- 
-; ok ( -- rsp) 
-; put the top of return stack at tos
-;
-HEADER "RS@", "RPAT" 
-    NOOP 
-    pspush tos_low, tos_high 
-    movw tos_low, rsp_low 
-    POON 
- 
-;---------------------------------------------------------------------- 
-; ok ( -- psp ) 
-; put the top of parameter stack at tos
-; 
-HEADER "PS@", "SPAT" 
-    NOOP 
-    pspush tos_low, tos_high 
-    movw tos_low, psp_low 
-    POON 
- 
-;---------------------------------------------------------------------- 
-; ok ( w1 w2 -- w2 NAND w1 ) 
-; 
-HEADER "NAND", "NAND" 
-    NOOP 
-    pspull nos_low, nos_high 
-    and tos_low, nos_low 
-    and tos_high, nos_high 
-    com nos_low 
-    com nos_high 
-    POON 
- 
-;---------------------------------------------------------------------- 
-; ok ( w1 w2 -- w2 + w1 ) 
-HEADER "+", "PLUS" 
-    NOOP 
-    pspull nos_low, nos_high 
-    clc 
-    add tos_low, nos_low 
-    adc tos_high, nos_high 
-    POON 
- 
-;---------------------------------------------------------------------- 
-;    end of minimal words 
-; 
-;********************************************************************** 
- 
  
 ;********************************************************************** 
 ;    load variables 
@@ -253,8 +206,8 @@ HEADER "+", "PLUS"
 HEADER "TIB", "tib_" 
     NOOP
     pspush tos_low, tos_high
-    ldi tos_low, lo8(TIB) 
-    ldi tos_high, hi8(TIB) 
+    ldi tos_low, lo8(TIB0) 
+    ldi tos_high, hi8(TIB0) 
     POON 
  
 ;---------------------------------------------------------------------- 
@@ -293,8 +246,8 @@ HEADER "BASE", "BASE"
 HEADER "(sram)", "sram_" 
     NOOP 
     pspush tos_low, tos_high
-    ldi tos_low, lo8(SRAM_LAST) 
-    ldi tos_high, hi8(SRAM_LAST) 
+    ldi tos_low, lo8(LAST) 
+    ldi tos_high, hi8(LAST) 
     POON 
  
 ;---------------------------------------------------------------------- 
@@ -303,8 +256,8 @@ HEADER "(sram)", "sram_"
 HEADER "(eeprom)", "eeprom_" 
     NOOP 
     pspush tos_low, tos_high
-    ldi tos_low, lo8(EEPROM_LAST) 
-    ldi tos_high, hi8(EEPROM_LAST) 
+    ldi tos_low, lo8(KEEP) 
+    ldi tos_high, hi8(KEEP) 
     POON 
  
 ;---------------------------------------------------------------------- 
@@ -313,8 +266,8 @@ HEADER "(eeprom)", "eeprom_"
 HEADER "(flash)", "flash_" 
     NOOP 
     pspush tos_low, tos_high
-    ldi tos_low, lo8(FLASH_LAST) 
-    ldi tos_high, hi8(FLASH_LAST) 
+    ldi tos_low, lo8(HEAP) 
+    ldi tos_high, hi8(HEAP) 
     POON 
  
 ;********************************************************************** 
@@ -426,6 +379,17 @@ HEADER "1", "ONE"
     POON 
  
 ;---------------------------------------------------------------------- 
+; ok (  -- 2) 
+HEADER "2", "TWO" 
+    NOOP 
+    pspush tos_low, tos_high 
+    clr tos_high 
+    clr tos_low 
+    inc tos_low 
+    inc tos_low 
+    POON 
+ 
+;---------------------------------------------------------------------- 
 ; ok ( w1 w2 -- 0 | -1 ) 
 ; 
 HEADER "<", "LTHAN" 
@@ -482,6 +446,26 @@ HEADER "PS!", "SPTO"
     pspull tos_low, tos_high 
     POON 
  
+;---------------------------------------------------------------------- 
+; ok ( -- rsp) 
+; put the top of return stack at tos
+;
+HEADER "RS@", "RPAT" 
+    NOOP 
+    pspush tos_low, tos_high 
+    movw tos_low, rsp_low 
+    POON 
+ 
+;---------------------------------------------------------------------- 
+; ok ( -- psp ) 
+; put the top of parameter stack at tos
+; 
+HEADER "PS@", "SPAT" 
+    NOOP 
+    pspush tos_low, tos_high 
+    movw tos_low, psp_low 
+    POON 
+
 ;---------------------------------------------------------------------- 
 ; ok ( w -- ) 
 ;     
@@ -549,12 +533,13 @@ _branch:
     POON 
  
 ;---------------------------------------------------------------------- 
-; ok ( branch next reference ) 
-; is as >R
-HEADER "EXECUTE", "EXECUTE" 
+; ok ( w1 w2 -- w2 + w1 ) 
+HEADER "+", "PLUS" 
     NOOP 
-    rspush tos_low, tos_high 
-    pspull tos_low, tos_high 
+    pspull nos_low, nos_high 
+    clc 
+    add tos_low, nos_low 
+    adc tos_high, nos_high 
     POON 
  
 ;---------------------------------------------------------------------- 
@@ -568,6 +553,18 @@ HEADER "-", "MINUS"
     sbc tos_high, nos_high 
     POON 
  
+;---------------------------------------------------------------------- 
+; ok ( w1 w2 -- w2 NAND w1 ) 
+; 
+HEADER "NAND", "NAND" 
+    NOOP 
+    pspull nos_low, nos_high 
+    and tos_low, nos_low 
+    and tos_high, nos_high 
+    com nos_low 
+    com nos_high 
+    POON 
+
 ;---------------------------------------------------------------------- 
 ; ok ( w1 w2 -- w2 AND w1 ) 
 ; 
@@ -596,6 +593,24 @@ HEADER "XOR", "XOR"
     pspull nos_low, nos_high 
     eor  tos_low, nos_low 
     eor  tos_high, nos_high 
+    POON 
+ 
+;---------------------------------------------------------------------- 
+; ok INV 
+HEADER "INVERT", "INVERT" 
+    NOOP 
+_inv: 
+    com tos_low 
+    com tos_high 
+    POON 
+ 
+;---------------------------------------------------------------------- 
+; ok NEG 
+HEADER "NEGATE", "NEGATE" 
+    NOOP 
+_neg: 
+    neg tos_low 
+    neg tos_high 
     POON 
  
 ;---------------------------------------------------------------------- 
@@ -677,24 +692,6 @@ HEADER "C@", "CAT"
     rjmp AT 
  
 ;---------------------------------------------------------------------- 
-; ok INV 
-HEADER "INVERT", "INVERT" 
-    NOOP 
-_inv: 
-    com tos_low 
-    com tos_high 
-    POON 
- 
-;---------------------------------------------------------------------- 
-; ok NEG 
-HEADER "NEGATE", "NEGATE" 
-    NOOP 
-_neg: 
-    neg tos_low 
-    neg tos_high 
-    POON 
- 
-;---------------------------------------------------------------------- 
 ; ok ( w -- w ) 
 ;  data space pointer align to CELL, atmega is always 
  
@@ -768,7 +765,7 @@ HEADER "CSAME", "CSAME"
 ; ok ( s d u -- ) 
 ; 
 ; MOVE (forward) copy bytes from source++ to destination++, decrease count-- 
-HEADER "CMOVE", "CMOVE" 
+HEADER "CMOVE", "MOVEF" 
     NOOP 
     ; WARNING No bound check and counter equal 0 moves nothing 
  
@@ -806,7 +803,7 @@ HEADER "CMOVE", "CMOVE"
 ; ok ( s d u -- ) 
 ; 
 ; MOVE (backward) copy bytes from source-- to destination--, decrease count-- 
-HEADER "BMOVE", "BMOVE" 
+HEADER "CMOVE>", "MOVEB"
     NOOP 
     ; WARNING No bound check and counter equal 0 moves nothing 
  
@@ -891,11 +888,6 @@ HEADER "TUCK", "TUCK"
 HEADER "FLIP", "FLIP" 
     .word SWAP, BIS, SWAP, ENDS 
 
-;---------------------------------------------------------------------- 
-; ok (  -- 2) 
-HEADER "2", "TWO" 
-    .word ONE, SHL, ENDS 
- 
 ;---------------------------------------------------------------------- 
 ; ok ( w1 w2 -- 0 | -1) 
 ; 
@@ -1044,14 +1036,14 @@ HEADER  "COMPILE_ONLY", "COMPILE_ONLY",
 ; ok HERE 
 ; 
 HEADER  "HERE", "HERE", 
-    .word FLASH_LAST, AT, ENDS 
+    .word HEAP, AT, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 
 ; ok ALLOT 
 ; 
 HEADER  "ALLOT", "ALLOT", 
-    .word FLASH_LAST, PLUSTO, ENDS 
+    .word HEAP, PLUSTO, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 
@@ -1068,7 +1060,7 @@ HEADER  "COMP", "COMP",
  
 ;----------------------------------------------------------------------
 ; ok compile a eow 
-HEADER "FINITE", "FINITE"
+HEADER "EXIT", "EXIT"
     .word COMP, ENDS, ENDS
 
 ;----------------------------------------------------------------------
@@ -1101,7 +1093,7 @@ HEADER  ":", "COLON",
 ;---------------------------------------------------------------------- 
 ; ok  
 HEADER  ";", "SEMMI", 
-    .word FINITE, LBRAC, ENDS 
+    .word EXIT, LBRAC, ENDS 
   
 ;---------------------------------------------------------------------- 
 ; 
@@ -1188,13 +1180,15 @@ HEADER "BYE", "BYE"
 ; 
 HEADER "COLD", "COLD" 
     NOOP 
+
 ; restart return stack 
-    ldi rsp_low, lo8(RSP) 
-    ldi rsp_high, hi8(RSP) 
+    ldi rsp_low, lo8(RS0) 
+    ldi rsp_high, hi8(RS0) 
+
 ; restart parameter stack 
-    ldi psp_low, lo8(PSP) 
-    ldi psp_high, hi8(PSP) 
-; restart buffers etc???? 
+    ldi psp_low, lo8(PS0) 
+    ldi psp_high, hi8(PS0) 
+
 ; preload to WARM 
     ; next word 
     ldi zpm_low, lo8(WARM) 

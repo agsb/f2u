@@ -26,8 +26,7 @@
 ;---------------------------------------------------------------------
 ; atmega8 avr
 ;
-; UPDATE: 10/2022 to include stuff for atmega328 
-;---------------------------------------------------------------------
+; UPDATE: 10/2022 to include stuff for atmega328 P;---------------------------------------------------------------------
 
 ;----------------------------------------------------------------------
 ;
@@ -43,26 +42,36 @@
 ; those are non volatile, must be saved in eeprom
 VOID:	.word 0		; always 0x0000
 SEED:	.word 0		; seed for pseudo random
+
 TURN:	.word 0		; routine to run after boot
 REST:	.word 0		; routine to run before reset
-WORD_LAST:	    .word 0		; reference to latest word in dictionary
-FLASH_LAST:	    .word 0		; next free cell in flash dictionary
-SRAM_LAST:	    .word 0		; next free cell in static ram 
-EEPROM_LAST:	.word 0		; next free cell in eeprom
+
+WORD:	.word 0		; reference to latest word in dictionary
+HEAP:	.word 0		; next free cell in flash dictionary
+LAST:   .word 0		; next free cell in static ram 
+KEEP:	.word 0		; next free cell in eeprom
 
 ; those are volatile, dont care
 STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile, 2 postpone
 RADX:	.word 0		; numeric radix for convertion
-TOIN:	.word 0		; next free char in terminal input buffer
-TOPG:   .word 0     ; next free char in this page flash memory
-FAGE:   .word 0     ; this page in flash memory
 
-.equ	SPZ, SRAM_END - 1		
-.equ	RSP, SPZ - STACK_SIZE
-.equ	PSP, RSP - STACK_SIZE
-.equ	END, PSP - STACK_SIZE
-.equ	FIB, END - FIB_SIZE
-.equ	TIB, FIB - TIB_SIZE 
+TIBP:	.word 0		; offset in TIB
+TIBC:	.word 0		; count down
+
+FIBP:	.word 0		; offset in FIB
+FIBC:	.word 0		; count down
+
+FIB0:	.byte FIB_SIZE
+TIB0:	.byte TIB_SIZE
+
+SPZ:	.byte STACK_SIZE
+RSZ:	.byte STACK_SIZE
+PSZ:	.byte STACK_SIZE
+
+SP0 = SPZ + STACK_SIZE
+RS0 = RSZ + STACK_SIZE
+PS0 = PSZ + STACK_SIZE
+
 
 ;.equ free_sram, TIB - FREE
 
@@ -75,8 +84,8 @@ FAGE:   .word 0     ; this page in flash memory
 #include "forth.S"
 
 ;----------------------------------------------------------------------
-;.p2align 1, 0x00
-;#include "inside.S"
+.p2align 1, 0x00
+#include "inside.S"
 
 ;----------------------------------------------------------------------
 .p2align 1, 0x00

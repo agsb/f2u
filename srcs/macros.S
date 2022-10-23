@@ -234,7 +234,6 @@ is_\label:
 ; test, skip next if not zero
 ;
 ; for Atmega8:
-; __SREG__ is 0x3F
 ; BIT_ZERO is 1
 ;
 ; non destructive
@@ -301,9 +300,9 @@ e_void = eeprom + 0  ; always zero
 e_seed = eeprom + 2  ; seed for random
 e_turn = eeprom + 4  ; routine after boot
 e_rest = eeprom + 6  ; routine before reset
-e_last = eeprom + 8  ; last link addres to dictionary 
-e_here = eeprom + 10 ; next free flash address for dictionary
-e_sram = eeprom + 12 ; next free sram address for variables, as stack
+e_word = eeprom + 8  ; last link addres to dictionary 
+e_heap = eeprom + 10 ; next free flash address for dictionary
+e_last = eeprom + 12 ; next free sram address for variables, as stack
 e_erom = eeprom + 14 ; next free eprom address for values, as stack
 
 ;----------------------------------------------------------------------
@@ -326,21 +325,6 @@ F_COMMON = 0x00
 F_TOMASK = 0xF0
 F_UNMASK = 0x0F
 
-; STATES BIT!
-; execute  STATE == 0
-; compile  STATE == 1
-
-BIT_COMPILE = 0
-BIT_EXECUTE = 0
-
-/*
-state       common    immediate
-S_EXECUTE    execute   execute
-S_COMPILE    compile   execute
-
-postpone always compiles.
-
-*/
 ;---------------------------------------------------------------------
 ; status register from error codes forth 2012
 ; minimal
@@ -360,6 +344,8 @@ NOT_A_NUMBER = -24
 XON_   =   0x11    ; ascii DC1 ^Q
 
 XOFF_  =   0x13    ; ascii DC3 ^S
+
+NAK_   =   0x15    ; ascii NAK ^U
 
 CR_    =   0x0d    ; ascci carriage return ^M
 
@@ -381,7 +367,7 @@ SPM_SIZE = 64
 
 SRAM_START = 0x060  ; SRAM from AVR manual
 
-SRAM_END = 0x45E  ; SRAM from AVR manual minus one
+SRAM_END = 0x45F    ; SRAM from AVR manual 
 
 FLASH_RWW = 0x0000
 

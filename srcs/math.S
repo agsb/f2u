@@ -327,12 +327,11 @@ d16s_6:
 ; input 16 bit value 0 ... 65535
 ; output  5 digits (ASCII)
 ;
+; zzzz ( a -- w )
 HEADER "utoa", "utoa" 
     NOOP
 
-    ldi zpm_low, lo8(PIC)
-    ldi zpm_high, hi8(PIC)
-    movw nos_low, zpm_low
+    movw nos_low, tos_low
     pspull wrk_low, wrk_high
     
 itoa:
