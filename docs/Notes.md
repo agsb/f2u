@@ -3,6 +3,15 @@
 *still not operational*
 
 *still lots of english errors, please correct me*
+# 16/10/2022
+
+- return to f2u for review of flush flash memory, the optiboot crew leaves the solution at plainsight
+
+- using a direct call for boot_rww_enable_short() in version 8.3 does spm instruction free and easy
+
+- review of flush.S
+
+- review for use of variables and sram and headshake to renameds
 
 # 18/07/2022
 

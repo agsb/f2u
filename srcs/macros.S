@@ -423,10 +423,6 @@ E2P_END = 0x1FF
 
 FIB_SIZE = SPM_SIZE
 
-pagesize = (SPM_PAGE - 1)
-
-pagemask = (~pagesize)
-
 /* where start forth */
 
 FORTH_INI = SRAM_END + 1

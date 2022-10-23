@@ -58,6 +58,9 @@ routines for flush flash memory
 ;	0x03 erase page, 
 ;	0x05 write page
 ;   set SPMCR and do a SPM whithin 4 cycles
+;
+;	about 3.5 to 4.5 ms to complete write !
+;
 ;---------------------------------------------------------------------
 
 
@@ -86,10 +89,6 @@ HEADER "(load_flash)", "LDFLASH"
     ; move destin from tos
 
     movw psp_low, tos_low
-
-    ; make round down pagesize, pagemask is ~(pagesize - 1)
-    ; andi zpm_high, hi8(pagemask) ; not need if pagesize < 256
-    andi zpm_low, lo8(pagemask)
 
     ; adjust address for lpm
     lsr zpm_low
@@ -123,11 +122,11 @@ HEADER "(save_flash)", "SVFLASH"
 
 	; destin
 
-	movw zpm_low, tos_low
+	movw zpm_low, tos_low ; tos is HERE
 
     ; origin
 
-    pspull nos_low, nos_high
+    pspull nos_low, nos_high ; nos is FIB0
 
     ; save psp 
 
@@ -137,12 +136,7 @@ HEADER "(save_flash)", "SVFLASH"
 
     movw psp_low, nos_low
 
-    ; mask to match correct address
-    ; andi zpm_high, hi8(pagemask) ; not need if pagesize < 256
-    andi zpm_low, lo8(pagemask)
-
-    ; save address twice
-    rspush zpm_low, zpm_high
+    ; save address 
     rspush zpm_low, zpm_high
 
 ;-----------------------------------------------------------------
@@ -154,9 +148,10 @@ HEADER "(save_flash)", "SVFLASH"
 
 ;-----------------------------------------------------------------
 
-	; load flash page address
-
-    rspull zpm_low, zpm_high
+    ; start buffer page address
+	
+    clr zpm_low
+	clr zpm_high
 
     ; how many bytes, less than 256!
     ldi r23, SPM_PAGE
