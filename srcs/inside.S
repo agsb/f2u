@@ -25,10 +25,6 @@
  *
  */
 
-;----------------------------------------------------------------------
-; workaround while not done
-;
-THIS = LAST
 
 ;----------------------------------------------------------------------
 ;
@@ -101,7 +97,8 @@ HEADER "(refill)", "refill"
     pspull nds_low, nds_high
     pspull zpm_low, zpm_high
 
-    ; keep a spc at start, so every word starts with spc, used later to make a counted string in site
+    ; keep a spc at start, so every word starts with spc, 
+    ; used later to make a counted string in site
     ldi tos_low, 32
     srsave tos_low
     dec nds_low

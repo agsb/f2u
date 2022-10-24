@@ -1,0 +1,118 @@
+forth.S:HEADER "ENDS", "ENDS" 
+forth.S:HEADER "0=", "ZEQU" 
+forth.S:HEADER "!", "TO" 
+forth.S:HEADER "@", "AT" 
+forth.S:HEADER "TRUE", "FTRUE" 
+forth.S:HEADER "FALSE", "FFALSE" 
+forth.S:HEADER "<", "LTHAN" 
+forth.S:HEADER ">R", "TOR" 
+forth.S:HEADER "R>", "RTO" 
+forth.S:HEADER "R@", "RAT" 
+forth.S:HEADER "RS!", "RPTO" 
+forth.S:HEADER "PS!", "SPTO" 
+forth.S:HEADER "RS@", "RPAT" 
+forth.S:HEADER "PS@", "SPAT" 
+forth.S:HEADER "DROP", "DROP" 
+forth.S:HEADER "DUP", "DUP" 
+forth.S:HEADER "SWAP", "SWAP" 
+forth.S:HEADER "?DUP", "ZDUP" 
+forth.S:HEADER "+", "PLUS" 
+forth.S:HEADER "-", "MINUS" 
+forth.S:HEADER "NAND", "NAND" 
+forth.S:HEADER "AND", "AND" 
+forth.S:HEADER "OR", "OR" 
+forth.S:HEADER "XOR", "XOR" 
+forth.S:HEADER "INVERT", "INVERT" 
+forth.S:HEADER "NEGATE", "NEGATE" 
+forth.S:HEADER "2*", "SHL" 
+forth.S:HEADER "2/", "SHR" 
+forth.S:HEADER "><", "ENDIAN" 
+forth.S:HEADER "BRANCH", "BRANCH" 
+forth.S:HEADER "?BRANCH", "ZBRANCH" 
+forth.S:HEADER "DOCON", "DOCON" 
+forth.S:HEADER "DOVAR", "DOVAR" 
+forth.S:HEADER "ALIGN", "ALLIGN" 
+forth.S:HEADER "CELL", "CELL" 
+forth.S:HEADER "C!", "CTO" 
+forth.S:HEADER "C@", "CAT" 
+forth.S:HEADER "CSAME", "CSAME" 
+forth.S:HEADER "CMOVE", "MOVEF" 
+forth.S:HEADER "CMOVE>", "MOVEB"
+forth.S:HEADER "TIB", "tib_" 
+forth.S:HEADER "LATEST", "LATEST" 
+forth.S:HEADER "STATE", "STATE" 
+forth.S:HEADER "BASE", "BASE" 
+forth.S:HEADER "(sram)", "sram_" 
+forth.S:HEADER "(eeprom)", "eeprom_" 
+forth.S:HEADER "(flash)", "flash_" 
+forth.S:HEADER "key", "key_" 
+forth.S:HEADER "key?", "qkey_" 
+forth.S:HEADER "emit", "emit_" 
+forth.S:HEADER "emit?", "qemit_" 
+forth.S:HEADER "millis", "millis_" 
+forth.S:HEADER "0", "ZERO" 
+forth.S:HEADER "1", "ONE" 
+forth.S:HEADER "2", "TWO" 
+forth.S:HEADER "SWIP", "SWIP" 
+forth.S:HEADER "OVER", "OVER" 
+forth.S:HEADER "ROT", "ROTU" 
+forth.S:HEADER "-ROT", "ROTD" 
+forth.S:HEADER "TUCK", "TUCK" 
+forth.S:HEADER "FLIP", "FLIP" 
+forth.S:HEADER "=", "EQUAL" 
+forth.S:HEADER "<>", "NOTEQUAL" 
+forth.S:HEADER ">", "GTHAN" 
+forth.S:HEADER "0>", "ZEROGT" 
+forth.S:HEADER "0<", "ZEROLT" 
+forth.S:HEADER "CELLS", "CELLS" 
+forth.S:HEADER "CELL+", "CELLPLUS" 
+forth.S:HEADER "CELL-", "CELLMINUS" 
+forth.S:HEADER "1+", "ONEPLUS" 
+forth.S:HEADER "1-", "ONEMINUS" 
+forth.S:HEADER "2+", "TWOPLUS" 
+forth.S:HEADER "2-", "TWOMINUS" 
+forth.S:HEADER "+!", "PLUSTO" 
+forth.S:HEADER ",", "COMMA", 
+forth.S:HEADER "COMP", "COMP", 
+forth.S:HEADER "EXIT", "EXIT"
+forth.S:HEADER "EXEC", "EXEC"
+forth.S:HEADER "TAIL", "TAIL"
+forth.S:HEADER "BACK", "BACK", F_IMMEDIATE 
+forth.S:HEADER "MARK", "MARK", F_IMMEDIATE 
+forth.S:HEADER "BEGIN", "BEGIN", F_IMMEDIATE 
+forth.S:HEADER "AGAIN", "AGAIN", F_IMMEDIATE 
+forth.S:HEADER "UNTIL", "UNTIL", F_IMMEDIATE 
+forth.S:HEADER "UNLESS", "UNLESS", F_IMMEDIATE 
+forth.S:HEADER "IF", "IF", F_IMMEDIATE 
+forth.S:HEADER "ENDIF", "ENDIF", F_IMMEDIATE 
+forth.S:HEADER "THEN", "THEN", F_IMMEDIATE 
+forth.S:HEADER "ELSE", "ELSE", F_IMMEDIATE 
+forth.S:HEADER "WHILE", "WHILE", F_IMMEDIATE 
+forth.S:HEADER "REPEAT", "REPEAT", F_IMMEDIATE 
+forth.S:HEADER "COLD", "COLD" 
+forth.S:HEADER "WARM", "WARM" 
+forth.S:HEADER "BYE", "BYE" 
+forth.S:HEADER "]", "RBRAC", 
+forth.S:HEADER "[", "LBRAC", F_IMMEDIATE 
+forth.S:HEADER "TOGGLE", "TOGGLE", 
+forth.S:HEADER ">NFA", "TONFA", 
+forth.S:HEADER ">CFA", "TOCFA", 
+forth.S:HEADER "HIDDEN", "HIDDEN", 
+forth.S:HEADER "IMMEDIATE", "IMMEDIATE", 
+forth.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY", 
+forth.S:HEADER "HERE", "HERE", 
+forth.S:HEADER "ALLOT", "ALLOT", 
+forth.S:HEADER "CREATE", "CREATE"
+forth.S:HEADER "PARSE", "PARSE"
+forth.S:HEADER ":", "COLON", 
+forth.S:HEADER ";", "SEMMI", 
+flush.S:HEADER "(load_flash)", "LDFLASH"
+flush.S:HEADER "(save_flash)", "SVFLASH"
+math.S:HEADER "HASH", "HASH"
+math.S:HEADER "RANDOM", "RANDOM"
+math.S:HEADER "RAND", "RAND"
+math.S:HEADER "UM*", "UMUL"
+math.S:HEADER "UM/MOD", "UMBYMOD"
+math.S:HEADER "*", "SMUL"
+math.S:HEADER "/", "SDIV"
+math.S:HEADER "utoa", "utoa" 

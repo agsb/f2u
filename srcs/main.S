@@ -60,7 +60,9 @@ TIBC:	.word 0		; count down
 
 FIBP:	.word 0		; offset in FIB
 FIBC:	.word 0		; count down
+PAGE:   .word 0     ; hold flash page to flush 
 
+; zzzzz
 FIB0:	.byte FIB_SIZE
 TIB0:	.byte TIB_SIZE
 
@@ -73,7 +75,7 @@ RS0 = RSZ + STACK_SIZE
 PS0 = PSZ + STACK_SIZE
 
 
-;.equ free_sram, TIB - FREE
+;.equ free_sram, SRAM_END - .
 
 ;----------------------------------------------------------------------
 .p2align 1, 0x00
@@ -84,12 +86,12 @@ PS0 = PSZ + STACK_SIZE
 #include "forth.S"
 
 ;----------------------------------------------------------------------
-.p2align 1, 0x00
-#include "inside.S"
+;.p2align 1, 0x00
+;#include "inside.S"
 
 ;----------------------------------------------------------------------
-.p2align 1, 0x00
-#include "math.S"
+;.p2align 1, 0x00
+;#include "math.S"
 
 ;----------------------------------------------------------------------
 .p2align 1, 0x00
