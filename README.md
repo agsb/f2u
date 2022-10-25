@@ -13,7 +13,12 @@
 
 This is a evolution from what I learning with u2forth, ATMEGA8, gcc assembler and forth implementations as 328eforth, eforth, amforth, avr-forth, gforth, flashforth, punyforth, etc 
 
-Some special insights from jonasforth (https://rwmj.wordpress.com/2010/08/07/jonesforth-git-repository/ https://github.com/nornagon/jonesforth), sectorforth (https://github.com/cesarblum/sectorforth), and lbforth (https://github.com/larsbrinkhoff/lbForth/)
+Some special insights from 
+  jonasforth (https://rwmj.wordpress.com/2010/08/07/jonesforth-git-repository/ https://github.com/nornagon/jonesforth),
+  sectorforth (https://github.com/cesarblum/sectorforth), 
+  lbforth (https://github.com/larsbrinkhoff/lbForth/),
+  polyForth (https://www.greenarraychips.com/home/documents/greg/DB005-120825-PF-REF.pdf),
+  and ...
 
 
 (I need to learn how to use and format with .md)
