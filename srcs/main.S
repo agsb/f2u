@@ -63,19 +63,20 @@ TIBC:	.word 0		; count down
 
 FIBP:	.word 0		; offset in FIB
 FIBC:	.word 0		; count down
-PAGE:   .word 0     ; hold flash page to flush 
 
-; zzzzz
-FIB0:	.byte FIB_SIZE
-TIB0:	.byte TIB_SIZE
+PAGE:   .word 0     ; flash page to flush 
+PADS:   .word 0     ; reference to scratch area 
 
-SPZ:	.byte STACK_SIZE
-RSZ:	.byte STACK_SIZE
-PSZ:	.byte STACK_SIZE
+FIB0:	.space FIB_SIZE, 0x0
+TIB0:	.space TIB_SIZE, 0x0
 
-SP0 = SPZ + STACK_SIZE
-RS0 = RSZ + STACK_SIZE
+PSZ:	.space STACK_SIZE, 0x0
+RSZ:	.space STACK_SIZE, 0x0
+SPZ:	.space STACK_SIZE, 0x0
+
 PS0 = PSZ + STACK_SIZE
+RS0 = RSZ + STACK_SIZE
+SP0 = SPZ + STACK_SIZE
 
 
 ;.equ free_sram, SRAM_END - .
@@ -83,6 +84,10 @@ PS0 = PSZ + STACK_SIZE
 ;----------------------------------------------------------------------
 .p2align 1, 0x00
 #include "bios.S"
+
+;----------------------------------------------------------------------
+.p2align 1, 0x00
+#include "messages.S"
 
 ;----------------------------------------------------------------------
 .p2align 1, 0x00

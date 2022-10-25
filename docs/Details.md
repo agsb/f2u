@@ -25,7 +25,8 @@ Details.md
 - little endian, low byte at low address;
 - a char is ASCII 7 bits, one byte at SRAM, one cell at stacks.
 - maximum word lenght is 15;
-- four bits flags (IMMEDIATE, COMPILE_ONLY, HIDEN, TOGGLE) per word;
+- four bits flags (IMMEDIATE, COMPILE_ONLY, SMUDGE, LEAP) per word;
+-
 - word names are padded with space (0x20)
 - numbers are signed two-complement;
 - all stacks are 18 words (cells);
@@ -36,6 +37,8 @@ Details.md
   
 ## Forth non conforming,
 
+- SMUGDE or HIDDEN bit not used, dictionary only have complete words.
+- LEAP marks a pure assembler chain routine with no calls or jumps.
 - primitive (Leaf) routine does not do any calls. 
 - compound (Twig) routines could do any calls.
 - index routines counts downwards until 0, easy ever, exact as C: for (n=NNNN; n != 0 ; n--) { ~~~ }

@@ -62,12 +62,12 @@
 ;
 ; the size byte must be masked by: or 0xF0 
 ;
-; memory pointer r31:r30 as Z 
-; return stack pointer r29:r28 as Y 
-; parameter stack pointer r27:r26 as Y 
-; working register r25:r24 as W 
-; temporary tos register r23:r22 
-; temporary nds register r21:r20 
+; memory pointer r30:r31 as Z 
+; parameter stack pointer r28:r29 as Y 
+; return stack pointer r26:r27 as X 
+; top of stack r24:r25 
+; temporary second of stack r22:r23 
+; temporary working r20:r21 
 ; instruction pointer r18:r19 
 ;
 ; Can only use LPM to access flash memory ? YES! 
@@ -94,7 +94,7 @@ _forth_:
 ;
 ; also called semis 
 ;
-HEADER "ENDS", "ENDS" 
+HEADER "ENDS", "ENDS", F_LEAP
 ; does nothing and mark as primitive 
     NOOP 
  
@@ -143,7 +143,7 @@ _link:
 ;
 ; ok 0= 
 ;
-HEADER "0=", "ZEQU" 
+HEADER "0=", "ZEQU", F_LEAP
     NOOP 
     or tos_low, tos_high
     brbs BIT_ZERO, _ftrue
@@ -161,7 +161,7 @@ _ftrue:
 ; ok ! to (w a -- ) 
 ; only in sram 
 ;
-HEADER "!", "TO" 
+HEADER "!", "TO", F_LEAP
     NOOP 
     movw  zpm_low, tos_low
     pspull tos_low, tos_high 
@@ -187,7 +187,7 @@ _isflash_to:
 ; ok @ at ( a -- w ) 
 ; only in sram 
 ;
-HEADER "@", "AT" 
+HEADER "@", "AT", F_LEAP
     NOOP 
     movw zpm_low, tos_low 
  
@@ -210,7 +210,7 @@ _isflash_at:
 ;
 ; ok ( -- -1 ) 
 ;
-HEADER "TRUE", "FTRUE" 
+HEADER "TRUE", "FTRUE", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
 _iftrue: 
@@ -222,7 +222,7 @@ _iftrue:
 ;
 ; ok ( -- 0 ) 
 ;
-HEADER "FALSE", "FFALSE" 
+HEADER "FALSE", "FFALSE", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
 _iffalse: 
@@ -234,7 +234,7 @@ _iffalse:
 ;
 ; ok ( w1 w2 -- 0 | -1 ) 
 ;
-HEADER "<", "LTHAN" 
+HEADER "<", "LTHAN", F_LEAP
     NOOP 
     pspull nos_low, nos_high 
     cp tos_low, nos_low 
@@ -247,7 +247,7 @@ HEADER "<", "LTHAN"
 ; ok ( w -- ) ( -- W) 
 ;      
 ;
-HEADER ">R", "TOR" 
+HEADER ">R", "TOR", F_LEAP
     NOOP 
     rspush tos_low, tos_high 
     pspull tos_low, tos_high 
@@ -258,7 +258,7 @@ HEADER ">R", "TOR"
 ; ok ( -- w ) ( w -- ) 
 ;     
 ;
-HEADER "R>", "RTO" 
+HEADER "R>", "RTO", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
     rspull tos_low, tos_high 
@@ -268,7 +268,7 @@ HEADER "R>", "RTO"
 ;
 ; ok ( -- w ) ( w -- w ) 
 ;
-HEADER "R@", "RAT" 
+HEADER "R@", "RAT", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
     rspull tos_low, tos_high 
@@ -279,7 +279,7 @@ HEADER "R@", "RAT"
 ;
 ; ok ( rsp -- ) 
 ;
-HEADER "RS!", "RPTO" 
+HEADER "RS!", "RPTO", F_LEAP
     NOOP 
     movw rsp_low, tos_low 
     pspull tos_low, tos_high 
@@ -289,7 +289,7 @@ HEADER "RS!", "RPTO"
 ;
 ; ok ( psp -- ) 
 ;
-HEADER "PS!", "SPTO" 
+HEADER "PS!", "SPTO", F_LEAP
     NOOP 
     movw psp_low, tos_low 
     pspull tos_low, tos_high 
@@ -300,7 +300,7 @@ HEADER "PS!", "SPTO"
 ; ok ( -- rsp) 
 ; put the top of return stack at tos
 ;
-HEADER "RS@", "RPAT" 
+HEADER "RS@", "RPAT", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
     movw tos_low, rsp_low 
@@ -311,7 +311,7 @@ HEADER "RS@", "RPAT"
 ; ok ( -- psp ) 
 ; put the top of parameter stack at tos
 ;
-HEADER "PS@", "SPAT" 
+HEADER "PS@", "SPAT", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
     movw tos_low, psp_low 
@@ -322,7 +322,7 @@ HEADER "PS@", "SPAT"
 ; ok ( w -- ) 
 ;     
 ;
-HEADER "DROP", "DROP" 
+HEADER "DROP", "DROP", F_LEAP
     NOOP
 PULL: 
     pspull tos_low, tos_high 
@@ -332,7 +332,7 @@ PULL:
 ;
 ; ok ( w -- w w) 
 ;
-HEADER "DUP", "DUP" 
+HEADER "DUP", "DUP", F_LEAP
     NOOP 
 PUSH:
     pspush tos_low, tos_high 
@@ -342,7 +342,7 @@ PUSH:
 ;
 ; ok ( w2 w1 -- w1 w2 ) 
 ;
-HEADER "SWAP", "SWAP" 
+HEADER "SWAP", "SWAP", F_LEAP
     NOOP 
     pspull nos_low, nos_high 
     pspush tos_low, tos_high 
@@ -354,7 +354,7 @@ HEADER "SWAP", "SWAP"
 ; ok ( 0 | w -- 0 | w w ) 
 ; dup if tos not zero 
 ;
-HEADER "?DUP", "ZDUP" 
+HEADER "?DUP", "ZDUP", F_LEAP
     NOOP 
     test_zero tos_low, tos_high, 1f 
     pspush tos_low, tos_high 
@@ -364,7 +364,7 @@ HEADER "?DUP", "ZDUP"
 ;
 ; ok ( w1 w2 -- w2 + w1 ) 
 ;
-HEADER "+", "PLUS" 
+HEADER "+", "PLUS", F_LEAP
     NOOP 
     pspull nos_low, nos_high 
     clc 
@@ -376,7 +376,7 @@ HEADER "+", "PLUS"
 ;
 ; ok ( w1 w2 -- w2 - w1 ) 
 ;
-HEADER "-", "MINUS" 
+HEADER "-", "MINUS", F_LEAP
     NOOP 
     pspull nos_low, nos_high 
     clc 
@@ -388,7 +388,7 @@ HEADER "-", "MINUS"
 ;
 ; ok ( w1 w2 -- w2 NAND w1 ) 
 ;
-HEADER "NAND", "NAND" 
+HEADER "NAND", "NAND", F_LEAP
     NOOP 
     pspull nos_low, nos_high 
     and tos_low, nos_low 
@@ -401,7 +401,7 @@ HEADER "NAND", "NAND"
 ;
 ; ok ( w1 w2 -- w2 AND w1 ) 
 ;
-HEADER "AND", "AND" 
+HEADER "AND", "AND", F_LEAP
     NOOP 
     pspull nos_low, nos_high 
     and  tos_low, nos_low 
@@ -412,7 +412,7 @@ HEADER "AND", "AND"
 ;
 ; ok ( w1 w2 -- w2 OR w1 ) 
 ;
-HEADER "OR", "OR" 
+HEADER "OR", "OR", F_LEAP
     NOOP 
     pspull nos_low, nos_high 
     or   tos_low, nos_low 
@@ -423,7 +423,7 @@ HEADER "OR", "OR"
 ;
 ; ok ( w1 w2 -- w2 XOR w1 ) 
 ;
-HEADER "XOR", "XOR" 
+HEADER "XOR", "XOR", F_LEAP
     NOOP 
     pspull nos_low, nos_high 
     eor  tos_low, nos_low 
@@ -434,7 +434,7 @@ HEADER "XOR", "XOR"
 ;
 ; ok INV 
 ;
-HEADER "INVERT", "INVERT" 
+HEADER "INVERT", "INVERT", F_LEAP
     NOOP 
 _inv: 
     com tos_low 
@@ -445,7 +445,7 @@ _inv:
 ;
 ; ok NEG 
 ;
-HEADER "NEGATE", "NEGATE" 
+HEADER "NEGATE", "NEGATE", F_LEAP
     NOOP 
 _neg: 
     neg tos_low 
@@ -456,7 +456,7 @@ _neg:
 ;
 ; ok ( w -- w * 2 ) same as shift left << 1, unsigned 
 ;
-HEADER "2*", "SHL" 
+HEADER "2*", "SHL", F_LEAP
     NOOP 
 _shl: 
     clc 
@@ -468,7 +468,7 @@ _shl:
 ;
 ; ok ( w -- w / 2 ) same as shift right >> 1, unsigned 
 ;
-HEADER "2/", "SHR" 
+HEADER "2/", "SHR", F_LEAP
     NOOP 
 _shr: 
     clc 
@@ -480,7 +480,7 @@ _shr:
 ;
 ; ok ( nAnB -- nBnA ) swap bytes in a word 
 ;
-HEADER "><", "ENDIAN" 
+HEADER "><", "ENDIAN", F_LEAP
     NOOP 
     mov _work_, tos_low
     mov tos_low, tos_high
@@ -492,7 +492,7 @@ HEADER "><", "ENDIAN"
 ; ok ( branch next reference ) 
 ; doing offsets in bytes 
 ;
-HEADER "BRANCH", "BRANCH" 
+HEADER "BRANCH", "BRANCH", F_LEAP
     NOOP 
 _branch: 
     movw zpm_low, ips_low 
@@ -507,7 +507,7 @@ _branch:
 ; ok ( u -- ) 
 ; branch IF tos IS zero 
 ;
-HEADER "?BRANCH", "ZBRANCH" 
+HEADER "?BRANCH", "ZBRANCH", F_LEAP
     NOOP 
     test_zero tos_low, tos_high, _branch 
     movw tos_low, ips_low 
@@ -517,10 +517,11 @@ HEADER "?BRANCH", "ZBRANCH"
     POON 
  
 ;----------------------------------------------------------------------
-;  os DOCON ( -- w ), (IP++) -> Tos
-;   from flash to data stack 
 ;
-HEADER "DOCON", "DOCON" 
+;  ok DOCON ( -- w ), (IP++) -> Tos
+;  push a value from flash to data stack 
+;
+HEADER "DOCON", "DOCON", F_LEAP
     NOOP 
     pspush tos_low, tos_high
     movw zpm_low, ips_low 
@@ -529,10 +530,11 @@ HEADER "DOCON", "DOCON"
     POON 
  
 ;----------------------------------------------------------------------
-;  os DOVAR ( -- w ), IP++ -> Tos 
-;  from flash to data stack 
 ;
-HEADER "DOVAR", "DOVAR" 
+;  ok DOVAR ( -- w ), IP++ -> Tos 
+;  push a reference from flash to data stack 
+;
+HEADER "DOVAR", "DOVAR", F_LEAP
     NOOP 
     pspush tos_low, tos_high
     movw tos_low, ips_low 
@@ -547,7 +549,7 @@ HEADER "DOVAR", "DOVAR"
 ;  data space pointer align to CELL, atmega is always 
  
 ;
-HEADER "ALIGN", "ALLIGN" 
+HEADER "ALIGN", "ALLIGN", F_LEAP
     NOOP 
     adiw tos_low, 1 
     cbr tos_low, 0 
@@ -558,7 +560,7 @@ HEADER "ALIGN", "ALLIGN"
 ; ok ( -- CELL ) 
 ; CELL is 2 ; size of a cell 
 ;
-HEADER "CELL", "CELL" 
+HEADER "CELL", "CELL", F_LEAP
     NOOP 
     pspush tos_low, tos_high
     ldi tos_low, CELL_SIZE 
@@ -570,7 +572,7 @@ HEADER "CELL", "CELL"
 ; ok C! ( c a -- ) 
 ; only works in sram
 ;
-HEADER "C!", "CTO" 
+HEADER "C!", "CTO", F_LEAP
     NOOP 
     movw zpm_low, tos_low
     pspull tos_low, tos_high
@@ -583,7 +585,7 @@ HEADER "C!", "CTO"
 ; ok C@ ( a -- c ) 
 ; only works in sram
 ;
-HEADER "C@", "CAT" 
+HEADER "C@", "CAT", F_LEAP
     NOOP 
     movw zpm_low, tos_low
     ld tos_low, Z
@@ -597,7 +599,7 @@ HEADER "C@", "CAT"
 ; returns 0 if equal (no differ) 
 ; only works in sram
 ;
-HEADER "CSAME", "CSAME" 
+HEADER "CSAME", "CSAME", F_LEAP
     NOOP 
     ; WARNING No bound check and counter equal 0 moves nothing 
  
@@ -647,7 +649,7 @@ HEADER "CSAME", "CSAME"
 ; move (forward) copy u bytes from source++ to destination++, decrease count--
 ; only works in sram
 ;
-HEADER "CMOVE", "MOVEF" 
+HEADER "CMOVE", "MOVEF", F_LEAP
     NOOP 
     ; WARNING No bound check and counter equal 0 moves nothing 
  
@@ -687,7 +689,7 @@ HEADER "CMOVE", "MOVEF"
 ; move (backward) copy bytes from source-- to destination--, decrease count--
 ; only works in sram
 ;
-HEADER "CMOVE>", "MOVEB"
+HEADER "CMOVE>", "MOVEB", F_LEAP
     NOOP 
     ; WARNING No bound check and counter equal 0 moves nothing 
  
@@ -732,7 +734,7 @@ HEADER "CMOVE>", "MOVEB"
 ;
 ; ok ( -- w) 
 ;
-HEADER "TIB", "tib_" 
+HEADER "TIB", "TIB", F_LEAP
     NOOP
     pspush tos_low, tos_high
     ldi tos_low, lo8(TIB0) 
@@ -743,7 +745,7 @@ HEADER "TIB", "tib_"
 ;
 ; ok ( -- w) 
 ;
-HEADER "LATEST", "LATEST" 
+HEADER "LATEST", "LATEST", F_LEAP
     NOOP 
     pspush tos_low, tos_high
     ldi tos_low, lo8(WORD) 
@@ -754,7 +756,7 @@ HEADER "LATEST", "LATEST"
 ;
 ; ok ( -- w) 
 ;
-HEADER "STATE", "STATE" 
+HEADER "STATE", "STATE", F_LEAP
     NOOP 
     pspush tos_low, tos_high
     ldi tos_low, lo8(STAT) 
@@ -765,7 +767,7 @@ HEADER "STATE", "STATE"
 ;
 ; ok ( -- w) 
 ;
-HEADER "BASE", "BASE" 
+HEADER "BASE", "BASE", F_LEAP
     NOOP 
     pspush tos_low, tos_high
     ldi tos_low, lo8(RADX) 
@@ -776,7 +778,7 @@ HEADER "BASE", "BASE"
 ;
 ; ok ( -- w) 
 ;
-HEADER "(sram)", "sram_" 
+HEADER "(sram)", "sram_", F_LEAP
     NOOP 
     pspush tos_low, tos_high
     ldi tos_low, lo8(LAST) 
@@ -787,7 +789,7 @@ HEADER "(sram)", "sram_"
 ;
 ; ok ( -- w) 
 ;
-HEADER "(eeprom)", "eeprom_" 
+HEADER "(eeprom)", "eeprom_", F_LEAP
     NOOP 
     pspush tos_low, tos_high
     ldi tos_low, lo8(KEEP) 
@@ -798,7 +800,7 @@ HEADER "(eeprom)", "eeprom_"
 ;
 ; ok ( -- w) 
 ;
-HEADER "(flash)", "flash_" 
+HEADER "(flash)", "flash_", F_LEAP
     NOOP 
     pspush tos_low, tos_high
     ldi tos_low, lo8(HEAP) 
@@ -813,7 +815,7 @@ HEADER "(flash)", "flash_"
 ; ok ( -- w) 
 ; beware, it blocks while test if can receive a char 
 ;
-HEADER "key", "key_" 
+HEADER "KEY", "KEY", F_LEAP
     NOOP 
 1: 
     sbis 0x0b, 7 
@@ -829,7 +831,7 @@ HEADER "key", "key_"
 ; ok ( -- 0 | w) 
 ; test if can receive a char, or return FALSE 
 ;
-HEADER "key?", "qkey_" 
+HEADER "KEY?", "QKEY", F_LEAP
     NOOP 
 3: 
     sbis 0x0b, 7 
@@ -841,7 +843,7 @@ HEADER "key?", "qkey_"
 ; ok ( w -- ) 
 ; beware, it blocks while test if can send a char 
 ;
-HEADER "emit", "emit_" 
+HEADER "EMIT", "EMIT", F_LEAP
     NOOP 
 1: 
     sbis 0x0b, 5 
@@ -856,7 +858,7 @@ HEADER "emit", "emit_"
 ; ok ( w -- w 0) 
 ; test if can send a char, or return FALSE 
 ;
-HEADER "emit?", "qemit_" 
+HEADER "EMIT?", "QEMIT", F_LEAP
     NOOP 
 3: 
     sbis 0x0b, 5 
@@ -868,7 +870,7 @@ HEADER "emit?", "qemit_"
 ; ok ( -- w) 
 ; push timer counter 
 ;
-HEADER "millis", "millis_" 
+HEADER "MILLIS", "MILLIS", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
     movw tos_low, ticks_low 
@@ -878,7 +880,7 @@ HEADER "millis", "millis_"
 ;
 ; ok ( -- 0 ) 
 ;
-HEADER "0", "ZERO" 
+HEADER "0", "ZERO", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
     clr tos_low 
@@ -889,7 +891,7 @@ HEADER "0", "ZERO"
 ;
 ; ok ( -- 1 ) 
 ;
-HEADER "1", "ONE" 
+HEADER "1", "ONE", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
     clr tos_low 
@@ -901,11 +903,12 @@ HEADER "1", "ONE"
 ;
 ; ok ( -- 0 ) 
 ;
-HEADER "2", "TWO" 
+HEADER "2", "TWO", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
     clr tos_low 
     clr tos_high 
+    inc tos_low
     inc tos_low
     POON 
  
@@ -924,75 +927,75 @@ HEADER "2", "TWO"
 ;
 ; ok ( w3 w2 w1 -- w2 w3 w1 ) 
 ;
-HEADER "SWIP", "SWIP" 
+HEADER "SWIP", "SWIP",
     .word TOR, SWAP, RTO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w2 w1 -- w2 w1 w2 ) 
 ;
-HEADER "OVER", "OVER" 
-    .word SWAP, DUP, SWIP, ENDS 
+HEADER "OVER", "OVER",
+    .word TOR, DUP, RTO, SWAP, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w3 w2 w1 -- w2 w1 w3 ) 
 ;
-HEADER "ROT", "ROTU" 
+HEADER "ROT", "ROTU",
     .word SWIP, SWAP, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w3 w2 w1 -- w1 w3 w2 ) 
 ;
-HEADER "-ROT", "ROTD" 
+HEADER "-ROT", "ROTD",
     .word SWAP, SWIP, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w2 w1 --  w1 w2 w1 ) 
 ;
-HEADER "TUCK", "TUCK" 
+HEADER "TUCK", "TUCK",
     .word DUP, SWIP, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w3 w2 w1 --  w1 w2 w3 ) 
 ;
-HEADER "FLIP", "FLIP" 
+HEADER "FLIP", "FLIP",
     .word SWAP, SWIP, SWAP, ENDS 
 
 ;----------------------------------------------------------------------
 ;
 ; ok ( w1 w2 -- 0 | -1) 
 ;
-HEADER "=", "EQUAL" 
+HEADER "=", "EQUAL",
     .word MINUS, ZEQU, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w1 w2 -- 0 | -1) 
 ;
-HEADER "<>", "NOTEQUAL" 
+HEADER "<>", "NOTEQUAL",
     .word EQUAL, INVERT, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w1 w2 -- 0 | -1 ) 
 ;
-HEADER ">", "GTHAN" 
+HEADER ">", "GTHAN",
     .word SWAP, LTHAN, ENDS 
  
 ;----------------------------------------------------------------------
 ;  ok 0>  must be signed 
 ;
-HEADER "0>", "ZEROGT" 
+HEADER "0>", "ZEROGT",
      .word ZERO, LTHAN, ENDS 
  
 ;----------------------------------------------------------------------
 ;  ok 0< must be signed 
 ;
-HEADER "0<", "ZEROLT" 
+HEADER "0<", "ZEROLT",
     .word ZERO, SWAP, LTHAN, ENDS 
  
 ;----------------------------------------------------------------------
@@ -1000,140 +1003,140 @@ HEADER "0<", "ZEROLT"
 ; ok ( w -- w * CELL  ) 
 ; CELL is 2, multiply by 2, easy way 
 ;
-HEADER "CELLS", "CELLS" 
+HEADER "CELLS", "CELLS",
     .word SHL, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w -- w + CELL ) 
 ;
-HEADER "CELL+", "CELLPLUS" 
+HEADER "CELL+", "CELLPLUS",
     .word CELL, PLUS, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w -- w - CELL ) 
 ;
-HEADER "CELL-", "CELLMINUS" 
+HEADER "CELL-", "CELLMINUS",
     .word CELL, MINUS, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w -- w + 1 ) 
 ;
-HEADER "1+", "ONEPLUS" 
+HEADER "1+", "ONEPLUS",
      .word ONE, PLUS, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w -- w - 1 ) 
 ;
-HEADER "1-", "ONEMINUS" 
+HEADER "1-", "ONEMINUS",
      .word ONE, MINUS, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w -- w + 2 ) 
 ;
-HEADER "2+", "TWOPLUS" 
+HEADER "2+", "TWOPLUS",
      .word TWO, PLUS, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w -- w - 2 ) 
 ;
-HEADER "2-", "TWOMINUS" 
+HEADER "2-", "TWOMINUS",
      .word TWO, MINUS, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( u w -- ) 
 ;
-HEADER "+!", "PLUSTO" 
+HEADER "+!", "PLUSTO",
     .word SWAP, OVER, AT, PLUS, SWAP, TO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok COMMMA ( w -- ) 
 ;
-HEADER ",", "COMMA", 
+HEADER ",", "COMMA",
     .word HERE, TO, CELL, ALLOT, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok this puts next cell into stack and compiles into HERE 
 ;
-HEADER "COMP", "COMP", 
+HEADER "COMP", "COMP",
     .word DOCON, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok compile a eow 
 ;
-HEADER "EXIT", "EXIT"
+HEADER "EXIT", "EXIT",
     .word COMP, ENDS, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok compile a eow 
 ;
-HEADER "EXEC", "EXEC"
+HEADER "EXEC", "EXEC",
     .word RTO, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok compile a eow 
 ;
-HEADER "TAIL", "TAIL"
+HEADER "TAIL", "TAIL",
     .word RAT, TWOMINUS, RTO, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok BACK 
 ;
-HEADER "BACK", "BACK", F_IMMEDIATE 
+HEADER "BACK", "BACK", F_IMMEDIATE,
     .word HERE, SWAP, MINUS, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok MARK 
 ;
-HEADER "MARK", "MARK", F_IMMEDIATE 
+HEADER "MARK", "MARK", F_IMMEDIATE,
     .word HERE, 0, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok BEGIN 
 ;
-HEADER "BEGIN", "BEGIN", F_IMMEDIATE 
+HEADER "BEGIN", "BEGIN", F_IMMEDIATE,
     .word HERE, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok AGAIN resolves a backward branch 
 ;
-HEADER "AGAIN", "AGAIN", F_IMMEDIATE 
+HEADER "AGAIN", "AGAIN", F_IMMEDIATE,
     .word COMP, BRANCH, BACK, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok UNTIL 
 ;
-HEADER "UNTIL", "UNTIL", F_IMMEDIATE 
+HEADER "UNTIL", "UNTIL", F_IMMEDIATE,
     .word COMP, ZBRANCH, BACK, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok UNLESS 
 ;
-HEADER "UNLESS", "UNLESS", F_IMMEDIATE 
+HEADER "UNLESS", "UNLESS", F_IMMEDIATE,
     .word INVERT, UNTIL, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok IF 
 ;
-HEADER "IF", "IF", F_IMMEDIATE 
+HEADER "IF", "IF", F_IMMEDIATE,
     .word COMP, ZBRANCH, MARK, ENDS 
  
 ;----------------------------------------------------------------------
@@ -1141,40 +1144,85 @@ HEADER "IF", "IF", F_IMMEDIATE
 ; ok ENDIF resolves a forward branch 
 ; note: use of store if addres is not 'here' 
 ;
-HEADER "ENDIF", "ENDIF", F_IMMEDIATE 
+HEADER "ENDIF", "ENDIF", F_IMMEDIATE,
     .word DUP, HERE, MINUS, SWAP, TO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok THEN 
 ;
-HEADER "THEN", "THEN", F_IMMEDIATE 
+HEADER "THEN", "THEN", F_IMMEDIATE,
     .word ENDIF, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ELSE 
 ;
-HEADER "ELSE", "ELSE", F_IMMEDIATE 
+HEADER "ELSE", "ELSE", F_IMMEDIATE,
     .word COMP, BRANCH, MARK, SWAP, ENDIF, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok WHILE 
 ;
-HEADER "WHILE", "WHILE", F_IMMEDIATE 
+HEADER "WHILE", "WHILE", F_IMMEDIATE,
     .word IF, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok REPEAT 
 ;
-HEADER "REPEAT", "REPEAT", F_IMMEDIATE 
+HEADER "REPEAT", "REPEAT", F_IMMEDIATE,
     .word TOR, TOR, AGAIN, RAT, RAT, MINUS, ENDIF, ENDS 
  
 ;----------------------------------------------------------------------
 ;
-HEADER "COLD", "COLD" 
+; DO and LOOP runs from 0x8000 till 0x7FFF, -32768 to 32767
+; counting from 0 to 65535, as Forth-83
+; ZZZZ
+;
+;----------------------------------------------------------------------
+;
+; ok DO (Forth-83)
+;
+HEADER "DO", "DO", F_IMMEDIATE,
+    .word HERE, TOR, 0x8000, PLUS, DUP, TOR, MINUS, TOR, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; ok DONT (not Forth-83)
+;
+HEADER "DONT", "DONT", F_IMMEDIATE,
+    .word DROP, DROP, HERE, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is QDO ( u n -- ) (Forth-83)
+;
+HEADER "QDO", "QDO", F_IMMEDIATE,
+    .word OVER, OVER, MINUS, COMP, ZBRANCH, HERE, DO, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; ok LOOP (Forth-83)
+;
+HEADER "LOOP", "LOOP", F_IMMEDIATE,
+    .word RAT, ONEPLUS, ZBRANCH, ZZZZ 
+    .word RPAT, CELL, MINUS, CELL, MINUS
+    .word ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; ok LEAVE (Forth-83)
+;
+HEADER "LEAVE", "LEAVE", F_IMMEDIATE,
+    .word RTO, RTO, MINUS, ZZZZ, ENDS 
+ 
+;--------------------------------------------------------------------
+;
+;----------------------------------------------------------------------
+;
+HEADER "COLD", "COLD", F_LEAP
     NOOP 
 
 ; restart return stack 
@@ -1194,7 +1242,7 @@ HEADER "COLD", "COLD"
  
 ;----------------------------------------------------------------------
 ;
-HEADER "WARM", "WARM" 
+HEADER "WARM", "WARM", F_LEAP
     NOOP 
     ; verify error code 
     ; resets etc 
@@ -1203,7 +1251,7 @@ HEADER "WARM", "WARM"
 ;----------------------------------------------------------------------
 ; does reset 
 ;
-HEADER "BYE", "BYE" 
+HEADER "BYE", "BYE", F_LEAP
     NOOP 
     rjmp RESET 
     POON 
@@ -1212,28 +1260,28 @@ HEADER "BYE", "BYE"
 ;
 ; is \]  
 ;
-HEADER "]", "RBRAC", 
+HEADER "]", "RBRAC",
     .word ONE, STATE, TO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is \[ 
 ;
-HEADER "[", "LBRAC", F_IMMEDIATE 
+HEADER "[", "LBRAC", F_IMMEDIATE | F_LEAP
     .word ZERO, STATE, TO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is TOGGLE ( a f -- )
 ;
-HEADER "TOGGLE", "TOGGLE", 
+HEADER "TOGGLE", "TOGGLE",
     .word OVER, AT, XOR, SWAP, TO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is >NFA ( a f -- )
 ;
-HEADER ">NFA", "TONFA", 
+HEADER ">NFA", "TONFA",
     .word CELL, PLUS, ENDS
 
 ;----------------------------------------------------------------------
@@ -1247,7 +1295,7 @@ HEADER ">CFA", "TOCFA",
 ;
 ; is HIDDEN 
 ;
-HEADER "HIDDEN", "HIDDEN", 
+HEADER "HIDDEN", "HIDDEN",
     .word LATEST, TONFA, F_HIDDEN, TOGGLE, ENDS 
 
 ;----------------------------------------------------------------------
@@ -1261,28 +1309,28 @@ HEADER "IMMEDIATE", "IMMEDIATE",
 ;
 ; is COMPILE_ONLY 
 ;
-HEADER "COMPILE_ONLY", "COMPILE_ONLY", 
+HEADER "COMPILE_ONLY", "COMPILE_ONLY",
     .word LATEST, TONFA, F_COMPILE, TOGGLE, ENDS 
 
 ;----------------------------------------------------------------------
 ;
 ; is HERE 
 ;
-HEADER "HERE", "HERE", 
+HEADER "HERE", "HERE", F_LEAP
     .word HEAP, AT, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is ALLOT 
 ;
-HEADER "ALLOT", "ALLOT", 
+HEADER "ALLOT", "ALLOT", F_LEAP
     .word HEAP, PLUSTO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is compile a header 
 ;
-HEADER "CREATE", "CREATE"
+HEADER "CREATE", "CREATE",
     .word ENDS
 
 ;----------------------------------------------------------------------
@@ -1297,13 +1345,13 @@ HEADER "PARSE", "PARSE"
 ;
 ; is  
 ;
-HEADER ":", "COLON", 
+HEADER ":", "COLON",
     .word CREATE, RBRAC, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is  
 ;
-HEADER ";", "SEMMI", 
+HEADER ";", "SEMMI",
     .word EXIT, LBRAC, ENDS 
   

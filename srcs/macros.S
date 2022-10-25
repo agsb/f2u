@@ -310,18 +310,23 @@ e_erom = eeprom + 14 ; next free eprom address for values, as stack
 ;----------------------------------------------------------------------
 ;   words can be 1 to 15 chars lenght, 
 ;
-;   almost over for normal english ~10 letters words http://norvig.com/mayzner.html
+;   almost over for normal english ~10 letters words 
+;   http://norvig.com/mayzner.html
 ;
 ;   flags 
 ;
-;   IMMEDIATE, COMPILE, HIDDEN, TOGGLE
+;   IMMEDIATE, COMPILE, SMUDGE, LEAP
 ;
 ;   COMPILE is the compile only.
+;
+;   HIDDEN or SMUDGE is no used
+;
+;   LEAP is for pure assembler routines, no calls inside.
 ;
 F_IMMEDIATE = 0x80
 F_COMPILE = 0x40
 F_HIDDEN = 0x20
-F_TOGGLE = 0x10
+F_LEAP = 0x10
 F_COMMON = 0x00
 
 F_TOMASK = 0xF0

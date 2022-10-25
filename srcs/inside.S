@@ -1,7 +1,7 @@
 
 
 /*
- *  DISCLAIMER
+ *  DISCLAIMER"
  *
  *  Copyright © 2020, Alvaro Gomes Sobral Barcellos,
  *
@@ -11,7 +11,7 @@
  *  without limitation the rights to use, copy, modify, merge, publish,
  *  distribute, sublicense, and/or sell copies of the Software, and to
  *  permit persons to whom the Software is furnished to do so, subject to
- *  the following conditions:
+ *  the following conditions"
  *
  *  The above copyright notice and this permission notice shall be
  *  included in all copies or substantial portions of the Software.
@@ -22,9 +22,13 @@
  *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
  *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
  *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
+
+;----------------------------------------------------------------------
+; workaround while not done
+;
+THIS = LAST
 
 ;----------------------------------------------------------------------
 ;
@@ -97,8 +101,7 @@ HEADER "(refill)", "refill"
     pspull nds_low, nds_high
     pspull zpm_low, zpm_high
 
-    ; keep a spc at start, so every word starts with spc, 
-    ; used later to make a counted string in site
+    ; keep a spc at start, so every word starts with spc, used later to make a counted string in site
     ldi tos_low, 32
     srsave tos_low
     dec nds_low
