@@ -64,6 +64,9 @@ TIBC:	.word 0		; count down
 FIBP:	.word 0		; offset in FIB
 FIBC:	.word 0		; count down
 
+PTRP:   .word 0     ; offset in PAD
+CTRC:   .word 0     ; count down 
+
 PAGE:   .word 0     ; flash page to flush 
 PADS:   .word 0     ; reference to scratch area 
 

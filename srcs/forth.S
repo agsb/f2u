@@ -1330,6 +1330,13 @@ HEADER "ALLOT", "ALLOT", F_LEAP
 ;
 ; is compile a header 
 ;
+HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE
+    .word FIND, COMMA, ENDS
+
+;----------------------------------------------------------------------
+;
+; is compile a header 
+;
 HEADER "CREATE", "CREATE",
     .word ENDS
 
@@ -1355,3 +1362,19 @@ HEADER ":", "COLON",
 HEADER ";", "SEMMI",
     .word EXIT, LBRAC, ENDS 
   
+
+;----------------------------------------------------------------------
+;----------------------------------------------------------------------
+;
+; is  
+;
+;HEADER "INTERPRET", "INTERPRET",
+;    .word WORD, DUP2, FIND, DUP, QBRANCH, notfound
+;    .word LINK2XT, NIP, NIP, EXECUTE, BRANCH, INTERPRET
+;notfound:    
+;    .word DROP, DUP2, TONUMBER, QBRANCH, notnumber
+;    .word NIP, NIP, BRANCH, INTERPRET
+;notnumber:
+;    .word EUNDEFI, AT, EXECUTE, BRANCH, INTERPRET
+;    .word ENDS
+;  
