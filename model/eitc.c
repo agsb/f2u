@@ -2,60 +2,95 @@
 #include <stdlib.h>
 
 /*
-    simple model for extended indirect thread code
 
-    */
+simple simulator model for extended indirect thread code
 
-#define MAX 7000
+0 variable ip
+0 variable wk
 
-unsigned int pc, ip, sp, rp, dp, w, a, b;
-    
-unsigned int memory[MAX];
+defer nexti
 
+: unnest r> ip ! nexti ;
 
-/*
+: nest ip @ >r   nexti ;
 
-label and goto self routines
+: jump wk ! ip dup @ 2+ ! exec ;
+
+: next ip @ dup @ wk ! 2+ ip ! 
+    wk @ IF jump    
+         ELSE unnest
+         THEN ;
+
+nexti is next
 
 */
 
-_exit: //unnest
-	ip = m[rp];
-	rp++;
-	goto _next;
+#define END 8192
 
-; load w with contents of cell at ips
-; if zero (NULL) is a primitive word
-_next: // next
-	w = m[ip];
-	ip++;
-    if ( ! w ) goto _jump;
-	goto _enter;
+#define STK 18
 
-; else is a reference
-_enter: //nest
-	rp--; 
-    m[rp] = ip;
-    ip = w;
-	goto _next;
+#define WDS 26
 
-; continue 
-_link:
-	putc ('\n');
-	goto _next;
+#define MAX 10
 
-; then jump, for exec it, save next return into ips
-_jump:
-	w = ip;
-	ip++;
-	pc = w;
-	goto _prime;
-
-_prime:
-	putc (w+'A');
-	goto _link;
+#define debug 1
 
 int main (int argc, char * argv[]) {
+
+int  i, j, k, n, m;
+
+// define registers as 16 bits
+
+int  ip, rp, wk;
+int  pc, sp, dp, a, b;
+
+// define  memory as 16 bits
+
+int  ram[END];
+
+// label and goto self routines
+
+// pop ip
+unnest:
+	ip = ram[rp];
+	rp++;
+    if (debug) printf ("<%4d", ip);
+	goto next;
+
+//; load wk with contents of cell at ip
+next: 
+	wk = ram[ip];
+	ip++;
+//; if zero (NULL) is a primitive word
+    if ( ! wk ) goto jump;
+//; else is a reference
+	goto nest;
+
+// push ip
+nest:
+	rp--; 
+    ram[rp] = ip;
+    ip = wk;
+    if (debug) printf (">%4d", ip);
+	goto next;
+
+//; continue 
+link:
+	putchar ('\n');
+	goto next;
+
+//; then jump, for exec it, save next return into ip
+jump:
+	wk = ip;
+	ip++;
+	goto exec;
+
+//; exec
+exec:
+    putchar ('Z' - wk);
+    goto link;
+
+// setup pointers
 
     sp = STK;
     
@@ -65,6 +100,61 @@ int main (int argc, char * argv[]) {
     
     dp = pc + 1;
 
-    w = a = b = 0
+    ip = pc;
+
+    wk = a = b = 0;
 
 
+// loop random links
+
+    srand (1);
+
+// setup primitives
+
+    for (k = 0 ; k < WDS ; k++) {
+
+        ram[k + dp] = 0;
+        
+        }
+
+    dp = dp + k;
+
+// setup some random 
+
+    while (dp < (END-MAX) ) {
+
+        k = rand() % MAX;
+    
+        printf ("~%4d",k);
+
+        for (i = 0; i < k ; i++) {
+
+            printf (":%4d",k);
+            ram[dp] = rand() % dp;
+
+            dp++;
+
+            }   
+        
+        printf (":%4d",0);
+        ram[dp] = 0;
+
+        dp++;
+
+        } 
+
+// dump it 
+        
+    for (k = 0; k < dp; k++) {
+
+        if (k < WDS) continue;
+
+        printf ("%4d ",ram[k]);
+
+        if (ram[k] == 0)  printf ("\n");
+
+        }    
+
+    return (0);
+
+}
