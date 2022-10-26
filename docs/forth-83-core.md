@@ -1,0 +1,34 @@
+
+
+Memory Commands
+
+@ ! C@ C! CMOVE CMOVE> FILL ERASE BLANK MOVE HERE PAD
+
+Stack Commands
+
+SP@ SP! RP@ RP! DROP DUP SWAP OVER TUCK NIP
+ROT ROT FLIP ?DUP R> >R R@ PICK ROLL
+
+Logic Commands
+
+AND OR XOR NOT TRUE FALSE CSET CRESET CTOGGLE ON OFF
+
+Arithmetic Commands
+
++ - ABS +! 2* 2/ U2/ 8* 1+ 2+
+1- 2- UM* U*D UM/MOD *D M/MOD MU/MOD * /MOD
+/ MOD */MOD */
+
+Comparison Commands
+
+0= 0< 0> 0<> = <> ?NEGATE U< U> <
+> MIN MAX BETWEEN WITHIN
+
+Double Integer Commands
+
+2@ 2! 2DROP 2DUP 2SWAP 2OVER 3DUP 4DUP 2ROT D+
+DNEGATE S>D DABS D2/ D- D0= D= DU< D< D> DMIN DMAX
+
+String Commands
+
+COUNT LENGTH -TRAILING UPPER COMP CAPS-COMP COMPARE

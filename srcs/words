@@ -1,118 +1,165 @@
-forth.S:HEADER "ENDS", "ENDS" 
-forth.S:HEADER "0=", "ZEQU" 
-forth.S:HEADER "!", "TO" 
-forth.S:HEADER "@", "AT" 
-forth.S:HEADER "TRUE", "FTRUE" 
-forth.S:HEADER "FALSE", "FFALSE" 
-forth.S:HEADER "<", "LTHAN" 
-forth.S:HEADER ">R", "TOR" 
-forth.S:HEADER "R>", "RTO" 
-forth.S:HEADER "R@", "RAT" 
-forth.S:HEADER "RS!", "RPTO" 
-forth.S:HEADER "PS!", "SPTO" 
-forth.S:HEADER "RS@", "RPAT" 
-forth.S:HEADER "PS@", "SPAT" 
-forth.S:HEADER "DROP", "DROP" 
-forth.S:HEADER "DUP", "DUP" 
-forth.S:HEADER "SWAP", "SWAP" 
-forth.S:HEADER "?DUP", "ZDUP" 
-forth.S:HEADER "+", "PLUS" 
-forth.S:HEADER "-", "MINUS" 
-forth.S:HEADER "NAND", "NAND" 
-forth.S:HEADER "AND", "AND" 
-forth.S:HEADER "OR", "OR" 
-forth.S:HEADER "XOR", "XOR" 
-forth.S:HEADER "INVERT", "INVERT" 
-forth.S:HEADER "NEGATE", "NEGATE" 
-forth.S:HEADER "2*", "SHL" 
-forth.S:HEADER "2/", "SHR" 
-forth.S:HEADER "><", "ENDIAN" 
-forth.S:HEADER "BRANCH", "BRANCH" 
-forth.S:HEADER "?BRANCH", "ZBRANCH" 
-forth.S:HEADER "DOCON", "DOCON" 
-forth.S:HEADER "DOVAR", "DOVAR" 
-forth.S:HEADER "ALIGN", "ALLIGN" 
-forth.S:HEADER "CELL", "CELL" 
-forth.S:HEADER "C!", "CTO" 
-forth.S:HEADER "C@", "CAT" 
-forth.S:HEADER "CSAME", "CSAME" 
-forth.S:HEADER "CMOVE", "MOVEF" 
-forth.S:HEADER "CMOVE>", "MOVEB"
-forth.S:HEADER "TIB", "tib_" 
-forth.S:HEADER "LATEST", "LATEST" 
-forth.S:HEADER "STATE", "STATE" 
-forth.S:HEADER "BASE", "BASE" 
-forth.S:HEADER "(sram)", "sram_" 
-forth.S:HEADER "(eeprom)", "eeprom_" 
-forth.S:HEADER "(flash)", "flash_" 
-forth.S:HEADER "key", "key_" 
-forth.S:HEADER "key?", "qkey_" 
-forth.S:HEADER "emit", "emit_" 
-forth.S:HEADER "emit?", "qemit_" 
-forth.S:HEADER "millis", "millis_" 
-forth.S:HEADER "0", "ZERO" 
-forth.S:HEADER "1", "ONE" 
-forth.S:HEADER "2", "TWO" 
-forth.S:HEADER "SWIP", "SWIP" 
-forth.S:HEADER "OVER", "OVER" 
-forth.S:HEADER "ROT", "ROTU" 
-forth.S:HEADER "-ROT", "ROTD" 
-forth.S:HEADER "TUCK", "TUCK" 
-forth.S:HEADER "FLIP", "FLIP" 
-forth.S:HEADER "=", "EQUAL" 
-forth.S:HEADER "<>", "NOTEQUAL" 
-forth.S:HEADER ">", "GTHAN" 
-forth.S:HEADER "0>", "ZEROGT" 
-forth.S:HEADER "0<", "ZEROLT" 
-forth.S:HEADER "CELLS", "CELLS" 
-forth.S:HEADER "CELL+", "CELLPLUS" 
-forth.S:HEADER "CELL-", "CELLMINUS" 
-forth.S:HEADER "1+", "ONEPLUS" 
-forth.S:HEADER "1-", "ONEMINUS" 
-forth.S:HEADER "2+", "TWOPLUS" 
-forth.S:HEADER "2-", "TWOMINUS" 
-forth.S:HEADER "+!", "PLUSTO" 
-forth.S:HEADER ",", "COMMA", 
-forth.S:HEADER "COMP", "COMP", 
-forth.S:HEADER "EXIT", "EXIT"
-forth.S:HEADER "EXEC", "EXEC"
-forth.S:HEADER "TAIL", "TAIL"
-forth.S:HEADER "BACK", "BACK", F_IMMEDIATE 
-forth.S:HEADER "MARK", "MARK", F_IMMEDIATE 
-forth.S:HEADER "BEGIN", "BEGIN", F_IMMEDIATE 
-forth.S:HEADER "AGAIN", "AGAIN", F_IMMEDIATE 
-forth.S:HEADER "UNTIL", "UNTIL", F_IMMEDIATE 
-forth.S:HEADER "UNLESS", "UNLESS", F_IMMEDIATE 
-forth.S:HEADER "IF", "IF", F_IMMEDIATE 
-forth.S:HEADER "ENDIF", "ENDIF", F_IMMEDIATE 
-forth.S:HEADER "THEN", "THEN", F_IMMEDIATE 
-forth.S:HEADER "ELSE", "ELSE", F_IMMEDIATE 
-forth.S:HEADER "WHILE", "WHILE", F_IMMEDIATE 
-forth.S:HEADER "REPEAT", "REPEAT", F_IMMEDIATE 
-forth.S:HEADER "COLD", "COLD" 
-forth.S:HEADER "WARM", "WARM" 
-forth.S:HEADER "BYE", "BYE" 
-forth.S:HEADER "]", "RBRAC", 
-forth.S:HEADER "[", "LBRAC", F_IMMEDIATE 
-forth.S:HEADER "TOGGLE", "TOGGLE", 
-forth.S:HEADER ">NFA", "TONFA", 
-forth.S:HEADER ">CFA", "TOCFA", 
-forth.S:HEADER "HIDDEN", "HIDDEN", 
-forth.S:HEADER "IMMEDIATE", "IMMEDIATE", 
-forth.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY", 
-forth.S:HEADER "HERE", "HERE", 
-forth.S:HEADER "ALLOT", "ALLOT", 
-forth.S:HEADER "CREATE", "CREATE"
-forth.S:HEADER "PARSE", "PARSE"
-forth.S:HEADER ":", "COLON", 
-forth.S:HEADER ";", "SEMMI", 
+Makefile:HEADERS = 
+Makefile:%.o : %.c $(HEADERS)
+Makefile:%.s : %.c $(HEADERS)
+MaybeRiscV.S:HEADER "CSAME", "csame"
+MaybeRiscV.S:HEADER "CMOVE", "cmove"
+MaybeRiscV.S:HEADER "BMOVE", "bmove"
+MaybeRiscV.S:HEADER "_EOF_", "_eof_"
+e2prom.S:HEADER "(weep)", "weep"
+e2prom.S:HEADER "(reep)", "reep"
+e2prom.S:HEADER "(here!e)", "hereto"
+e2prom.S:HEADER "(here@e)", "hereat"
+e2prom.S:HEADER "(last!e)", "lastto"
+e2prom.S:HEADER "(last@e)", "lastat"
+e2prom.S:HEADER "(seed!e)", "seedto"
+e2prom.S:HEADER "(seed@e)", "seedat"
+e2prom.S:HEADER "(sram!e)", "sramto"
+e2prom.S:HEADER "(sram@e)", "sramat"
+e2prom.S:HEADER "(erom!e)", "eromto"
+e2prom.S:HEADER "(erom@e)", "eromat"
 flush.S:HEADER "(load_flash)", "LDFLASH"
 flush.S:HEADER "(save_flash)", "SVFLASH"
-math.S:HEADER "HASH", "HASH"
-math.S:HEADER "RANDOM", "RANDOM"
-math.S:HEADER "RAND", "RAND"
-math.S:HEADER "UM*", "UMUL"
-math.S:HEADER "UM/MOD", "UMBYMOD"
-math.S:HEADER "*", "SMUL"
-math.S:HEADER "/", "SDIV"
-math.S:HEADER "utoa", "utoa" 
+forth.S:HEADER "ENDS", "ENDS", F_LEAP
+forth.S:HEADER "ZZZZ", "ZZZZ",
+forth.S:HEADER "0=", "ZEQU", F_LEAP
+forth.S:HEADER "!", "TO", F_LEAP
+forth.S:HEADER "@", "AT", F_LEAP
+forth.S:HEADER "TRUE", "FTRUE", F_LEAP
+forth.S:HEADER "FALSE", "FFALSE", F_LEAP
+forth.S:HEADER "<", "LTHAN", F_LEAP
+forth.S:HEADER ">R", "TOR", F_LEAP
+forth.S:HEADER "R>", "RTO", F_LEAP
+forth.S:HEADER "R@", "RAT", F_LEAP
+forth.S:HEADER "RS!", "RPTO", F_LEAP
+forth.S:HEADER "PS!", "SPTO", F_LEAP
+forth.S:HEADER "RS@", "RPAT", F_LEAP
+forth.S:HEADER "PS@", "SPAT", F_LEAP
+forth.S:HEADER "DROP", "DROP", F_LEAP
+forth.S:HEADER "DUP", "DUP", F_LEAP
+forth.S:HEADER "SWAP", "SWAP", F_LEAP
+forth.S:HEADER "?DUP", "ZDUP", F_LEAP
+forth.S:HEADER "+", "PLUS", F_LEAP
+forth.S:HEADER "-", "MINUS", F_LEAP
+forth.S:HEADER "NAND", "NAND", F_LEAP
+forth.S:HEADER "AND", "AND", F_LEAP
+forth.S:HEADER "OR", "OR", F_LEAP
+forth.S:HEADER "XOR", "XOR", F_LEAP
+forth.S:HEADER "INVERT", "INVERT", F_LEAP
+forth.S:HEADER "NEGATE", "NEGATE", F_LEAP
+forth.S:HEADER "2*", "SHL", F_LEAP
+forth.S:HEADER "2/", "SHR", F_LEAP
+forth.S:HEADER "><", "ENDIAN", F_LEAP
+forth.S:HEADER "BRANCH", "BRANCH", F_LEAP
+forth.S:HEADER "?BRANCH", "ZBRANCH", F_LEAP
+forth.S:HEADER "DOCON", "DOCON", F_LEAP
+forth.S:HEADER "DOVAR", "DOVAR", F_LEAP
+forth.S:HEADER "ALIGN", "ALLIGN", F_LEAP
+forth.S:HEADER "CELL", "CELL", F_LEAP
+forth.S:HEADER "C!", "CTO", F_LEAP
+forth.S:HEADER "C@", "CAT", F_LEAP
+forth.S:HEADER "CSAME", "CSAME", F_LEAP
+forth.S:HEADER "CMOVE", "MOVEF", F_LEAP
+forth.S:HEADER "CMOVE>", "MOVEB", F_LEAP
+forth.S:HEADER "TIB", "TIB", F_LEAP
+forth.S:HEADER "LATEST", "LATEST", F_LEAP
+forth.S:HEADER "STATE", "STATE", F_LEAP
+forth.S:HEADER "BASE", "BASE", F_LEAP
+forth.S:HEADER "(sram)", "sram_", F_LEAP
+forth.S:HEADER "(eeprom)", "eeprom_", F_LEAP
+forth.S:HEADER "(flash)", "flash_", F_LEAP
+forth.S:HEADER "KEY", "KEY", F_LEAP
+forth.S:HEADER "KEY?", "QKEY", F_LEAP
+forth.S:HEADER "EMIT", "EMIT", F_LEAP
+forth.S:HEADER "EMIT?", "QEMIT", F_LEAP
+forth.S:HEADER "MILLIS", "MILLIS", F_LEAP
+forth.S:HEADER "0", "ZERO", F_LEAP
+forth.S:HEADER "1", "ONE", F_LEAP
+forth.S:HEADER "2", "TWO", F_LEAP
+forth.S:HEADER "SWIP", "SWIP",
+forth.S:HEADER "OVER", "OVER",
+forth.S:HEADER "ROT", "ROTU",
+forth.S:HEADER "-ROT", "ROTD",
+forth.S:HEADER "TUCK", "TUCK",
+forth.S:HEADER "FLIP", "FLIP",
+forth.S:HEADER "=", "EQUAL",
+forth.S:HEADER "<>", "NOTEQUAL",
+forth.S:HEADER ">", "GTHAN",
+forth.S:HEADER "0>", "ZEROGT",
+forth.S:HEADER "0<", "ZEROLT",
+forth.S:HEADER "CELLS", "CELLS",
+forth.S:HEADER "CELL+", "CELLPLUS",
+forth.S:HEADER "CELL-", "CELLMINUS",
+forth.S:HEADER "1+", "ONEPLUS",
+forth.S:HEADER "1-", "ONEMINUS",
+forth.S:HEADER "2+", "TWOPLUS",
+forth.S:HEADER "2-", "TWOMINUS",
+forth.S:HEADER "+!", "PLUSTO",
+forth.S:HEADER ",", "COMMA",
+forth.S:HEADER "COMP", "COMP",
+forth.S:HEADER "EXIT", "EXIT",
+forth.S:HEADER "EXEC", "EXEC",
+forth.S:HEADER "TAIL", "TAIL",
+forth.S:HEADER "BACK", "BACK", F_IMMEDIATE,
+forth.S:HEADER "MARK", "MARK", F_IMMEDIATE,
+forth.S:HEADER "BEGIN", "BEGIN", F_IMMEDIATE,
+forth.S:HEADER "AGAIN", "AGAIN", F_IMMEDIATE,
+forth.S:HEADER "UNTIL", "UNTIL", F_IMMEDIATE,
+forth.S:HEADER "UNLESS", "UNLESS", F_IMMEDIATE,
+forth.S:HEADER "IF", "IF", F_IMMEDIATE,
+forth.S:HEADER "ENDIF", "ENDIF", F_IMMEDIATE,
+forth.S:HEADER "THEN", "THEN", F_IMMEDIATE,
+forth.S:HEADER "ELSE", "ELSE", F_IMMEDIATE,
+forth.S:HEADER "WHILE", "WHILE", F_IMMEDIATE,
+forth.S:HEADER "REPEAT", "REPEAT", F_IMMEDIATE,
+forth.S:HEADER "DO", "DO", F_IMMEDIATE,
+forth.S:HEADER "DONT", "DONT", F_IMMEDIATE,
+forth.S:HEADER "QDO", "QDO", F_IMMEDIATE,
+forth.S:HEADER "LOOP", "LOOP", F_IMMEDIATE,
+forth.S:HEADER "LEAVE", "LEAVE", F_IMMEDIATE,
+forth.S:HEADER "COLD", "COLD", F_LEAP
+forth.S:HEADER "WARM", "WARM", F_LEAP
+forth.S:HEADER "BYE", "BYE", F_LEAP
+forth.S:HEADER "]", "RBRAC",
+forth.S:HEADER "[", "LBRAC", F_IMMEDIATE | F_LEAP
+forth.S:HEADER "TOGGLE", "TOGGLE",
+forth.S:HEADER ">NFA", "TONFA",
+forth.S:HEADER ">CFA", "TOCFA", 
+forth.S:HEADER "HIDDEN", "HIDDEN",
+forth.S:HEADER "IMMEDIATE", "IMMEDIATE", 
+forth.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY",
+forth.S:HEADER "HERE", "HERE", F_LEAP
+forth.S:HEADER "ALLOT", "ALLOT", F_LEAP
+forth.S:HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE
+forth.S:HEADER "CREATE", "CREATE",
+forth.S:HEADER "PARSE", "PARSE"
+forth.S:HEADER ":", "COLON",
+forth.S:HEADER ";", "SEMMI",
+forth.S:;HEADER "INTERPRET", "INTERPRET",
+inside.S:HEADER "(parse)", "parse"
+inside.S:HEADER "(refill)", "refill"
+inside.S:HEADER "(find)", "find"
+inside.S:HEADER "(basemul)", "basemul"
+inside.S:HEADER "(basediv)", "basediv"
+inside.S:HEADER "]", "isexecute"
+inside.S:HEADER "[", "iscompile"
+inside.S:HEADER "(nopostpone)", "nopostpone"
+inside.S:HEADER "(postpone)", "ispostpone"
+inside.S:HEADER  "(eval)", "evaluate"
+inside.S:HEADER "(number)", "number"
+inside.S:HEADER ".\"", "dotquote"
+inside.S:HEADER    "(create)", "create"
+inside.S:HEADER "(comma)", "comma"
+macros.S:.macro HEADER name, label, flags=0x0
+math.S:HEADER "HASH", "HASH", F_LEAP
+math.S:HEADER "RANDOM", "RANDOM", F_LEAP
+math.S:HEADER "RAND", "RAND", F_LEAP
+math.S:HEADER "ABS", "ABS", F_LEAP 
+math.S:HEADER "MAX", "MAX", F_LEAP
+math.S:HEADER "MIN", "MIN", F_LEAP
+math.S:HEADER "UM*", "UMUL", F_LEAP
+math.S:HEADER "UM/MOD", "UMBYMOD", F_LEAP
+math.S:HEADER "*", "SMUL", F_LEAP
+math.S:HEADER "/", "SDIV", F_LEAP
+math.S:HEADER "utoa", "utoa", F_LEAP 
+math.toa.S:HEADER "utoa", "utoa" 
+math.toa.S:HEADER "itoa", "itoa"

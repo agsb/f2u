@@ -132,6 +132,12 @@ _link:
     rjmp _next 
  
 ;----------------------------------------------------------------------
+;
+; is ZZZZ, hook for incompleteness 
+;
+HEADER "ZZZZ", "ZZZZ",
+    .word ENDS 
+ 
  
 ;********************************************************************** 
 ;
@@ -1102,7 +1108,7 @@ HEADER "BACK", "BACK", F_IMMEDIATE,
 ; ok MARK 
 ;
 HEADER "MARK", "MARK", F_IMMEDIATE,
-    .word HERE, 0, COMMA, ENDS 
+    .word HERE, DOCON, 0x0000, ENDS 
  
 ;----------------------------------------------------------------------
 ;

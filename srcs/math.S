@@ -34,7 +34,7 @@
 ; for ascii chars in sram, in bytes not cells
 ; ( a u -- h ) djb hash
 .equ djbHASH, 5381
-HEADER "HASH", "HASH"
+HEADER "HASH", "HASH", F_LEAP
     NOOP
     clr _zero_
     ldi nos_low, lo8(djbHASH)
@@ -86,7 +86,7 @@ HEADER "HASH", "HASH"
 ;    92FF C206 0ECD 9361 2823
 ;    BE0B B303 6462 0E4C 3D24
 ;
-HEADER "RANDOM", "RANDOM"
+HEADER "RANDOM", "RANDOM", F_LEAP
     NOOP
 ;    load seed
     lds wrk_low, SEED
@@ -103,7 +103,7 @@ HEADER "RANDOM", "RANDOM"
 ;   ok ( w -- ) 
 ;   sets seed for rand
 ;
-HEADER "RAND", "RAND"
+HEADER "RAND", "RAND", F_LEAP
     NOOP
     pspull wrk_low, wrk_high
 _seed:
@@ -115,21 +115,21 @@ _seed:
 ;
 ;   ok ( w -- u) 
 ;
-HEADER "ABS", "ABS" 
+HEADER "ABS", "ABS", F_LEAP 
     .word NEGATE, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ;   is ( w1 w2 -- w) 
 ;
-HEADER "MAX", "MAX" 
+HEADER "MAX", "MAX", F_LEAP
     .word ENDS
 
 ;----------------------------------------------------------------------
 ;
 ;   is ( w1 w2 -- w) 
 ;
-HEADER "MIN", "MIN" 
+HEADER "MIN", "MIN", F_LEAP
     .word ENDS
 
 ;----------------------------------------------------------------------
@@ -140,7 +140,7 @@ HEADER "MIN", "MIN"
 ; "mpy16u" "- 16x16 Bit Unsigned Multiplication
 ;
 ; ok UM*
-HEADER "UM*", "UMUL"
+HEADER "UM*", "UMUL", F_LEAP
     NOOP
 ;
 ;    move operanos
@@ -185,7 +185,7 @@ m16result:
 ;   "div16u" "- 16/16 Bit Unsigned Division
 ;
 ; ok UM/MOD
-HEADER "UM/MOD", "UMBYMOD"
+HEADER "UM/MOD", "UMBYMOD", F_LEAP
     NOOP
 ;
 ;    move operanos
@@ -229,7 +229,7 @@ d16ures:
 ;     adapted from AVR-200 
 ;     "mpy16s" "- 16x16 Bit Signed Multiplication
 ; ok *
-HEADER "*", "SMUL"
+HEADER "*", "SMUL", F_LEAP
     NOOP
 ;
 ;***** Code
@@ -271,7 +271,7 @@ m16sres:
 ;   "div16s" "- 16/16 Bit Signed Division
 ;
 ; ok /
-HEADER "/", "SDIV"
+HEADER "/", "SDIV", F_LEAP
     NOOP
 ;
 ;***** Subroutine Register Variables
@@ -354,7 +354,7 @@ d16s_6:
 ; output  5 digits (ASCII)
 ;
 ; zzzz ( a -- w )
-HEADER "utoa", "utoa" 
+HEADER "utoa", "utoa", F_LEAP 
     NOOP
 
     movw nos_low, tos_low
