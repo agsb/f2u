@@ -1,9 +1,37 @@
+
+
+/*
+ *  DISCLAIMER
+ *
+ *  Copyright © 2020, Alvaro Gomes Sobral Barcellos,
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining
+ *  a copy of this software and associated documentation files (the
+ *  "Software"), to deal in the Software without restriction, including
+ *  without limitation the rights to use, copy, modify, merge, publish,
+ *  distribute, sublicense, and/or sell copies of the Software, and to
+ *  permit persons to whom the Software is furnished to do so, subject to
+ *  the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be
+ *  included in all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ *  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ *  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 
 /*
 
-simple simulator model for extended indirect thread code
+simple simulator for extended indirect thread code
 
 0 variable ip
 0 variable wk
@@ -25,7 +53,7 @@ nexti is next
 
 */
 
-#define END 8192
+#define END 1024
 
 #define STK 18
 
@@ -37,22 +65,23 @@ nexti is next
 
 int main (int argc, char * argv[]) {
 
-int  i, j, k, n, m;
+int  i, j, k, n, m, p;
 
-// define registers as 16 bits
+int  ip, dp, wk, rp;
 
-int  ip, rp, wk;
-int  pc, sp, dp, a, b;
-
-// define  memory as 16 bits
+int  hdr[END];
 
 int  ram[END];
 
+int  stk[STK];
+
 // label and goto self routines
+
+goto setup;
 
 // pop ip
 unnest:
-	ip = ram[rp];
+	ip = stk[rp];
 	rp++;
     if (debug) printf ("<%4d", ip);
 	goto next;
@@ -69,7 +98,7 @@ next:
 // push ip
 nest:
 	rp--; 
-    ram[rp] = ip;
+    stk[rp] = ip;
     ip = wk;
     if (debug) printf (">%4d", ip);
 	goto next;
@@ -91,19 +120,9 @@ exec:
     goto link;
 
 // setup pointers
+setup:
 
-    sp = STK;
-    
-    rp = STK + STK;
-    
-    pc = rp + 1;
-    
-    dp = pc + 1;
-
-    ip = pc;
-
-    wk = a = b = 0;
-
+    rp = STK - 1;
 
 // loop random links
 
@@ -111,47 +130,57 @@ exec:
 
 // setup primitives
 
-    for (k = 0 ; k < WDS ; k++) {
+    for (n = 0, m = 0 ; n < WDS ; n++, m++) {
 
-        ram[k + dp] = 0;
+        ram[n] = 0;
+
+        hdr[m] = n;
         
         }
 
-    dp = dp + k;
-
 // setup some random 
 
-    while (dp < (END-MAX) ) {
+    while (n < END) {
 
-        k = rand() % MAX;
-    
-        printf ("~%4d",k);
+        hdr[m] = n;
 
-        for (i = 0; i < k ; i++) {
+        j = rand() % MAX + 2;
 
-            printf (":%4d",k);
-            ram[dp] = rand() % dp;
+        for (i = 0; i < j ; i++) {
 
-            dp++;
+            p = rand() % (m - 2) + 1;
+
+            ram[n] = hdr[p];
+            
+            n++;
 
             }   
         
-        printf (":%4d",0);
-        ram[dp] = 0;
+        ram[n] = 0;
 
-        dp++;
+        n++;
+
+        m++;
 
         } 
 
 // dump it 
         
-    for (k = 0; k < dp; k++) {
+    j = 0;
 
-        if (k < WDS) continue;
+    for (i = 0; i < END; i++) {
 
-        printf ("%4d ",ram[k]);
+        if (i < WDS) { j++; continue; };
+  
+        printf ("%4d ",ram[i]);
 
-        if (ram[k] == 0)  printf ("\n");
+        if (ram[i] == 0)  {
+            
+            printf (" == %4d %4d\n (%4d) ", hdr[j], j, i);
+
+            j++;
+
+            }
 
         }    
 
