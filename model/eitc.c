@@ -1,5 +1,4 @@
 
-
 /*
  *  DISCLAIMER
  *
@@ -63,7 +62,11 @@ nexti is next
 
 #define debug 1
 
+#define last -1
+
 int main (int argc, char * argv[]) {
+
+int zz = 0;
 
 int  i, j, k, n, m, p;
 
@@ -79,19 +82,34 @@ int  stk[STK];
 
 goto setup;
 
-// pop ip
+// pull ip
 unnest:
 	ip = stk[rp];
 	rp++;
-    if (debug) printf ("<%4d", ip);
+    if (debug) {
+        printf ("\nunnest < ip %4d wk %4d rp %4d =",  ip, wk, rp);
+        printf ("( "); for (i=rp; i < STK; i++)  printf ("%4d ", stk[i]); printf (")\n");
+        }
 	goto next;
 
 //; load wk with contents of cell at ip
 next: 
+
 	wk = ram[ip];
 	ip++;
+
+    if (debug) {
+        printf ("\nnext = ip %4d wk %4d rp %4d =",  ip, wk, rp);
+        }
+
+    if (zz++ > 512) return (0);
+
+//; if last (-1) is a end of compoud word
+    if ( wk == -1) goto unnest;
+
 //; if zero (NULL) is a primitive word
-    if ( ! wk ) goto jump;
+    if ( wk == 0 ) goto jump;
+
 //; else is a reference
 	goto nest;
 
@@ -100,23 +118,34 @@ nest:
 	rp--; 
     stk[rp] = ip;
     ip = wk;
-    if (debug) printf (">%4d", ip);
+    if (debug) {
+        printf ("\nnest > ip %4d wk %4d rp %4d =",  ip, wk, rp);
+        printf ("( "); for (i=rp; i < STK; i++)  printf ("%4d ", stk[i]); printf (")\n");
+        }
 	goto next;
 
 //; continue 
 link:
-	putchar ('\n');
+    if (debug) {
+        printf ("\nlink > ip %4d wk %4d rp %4d =\n",  ip, wk, rp);
+        }
+	//printf ("\n");
 	goto next;
 
 //; then jump, for exec it, save next return into ip
 jump:
 	wk = ip;
 	ip++;
+    if (debug) {
+        printf ("\njump > ip %4d wk %4d rp %4d =\n",  ip, wk, rp);
+        }
 	goto exec;
 
 //; exec
 exec:
-    putchar ('Z' - wk);
+    if (debug) {
+        printf ("%2d %2d,", wk, ram[wk]);
+        }
     goto link;
 
 // setup pointers
@@ -126,7 +155,16 @@ setup:
 
 // loop random links
 
-    srand (1);
+    {
+
+    unsigned int seed;
+
+    seed = atoi(argv[1]); //(unsigned int *) (void *) &main;
+
+    srand ( ( seed ) );
+
+    }
+
 
 // setup primitives
 
@@ -156,7 +194,7 @@ setup:
 
             }   
         
-        ram[n] = 0;
+        ram[n] = last; // to unnest
 
         n++;
 
@@ -164,25 +202,62 @@ setup:
 
         } 
 
+    ram[n-1] = last;
+
+    
+    wk = atoi (argv[3]);
+
 // dump it 
         
-    j = 0;
+    if (wk && 0x1) {
 
-    for (i = 0; i < END; i++) {
+    j = WDS;
+
+    printf ("\n (%4d %4d) ", j, hdr[j]);
+
+    for (j = i = 0; i < END; i++) {
 
         if (i < WDS) { j++; continue; };
   
         printf ("%4d ",ram[i]);
 
-        if (ram[i] == 0)  {
+        if (ram[i] == -1)  {
             
-            printf (" == %4d %4d\n (%4d) ", hdr[j], j, i);
-
             j++;
+            printf ("\n (%4d %4d) ", j, hdr[j]);
 
             }
 
         }    
+    }
+
+// test it 
+
+    if (wk && 0x2) {
+
+        printf ("\n\n");
+
+        for (i = 0; i < STK - 2; i++) {
+            
+            j = rand() % (m - WDS) + WDS;
+
+            stk[i] = hdr[j];
+            
+            printf ("& %4d %4d %4d\n", i, j, stk[i]);
+
+            }
+        
+        stk[i] = stk[0];
+        
+        printf ("& %4d %4d\n", i, stk[i]);
+
+        rp = STK; // grows downwards
+
+        ip = wk = stk[0];
+    
+        goto nest;
+    
+        }
 
     return (0);
 
