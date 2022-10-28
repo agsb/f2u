@@ -43,9 +43,9 @@ static void mu_do_does()
     PUSH_ADDR(&W[2]);           /* push the address of the word's body */
 }
 
-muForth also names primitives as _leafs_, routines without calls, or as _twigs_, routines as list of references, for Indirect thread code.
-
 ```
+muForth also names primitives as *leafs*, routines without calls, or as *twigs*, routines as list of references, for Indirect thread code.
+
 ---
 > Alvaro H. Salas, National University of Colomb
 
