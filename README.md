@@ -18,8 +18,8 @@ Some special insights from
   sectorforth (https://github.com/cesarblum/sectorforth), 
   lbforth (https://github.com/larsbrinkhoff/lbForth/),
   polyForth (https://www.greenarraychips.com/home/documents/greg/DB005-120825-PF-REF.pdf),
+  muForth (https://muforth.nimblemachines.com/)
   and ...
-
 
 (I need to learn how to use and format with .md)
 
