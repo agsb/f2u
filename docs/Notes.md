@@ -3,6 +3,15 @@
 *still not operational*
 
 *still lots of english errors, please correct me*
+
+# 28/10/2022
+
+- review of inner interpreter code, optimize code, link and jump as background
+
+- review for try compliance to DPANS-94, ANSI  
+
+- rewrite core functions to use return stack only
+
 # 16/10/2022
 
 - return to f2u for review of flush flash memory, the optiboot crew leaves the solution at plainsight

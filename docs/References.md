@@ -47,7 +47,9 @@ defcode:  ; with NULL, one reference per primitive word
 +-------+---+---+---+---+---+---+-----+-------------+--------------+----------+--------------+----------+
          len                 pad  NULL
 
-OBS: 0x0 in codeword for all primitives, no need of DO_COLON in codeword for all compounds
+PS. ENDS and jmp link, does goto unnest
+
+OBS: 0x0 in codeword for all primitives and no DO_COLON in codeword for all compounds
 
 ```
 

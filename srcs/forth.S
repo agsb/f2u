@@ -92,19 +92,21 @@ _forth_:
 ; inner interpreter, 
 ; it is also a primitive word 
 ;
-; also called semis 
+; on AVR use Z for access flash
+;
+;   temporary use zpm, wrk, _word_
 ;
 HEADER "ENDS", "ENDS", F_LEAP
 ; does nothing and mark as primitive 
     NOOP 
  
 ; pull ips from rsp 
-_exit: 
+_unnest:  
     rspull zpm_low, zpm_high 
+    ; rjump _next
  
 ; load w with contents of cell at ips 
 _next: 
-; zpm points to next word cfa
     pmload wrk_low, wrk_high ; also increments zpm 
  
 ; if zero (NULL) is a primitive word 
@@ -113,23 +115,19 @@ _void:
     or _work_, wrk_high 
     brbs BIT_ZERO, _jump
  
-; else is a reference 
-_enter: 
+; else is a reference ( 2 extra cycles )
+_nest: 
     rspush zpm_low, zpm_high ; push next reference 
     movw zpm_low, wrk_low ; point to this reference 
     rjmp _next 
  
-; then jump, for exec it, save next return into ips 
+; then jump, for exec it 
 _jump: 
-    adiw zpm_low, 2	     
-    movw ips_low, zpm_low    
-    sbiw zpm_low, 2	     
     ijmp 
  
-; then link, for continue, load return from ips 
+; then link, for continue 
 _link: 
-    movw zpm_low, ips_low ; points to next reference 
-    rjmp _next 
+    rjmp _unnest 
  
 ;----------------------------------------------------------------------
 ;
@@ -524,28 +522,28 @@ HEADER "?BRANCH", "ZBRANCH", F_LEAP
  
 ;----------------------------------------------------------------------
 ;
-;  ok DOCON ( -- w ), (IP++) -> Tos
+;  ok DOCON ( -- w ), 
 ;  push a value from flash to data stack 
 ;
 HEADER "DOCON", "DOCON", F_LEAP
     NOOP 
     pspush tos_low, tos_high
-    movw zpm_low, ips_low 
+    rspull zpm_low, zpm_high
     pmload tos_low, tos_high 
-    movw ips_low, zpm_low 
+    rspush zpm_low, zpm_high
     POON 
  
 ;----------------------------------------------------------------------
 ;
-;  ok DOVAR ( -- w ), IP++ -> Tos 
+;  ok DOVAR ( -- w ),  
 ;  push a reference from flash to data stack 
 ;
 HEADER "DOVAR", "DOVAR", F_LEAP
     NOOP 
     pspush tos_low, tos_high
-    movw tos_low, ips_low 
+    rspull tos_low, tos_high
     adiw tos_low, 2
-    movw ips_low, tos_low
+    rspush tos_low, tos_high
     sbiw tos_low, 2
     POON 
  
@@ -929,6 +927,13 @@ HEADER "2", "TWO", F_LEAP
 ;
 ;    (some adapted from old fig-forth listings) 
 ;
+;----------------------------------------------------------------------
+;
+; ok ( w2 w1 -- w2 ) 
+;
+HEADER "NIP", "NIP",
+    .word SWAP, DROP, ENDS 
+ 
 ;----------------------------------------------------------------------
 ;
 ; ok ( w3 w2 w1 -- w2 w3 w1 ) 

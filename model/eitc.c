@@ -52,10 +52,13 @@ nexti is next
 
 */
 
+// size of memory
 #define END 1024
 
+// size of stack
 #define STK 18
 
+// number of primitives
 #define WDS 26
 
 #define MAX 10
@@ -72,10 +75,13 @@ int  i, j, k, n, m, p;
 
 int  ip, dp, wk, rp;
 
+// links to routines
 int  hdr[END];
 
+// plain memory
 int  ram[END];
 
+// stack return
 int  stk[STK];
 
 // label and goto self routines
@@ -130,12 +136,12 @@ link:
         printf ("\nlink > ip %4d wk %4d rp %4d =\n",  ip, wk, rp);
         }
 	//printf ("\n");
-	goto next;
+	goto unnest;
 
 //; then jump, for exec it, save next return into ip
 jump:
+    // skip zero
 	wk = ip;
-	ip++;
     if (debug) {
         printf ("\njump > ip %4d wk %4d rp %4d =\n",  ip, wk, rp);
         }
@@ -176,16 +182,16 @@ setup:
         
         }
 
-// setup some random 
+// setup some random compound
 
     while (n < END) {
 
         hdr[m] = n;
-
+// how many words
         j = rand() % MAX + 2;
 
         for (i = 0; i < j ; i++) {
-
+// which words, no recursion
             p = rand() % (m - 2) + 1;
 
             ram[n] = hdr[p];
@@ -237,6 +243,7 @@ setup:
 
         printf ("\n\n");
 
+// grow stack
         for (i = 0; i < STK - 2; i++) {
             
             j = rand() % (m - WDS) + WDS;
@@ -249,7 +256,7 @@ setup:
         
         stk[i] = stk[0];
         
-        printf ("& %4d %4d\n", i, stk[i]);
+        printf ("& %4d %4d %4d\n", i, 0, stk[i]);
 
         rp = STK; // grows downwards
 
