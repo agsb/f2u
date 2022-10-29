@@ -499,11 +499,13 @@ HEADER "><", "ENDIAN", F_LEAP
 HEADER "BRANCH", "BRANCH", F_LEAP
     NOOP 
 _branch: 
-    movw zpm_low, ips_low 
-    pmload tos_low, tos_high 
-    add ips_low, tos_low 
-    adc ips_high, tos_high 
-    pspull tos_low, tos_high 
+    rspull zpm_low, zpm_high 
+    pmload nos_low, nos_high 
+    sbiw zpm_low, 2
+    ; if negative ????
+    add zpm_low, nos_low 
+    adc zpm_high, nos_high 
+    rspull zpm_low, zpm_high 
     POON 
  
 ;----------------------------------------------------------------------
@@ -513,11 +515,13 @@ _branch:
 ;
 HEADER "?BRANCH", "ZBRANCH", F_LEAP
     NOOP 
-    test_zero tos_low, tos_high, _branch 
-    movw tos_low, ips_low 
-    adiw tos_low, 2 
-    movw ips_low, tos_low 
-    pspull tos_low, tos_high 
+    mvw nos_low, tos_low
+    pspull tos_low, tos_high
+    test_zero nos_low, nos_high, _branch 
+    ; skips forward
+    rspull zpm_low, zpm_high 
+    adiw zpm_low, 2 
+    rspull zpm_low, zpm_high 
     POON 
  
 ;----------------------------------------------------------------------
