@@ -1,5 +1,4 @@
 
-
 /*
  *  DISCLAIMER"
  *
@@ -26,13 +25,60 @@
  */
 
 ;----------------------------------------------------------------------
-; workaround while not done
 ;
-THIS = LAST
+; inside routines, not for user
+;
+;----------------------------------------------------------------------
+;
+; ok ( a1 c --- a2 | 0 ) 
+;   skips chars in address while not equal to c or 0x0
+;   not standart, 0x0 ends buffer
+;   works only in sram
+;
+HEADER "(skip)", "skip"
+    NOOP
+    clr tos_high
+    pspull zpm_low, zpm_high
+1:
+    lds nos_low, zpm_low
+    cp tos_high, nos_low 
+    breq 2f
+    cp tos_low, nos_low 
+    breq 3f
+    adiw zpm_low, 1
+    rjmp 1b
+2:  mv tos_low, tos_high
+    POON
+3:  mvw tos_low, zpm_low
+    POON
 
 ;----------------------------------------------------------------------
 ;
-; ok ( c --- a u | 0 ) 
+; ok ( a1 c --- a2 | 0 ) 
+;   scan chars in address while equal to c or 0x0
+;   not standart, 0x0 ends buffer
+;   works only in sram
+;
+HEADER "(scan)", "scan"
+    NOOP
+    clr tos_high
+    pspull zpm_low, zpm_high
+1:
+    lds nos_low, zpm_low
+    cp tos_high, nos_low 
+    breq 2f
+    cp tos_low, nos_low 
+    brne 3f
+    adiw zpm_low, 1
+    rjmp 1b
+2:  mv tos_low, tos_high
+    POON
+3:  mvw tos_low, zpm_low
+    POON
+
+;----------------------------------------------------------------------
+;
+; ok ( a c --- a u | 0 ) 
 ;    search TIB start at TOIN for next word delimited by c or \0
 ;    returns start of word and u lenght
 ;     or zero if no word
@@ -101,7 +147,8 @@ HEADER "(refill)", "refill"
     pspull nds_low, nds_high
     pspull zpm_low, zpm_high
 
-    ; keep a spc at start, so every word starts with spc, used later to make a counted string in site
+    ; keep a spc at start, so every word starts with spc, 
+    ; used later to make a counted string in site
     ldi tos_low, 32
     srsave tos_low
     dec nds_low
@@ -491,26 +538,6 @@ HEADER "[", "iscompile"
     sbr wrk_low, BIT_COMPILE
     rjmp states
 
-;----------------------------------------------------------------------
-;    ok ( -- ) 
-;    set bit_postpone in STATE to zero 
-HEADER "(nopostpone)", "nopostpone"
-    NOOP
-    ; clear postpone
-    lds wrk_low, STAT+0
-    cbr wrk_low, BIT_POSTPONE 
-    rjmp states
-    
-;----------------------------------------------------------------------
-;    ok ( -- ) 
-;    set bit_postpone in STATE to one 
-HEADER "(postpone)", "ispostpone"
-    NOOP
-    ; clear postpone
-    lds wrk_low, STAT+0
-    sbr wrk_low, BIT_POSTPONE 
-    rjmp states
-    
 ;----------------------------------------------------------------------
 ;    ok ( xt f -- ) 
 ;
