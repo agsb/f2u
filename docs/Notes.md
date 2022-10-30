@@ -4,6 +4,12 @@
 
 *still lots of english errors, please correct me*
 
+# 30/10/2022
+
+- include non standart words HOOK and BACK, as " ~~~ WORD ~~~ IF ~~~ WORD; THEN ~~~ ", cited by Moore in http://www.ultratechnology.com/1xforth.htm
+
+- review of flash write strategy
+
 # 28/10/2022
 
 - review of inner interpreter code, optimize code, link and jump as background
