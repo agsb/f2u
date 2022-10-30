@@ -49,9 +49,9 @@ SEED:	.word 0		; seed for pseudo random
 TURN:	.word 0		; routine to run after boot
 REST:	.word 0		; routine to run before reset
 
-WORD:	.word 0		; reference to latest word in dictionary
-HEAP:	.word 0		; next free cell in flash dictionary
-LAST:   .word 0		; next free cell in static ram 
+LIST:	.word 0		; reference to latest word in dictionary
+LAST:	.word 0		; next free cell in flash dictionary
+HEAP:   .word 0		; next free cell in static ram 
 KEEP:	.word 0		; next free cell in eeprom
 
 ; those are volatile, dont care

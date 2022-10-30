@@ -515,7 +515,7 @@ _branch:
 ;
 HEADER "?BRANCH", "ZBRANCH", F_LEAP
     NOOP 
-    mvw nos_low, tos_low
+    movw nos_low, tos_low
     pspull tos_low, tos_high
     test_zero nos_low, nos_high, _branch 
     ; skips forward
@@ -756,8 +756,8 @@ HEADER "TIB", "TIB", F_LEAP
 HEADER "LATEST", "LATEST", F_LEAP
     NOOP 
     pspush tos_low, tos_high
-    ldi tos_low, lo8(WORD) 
-    ldi tos_high, hi8(WORD) 
+    ldi tos_low, lo8(LIST) 
+    ldi tos_high, hi8(LIST) 
     POON 
  
 ;----------------------------------------------------------------------
@@ -1361,6 +1361,13 @@ HEADER "CREATE", "CREATE",
 ;   ( -- a n )
 ;
 HEADER "PARSE", "PARSE"
+    .word ENDS
+
+;----------------------------------------------------------------------
+;
+; is compile a header 
+;
+HEADER "FIND", "FIND",
     .word ENDS
 
 ;----------------------------------------------------------------------

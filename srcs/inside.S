@@ -41,6 +41,7 @@ HEADER "(skip)", "skip"
     pspull zpm_low, zpm_high
 1:
     lds nos_low, zpm_low
+    ; if \0
     cp tos_high, nos_low 
     breq 2f
     cp tos_low, nos_low 
@@ -65,6 +66,7 @@ HEADER "(scan)", "scan"
     pspull zpm_low, zpm_high
 1:
     lds nos_low, zpm_low
+    ; if \0
     cp tos_high, nos_low 
     breq 2f
     cp tos_low, nos_low 
@@ -79,60 +81,52 @@ HEADER "(scan)", "scan"
 ;----------------------------------------------------------------------
 ;
 ; ok ( a c --- a u | 0 ) 
-;    search TIB start at TOIN for next word delimited by c or \0
+;    search address for next word delimited by c or \0
 ;    returns start of word and u lenght
-;     or zero if no word
+;    or zero if no word
 ;
-HEADER "(parse)", "parse"
+HEADER "(word)", "word"
     NOOP
-1:    
     ; start at 
-    lds zpm_low, TOIN+0
-    lds zpm_high, TOIN+1
-    ; pull delimiter
-    pspull tos_low, tos_high
+    pspull zpm_low, zpm_high
     ; for \0 check
     clr tos_high
- 
-2:  
+1:  
     ; skips while equal delimiter
-    srload wrk_low
+    lds nos_low, zpm_low
     ; if \0
-    cp wrk_low, tos_high
+    cp tos_high, nos_low
     breq 10f
-    cp wrk_low, tos_low
-    breq 2b
-3:  
+    cp tos_low, nos_low
+    brne 2f
+    adiw zpm_low, 1
+    rjmp 1b
+
+2:  
     ; keep address
-    sbiw zpm_low, 1
-    movw nds_low, zpm_low
-4:  
-    ; skips while not equal delimiter
-    srload wrk_low
-    ; if \0
-    cp wrk_low, tos_high
-    breq 5f
-    cp wrk_low, tos_low
-    brne 4b
-5:  
-    ; keep length
-    sbiw zpm_low, 1
-    sub zpm_low, nds_low
-    sbc zpm_high, nds_high
     movw wrk_low, zpm_low
-    movw zpm_low, nds_low
+3:  
+    lds nos_low, zpm_low
+    ; if \0
+    cp tos_high, nos_low
+    breq 10f
+    cp tos_low, nos_low
+    breq 4f
+    adiw zpm_low, 1
+    rjmp 3b
+4:  
+    ; found
+    sub zpm_low, wrk_low
+    sbc zpm_high, wrk_high
+    pspull wrk_low, wrk_high
+    movw tos_low, wrk_low
     rjmp 20f
 10:
     ; end of buffer
-    ldi zpm_low, lo8(TIB)
-    ldi zpm_high, hi8(TIB)
-    clr wrk_low
-    clr wrk_high
+    clr tos_low
+    clr tos_high
 20:
-    ; update TOIN
-    sts TOIN+0, zpm_low
-    sts TOIN+1, zpm_high
-    WOOP
+    POON
 
 ;----------------------------------------------------------------------
 ;
@@ -144,24 +138,24 @@ HEADER "(parse)", "parse"
 HEADER "(refill)", "refill"
     NOOP
 10: 
-    pspull nds_low, nds_high
+    pspull nos_low, nos_high
     pspull zpm_low, zpm_high
 
     ; keep a spc at start, so every word starts with spc, 
     ; used later to make a counted string in site
     ldi tos_low, 32
     srsave tos_low
-    dec nds_low
+    dec nos_low
 
     clr tos_low  ; clear comments \
     clr tos_high ; clear comments ()
 
-    clr nds_high ; counter to 255
-    dec nds_low  ; save for \0
+    clr nos_high ; counter to 255
+    dec nos_low  ; save for \0
 
 11: 
     ; end of     
-    cp nds_low, nds_high
+    cp nos_low, nos_high
     brbs BIT_ZERO, 21f
 
 12: 
@@ -194,11 +188,11 @@ HEADER "(refill)", "refill"
 
     ; process BS
     ; no char ?
-    cp nds_high, nds_high
+    cp nos_high, nos_high
     breq 12b
 
     ; back one
-    dec nds_high
+    dec nos_high
     sbiw zpm_low, 1
     rjmp 12b    
 
@@ -292,7 +286,7 @@ HEADER "(refill)", "refill"
 
 20: 
     ; save char to buffer
-    inc nds_high
+    inc nos_high
     srsave wrk_low
     mov wrk_high, wrk_low
     rjmp 11b
@@ -315,140 +309,153 @@ HEADER "(refill)", "refill"
 ;----------------------------------------------------------------------
 ;
 ; ok find a word in a vocabulary
-;    ( a u -- xt f | a 0 )
-; counted strings are 254 chars maximum
-; names are 15 or 32 maximum
+;   ( aw u -- xt f | aw 0 )
+;   names are 15 maximum
+;
+;   dictionary is in flash and word is in sram
 ;
 HEADER "(find)", "find"
     NOOP
-    ; get count in low
-    pspull tos_low, tos_high
 
-    ; get address
-    pspull nds_low, nds_high
+    ; load address
+    pspull nos_low, nos_high
 
     ; save stack
     rspush psp_low, psp_high
+
+    ; move address to Y ! always check in macros.S
+    movw psp_low, nos_low
     
     ; prepare loop    
-    lds zpm_low, (LAST+0)
-    lds zpm_high, (LAST+1)
+    lds zpm_low, (LIST+0)
+    lds zpm_high, (LIST+1)
     
-    ; push for first loop
-    pspush zpm_low, zpm_high
+    ; push aword for first loop
+    rspush psp_low, psp_high
+
+    ; push alist for first loop
+    rspush zpm_low, zpm_high
+
+    ; save count
+    mov tos_high, tos_low
 
 10: 
     ; load link 
-    pspull zpm_low, zpm_high
+    rspull zpm_low, zpm_high
 
-    ; load contents
+    ; load address 
     pmload wrk_low, wrk_high
 
-    ; if null ends
+    ; if null, list ends
     cp wrk_low, wrk_high
     brbs BIT_ZERO, 30f
 
     ; save next link
-    pspush wrk_low, wrk_high
+    rspush wrk_low, wrk_high
 
+12:
     ; load size and first char
-    pmload wrk_low, wrk_high
+    pmload nos_low, nos_high
 
     ; save for flags
-    mov tos_high, wrk_low
+    mov wrk_high, nos_low
 
     ; must ummask
-    ; ( a1 u1 --- f )
-    andi wrk_low, F_UNMASK
+    andi nos_low, F_UNMASK
     
-    ; ping-pong
+    ; ping-pong 
     ; verify sizes
-    cp wrk_low, tos_low
+    cp nos_low, tos_low
     brne 10b
-
-    ; save count
-    mov _zero_, tos_low
 
     ; points to a1
-    movw psp_low, nds_low
-    ld wrk_low, X+
+    ld wrk_low, Y+
     
-12:  
     ; verify first char
-    cp wrk_low, wrk_high
+    cp wrk_low, nos_high
     brne 10b
-    dec _zero_
-    breq 20f 
+
+    ; prepare count down
+    mov tos_low, tos_high
     
-14:    
+14:
+    dec tos_low
+    brbs BIT_ZERO, 20f
+    
     ; verify next chars
-    pmload wrk_low, wrk_high
+    pmload nos_low, nos_high
 
-    ld _work_, X+
-    cp wrk_low, _work_
+    ld wrk_low, Y+
+    cp wrk_low, nos_low
     brne 10b
-    dec _zero_
-    breq 20f
+    
+    dec tos_low
+    brbs BIT_ZERO, 20f
 
-    ld _work_, x+
-    cp wrk_high, _work_
+    ld wrl_low, Y+
+    cp wrk_low, nos_high
     brne 10b
-    dec _zero_
-    breq 20f
 
     ; next chars
     rjmp 14b
 
 20:  
     ; found
-    ; drop link for next name
-    pspull wrk_low, wrk_high
+    ; anyway zpm is ever even
+
+    ; drops
+    rspull wrk_low, wrk_high
+    rspull wrk_low, wrk_high
 
     ; restore psp
     rspull psp_low, psp_high
 
-    ; push CFA, (xt)
-    ; if need LFA just subtract tos
+    ; push (xt)
     ;
     pspush zpm_low, zpm_high
 
     ; return flags
-    clr wrk_low
-    clr wrk_high
-    andi tos_high, F_IMMEDIATE
+    clr tos_low
+    clr tos_high
+    andi wrk_high, F_IMMEDIATE
     brne 24f
+
 22:
     ; immediate (1)
-    inc wrk_low
-    WOOP
+    inc tos_low
+    rjmp 40f
 24:
     ; common (-1)
-    dec wrk_low
-    WOOP
+    ser tos_low
+    ser tos_high
+    rjmp 40f
 
 30: 
     ; not found (0)
+    ; drops
+    rspull wrk_low, wrk_high
+    rspull wrk_low, wrk_high
     ; restore psp
     rspull psp_low, psp_high
     ; restore address
-    movw wrk_low, nds_low
     pspush wrk_low, wrk_high
     ; set flag false
-    clr wrk_low
-    clr wrk_low
+    clr tos_low
+    clr tos_low
+40:    
     ; save results
-    WOOP
+    POON
 
 ;----------------------------------------------------------------------
 ; ok ( mul mut -- d )
 ; 16*8 multiplication, 24 bit result, two words result
-; multipicand nd_high:nds_low by multiplier wrk_low, 
+; multipicand nd_high:nos_low by multiplier wrk_low, 
 ; result low word quotient in tos_high:tos_low, remainder in wrk_low
 ;
 HEADER "(basemul)", "basemul"
     NOOP
     ; pull multiplicanrd
-    pspull nds_low, nds_high
+    pspull nos_low, nos_high
     ; pull multiplier
     pspull wrk_low, wrk_high
     clr wrk_high
@@ -456,12 +463,12 @@ HEADER "(basemul)", "basemul"
 ; Multiply
 ;
     ; Multiply LSB
-    mul nds_low, wrk_low 
+    mul nos_low, wrk_low 
     ; copy result to result register
     mov tos_low, R0 
     mov tos_high, R1
     ; Multiply MSB
-    mul nds_high, wrk_low 
+    mul nos_high, wrk_low 
     ; copy MSB result to result byte 3
     mov wrk_high, R1 
     ; add LSB result to result byte 2
@@ -477,13 +484,13 @@ HEADER "(basemul)", "basemul"
 ;----------------------------------------------------------------------
 ;
 ; 16/8 division, 16 bit result, 8 bit remainder, two words result
-; dividend nds_high:tos_low by divisor tos_low, 
+; dividend nos_high:tos_low by divisor tos_low, 
 ; quotient in tos_high:tos_low, remainder in wrk_low
 ;
 HEADER "(basediv)", "basediv"
     NOOP
     ; pull dividend
-    pspull nds_low, nds_high
+    pspull nos_low, nos_high
     ; pull divisor
     pspull tos_low, tos_high
 10:
@@ -499,12 +506,12 @@ HEADER "(basediv)", "basediv"
     ; this should never, ever, happen
     brcs 30f                    
     ; trial subtraction
-    cp wrk_low, nds_low    
+    cp wrk_low, nos_low    
     ; not big enough
     brcs 40f                    
 30:
     ; ok, subtract it
-    sub wrk_low, nds_low      
+    sub wrk_low, nos_low      
     ; add this power of 2 to quotient
     inc tos_low               
 40:  
@@ -674,17 +681,17 @@ HEADER "(number)", "number"
     adc tos_high, wrk_high
 
     ; multiply by base
-    movw nds_low, tos_low
+    movw nos_low, tos_low
 
     ; Multiply LSB
-    mul nds_low, _work_
+    mul nos_low, _work_
     ; copy MSB result to result byte 1
     mov tos_low, R0 
     ; copy MSB result to result byte 2
     mov tos_high, R1
 
     ; Multiply MSB
-    mul nds_high, _work_
+    mul nos_high, _work_
     ; copy MSB result to result byte 3
     mov wrk_high, R1 
     ; add LSB result to result byte 2
