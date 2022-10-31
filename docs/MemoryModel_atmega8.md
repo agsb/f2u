@@ -117,7 +117,7 @@ note: system stack is for extra libraries, not for forth
     
     VERS    version (2 bytes) from 0.00.00 to 6.55.36 as release.version.revision
 
-### 6. Flags defined, inline
+### 3. Flags defined, inline
 
     CELL_SIZE   size of a cell in bytes, 2
     
@@ -135,7 +135,7 @@ note: system stack is for extra libraries, not for forth
 
     FALSE    0
 
-### 7. Ascii control, inline
+### 4. Ascii control, inline
 
     very minimal edit, 
         
