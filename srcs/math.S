@@ -33,6 +33,7 @@
 ; hash = (hash << 5) + str[i]
 ; for ascii chars in sram, in bytes not cells
 ; ( a u -- h ) djb hash
+;
 .equ djbHASH, 5381
 HEADER "HASH", "HASH", F_LEAP
     NOOP
@@ -44,13 +45,13 @@ HEADER "HASH", "HASH", F_LEAP
     ; get a char
 1:    
     
-    mov _work_, tos_low
-    or _work_, tos_high
+    cp tos_high, tos_low
     brbs BIT_ZERO, 2f
 
     ld _work_, Z+
     add nos_low, _work_
     adc nos_high, _zero_
+
     lsl nos_low
     rol nos_high
     lsl nos_low
@@ -95,7 +96,7 @@ HEADER "RANDOM", "RANDOM", F_LEAP
     eor wrk_low, wrk_high
     swap wrk_low
     add wrk_high, wrk_low
-    pspush wrk_low, wrk_high
+    movw tos_low, wrk_low
     rjmp _seed
 
 ;----------------------------------------------------------------------
@@ -105,7 +106,8 @@ HEADER "RANDOM", "RANDOM", F_LEAP
 ;
 HEADER "RAND", "RAND", F_LEAP
     NOOP
-    pspull wrk_low, wrk_high
+    movw wrk_low, tos_low
+    pspull tos_low, tos_high
 _seed:
     sts SEED, wrk_low
     sts SEED + 1, wrk_high
@@ -145,7 +147,7 @@ HEADER "UM*", "UMUL", F_LEAP
 ;
 ;    move operanos
 ;
-    pspull tos_low, tos_high    ; pull multiplicand
+    ; pspull tos_low, tos_high    ; pull multiplicand
     pspull nos_low, nos_high    ; pull multiplier
 ;
 ;***** Code
@@ -190,7 +192,7 @@ HEADER "UM/MOD", "UMBYMOD", F_LEAP
 ;
 ;    move operanos
 ;
-    pspull tos_low, tos_high    ; pull divisor
+    ; pspull tos_low, tos_high    ; pull divisor
     pspull nos_low, nos_high    ; pull dividend
 ;
 ;***** Code
@@ -236,7 +238,7 @@ HEADER "*", "SMUL", F_LEAP
 ;
 ;    move operanos
 ;
-    pspull tos_low, tos_high        ; pull multiplicand
+    ; pspull tos_low, tos_high        ; pull multiplicand
     pspull nos_low, nos_high        ; pull multiplier
 ;
 ;***** Code
@@ -278,7 +280,7 @@ HEADER "/", "SDIV", F_LEAP
 ;
 ;    move operanos
 ;
-    pspull tos_low, tos_high        ; pull divisor
+    ; pspull tos_low, tos_high        ; pull divisor
     pspull nos_low, nos_high        ; pull dividend
 ;
 ;***** Code

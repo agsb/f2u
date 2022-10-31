@@ -1,4 +1,5 @@
 
+
 /*
  *  DISCLAIMER
  *
@@ -25,95 +26,79 @@
  *
  */
 
-;---------------------------------------------------------------------
-; atmega8 avr
+;----------------------------------------------------------------------
 ;
-; UPDATE: 10/2022 to include stuff for atmega328 
-;---------------------------------------------------------------------- 
+; ok ( -- 0 ) 
 ;
-; version information
+HEADER "4", "FOUR", F_LEAP
+    NOOP 
+    pspush tos_low, tos_high 
+    clr tos_low 
+    clr tos_high 
+    adiw tos_low, 4
+    POON 
+
+;----------------------------------------------------------------------
 ;
-.equ version, 12 ; 0.00.10
-
-#include "macros.S"
-
+; ok ( w -- w + 4 ) 
+;
+HEADER "4+", "FOURPLUS",
+     .word FOUR, PLUS, ENDS 
+ 
 ;----------------------------------------------------------------------
-.section data
-.org SRAM_START
-; those are non volatile, must be saved in eeprom
-VOID:	.word 0		; always 0x0000
-SEED:	.word 0		; seed for pseudo random
-
-TURN:	.word 0		; routine to run after boot
-REST:	.word 0		; routine to run before reset
-
-LIST:	.word 0		; reference to latest word in dictionary
-LAST:	.word 0		; next free cell in flash dictionary
-HEAP:   .word 0		; next free cell in static ram 
-KEEP:	.word 0		; next free cell in eeprom
-
-; those are volatile, dont care
-STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile
-RADX:	.word 0		; numeric radix for convertion
-
-PAGE:   .word 0     ; flash page to flush 
-TOIN:   .word 0     ; offset in TIB
-
-TIBS:	.word 0		; count down
-CURS:   .word 0     ; count down 
-
-TIB0:	.space TIB_SIZE, 0x0
-
+;
+; ok ( w -- w - 4 ) 
+;
+HEADER "4-", "FOURMINUS",
+     .word FOUR, MINUS, ENDS 
+ 
 ;----------------------------------------------------------------------
-; stacks at end of sram
-SP0 = SRAM_END
-PS0 = SP0 - STACK_SIZE
-RS0 = PS0 - STACK_SIZE
-FREE = RS0 - STACK_SIZE
-
-;.equ free_sram, FREE - TIB_SIZE
-
+;
+; ok ( w1 w2 -- ) 
+;
+HEADER "2>R", "TWOTOR",
+     .word SWAP, SWIP, SWAP, RTO, RTO, ENDS 
+ 
 ;----------------------------------------------------------------------
-.p2align 1, 0x00
-#include "bios.S"
-
+;
+; ok ( w1 w2 -- ) 
+;
+HEADER "2R>", "TWORTO",
+     .word RTO, RTO, SWAP, SWIP, SWAP, ENDS 
+ 
 ;----------------------------------------------------------------------
-.p2align 1, 0x00
-#include "messages.S"
-
+;
+; ok ( w1 w2 -- ) 
+;
+HEADER "2R@", "TWORAT",
+     .word RTO, RTO, RAT, SWAP, TOR, SWIP, SWAP, ENDS 
+ 
 ;----------------------------------------------------------------------
-.p2align 1, 0x00
-;#include "forth.S"
-#include "forth-leafs.S"
-#include "forth-twigs.S"
-
+;
+; ok ( w1 w2 -- w1 w2 w1 w2 ) 
+;
+HEADER "2DUP", "TWODUP",
+     .word OVER, OVER, ENDS 
+ 
 ;----------------------------------------------------------------------
-.p2align 1, 0x00
-#include "doubles.S"
-
+;
+; ok ( w1 w2 w3 w4 -- w3 w4 w1 w2 ) 
+;
+HEADER "2SWAP", "TWOSWAP",
+     .word TOR, SWAP, SWIP, TOR, SWAP, SWIP, ENDS 
+     
 ;----------------------------------------------------------------------
-;.p2align 1, 0x00
-;#include "inside.S"
-
+;
+; ok ( w1 w2 w3 w4 -- w3 w4 + w1 w2 ) 
+;
+HEADER "D+", "DPLUS",
+     .word ENDS 
+     
 ;----------------------------------------------------------------------
-;.p2align 1, 0x00
-#include "math.S"
-
-;----------------------------------------------------------------------
-.p2align 1, 0x00
-#include "flush.S"
-
-;----------------------------------------------------------------------
-.equ free_flash, .
-
-;----------------------------------------------------------------------
-
-/*
-1 	1st 	fst,    first  
-2 	2nd 	snd,    second
-3 	3rd 	thd,    third
-4 	4th 	fth,    fourth
-and so on is th :)
-*/
-
-
+;
+; ok ( w1 w2 w3 w4 -- w3 w4 - w1 w2 ) 
+;
+HEADER "D-", "DMINUS",
+     .word ENDS 
+     
+ 

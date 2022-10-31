@@ -97,7 +97,7 @@ HEADER "(load_flash)", "LDFLASH"
     rol zpm_high
 
     ; how many bytes
-    lds wrk_low, SPM_PAGE
+    lds wrk_low, SPM_SIZE
 
 1:
     lpm wrk_high, Z+
@@ -156,7 +156,7 @@ HEADER "(save_flash)", "SVFLASH"
 	clr zpm_high
 
     ; how many bytes, less than 256!
-    ldi r23, SPM_PAGE
+    ldi r23, SPM_SIZE
 
     ; copy page to buffer, word by word
 2:

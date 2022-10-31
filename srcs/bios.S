@@ -74,6 +74,19 @@ PGERS = 1
 SPMEN = 0
 
 ;----------------------------------------------------------------------
+;792486AA–AVR–02/2013 ATmega8(L)Note:1.   See “About Code Examples” on page 8
+;
+; from atmeg8 datasheet
+;
+EEARH =  0x1F
+EEARL =  0x1E
+EEDR  =  0x1D
+EECR  =  0x1C
+EEWE  =  1
+EEMWE =  2
+EERE  =  0
+
+;----------------------------------------------------------------------
 ;
 ; classic interrup vector table
 ;
@@ -210,6 +223,8 @@ GOOD:
 ;
 ;   ticks counts till 65 seconds
 ;
+;   60000 is EA60
+;
 ; interrupt routine
 TIM0_OVF:
 ; save flags
@@ -222,7 +237,7 @@ TIM0_OVF:
     inc r5
 TIM0_ADJ:
     out TCNT0, r3
-; reset watch dog
+;  reset watch dog
     wdr
 ; load flags and return
     out __SREG__, r2
@@ -232,39 +247,3 @@ TIM0_ADJ:
     sei
     reti
 
-#ifdef EEPS
-;----------------------------------------------------------------------
-;
-;   Assembly Code Example, from AVR manual
-;
-EEPROM_write:
-; Wait for completion of previous write
-    sbic EECR, EEPE
-    rjmp EEPROM_write
-; Set up address (r18:r17) in address register
-    out EEARH, r25
-    out EEARL, r24
-; Write data (r16) to Data Register
-    out EEDR, r22
-; Write logical one to EEMPE
-    sbi EECR, EEMPE
-; Start eeprom write by setting EEPE
-    sbi EECR, EEPE
-    ret
-
-EEPROM_read:
-; Wait for completion of previous write
-    sbic EECR, EEPE
-    rjmp EEPROM_read
-; Set up address (r18:r17) in address register
-    out EEARH, r25
-    out EEARL, r24
-; Start eeprom read by writing EERE
-    sbi EECR, EERE
-; Read data from Data Register
-    in r22, EEDR
-    ret
-
-#endif
-
-.equ bios_end, .

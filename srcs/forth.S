@@ -37,7 +37,7 @@
 ;
 ; .word  link    link to previous 
 ; .byte  size    sizeof name OR flags 
-; .ascii "name"  name, plus a pad byte with BL (0x32) if size is odd 
+; .ascii "name"  name, plus a pad byte with BL (0x32) if size is even 
 ; .word  param,  many references 
 ;
 ;----------------------------------------------------------------------
@@ -69,6 +69,9 @@
 ; nos, temporary next of stack r22:r23 
 ; wrk, temporary working r20:r21 
 ;
+; _zero_, always zero, keeped by timer0
+; _work_, scratch
+;
 ; Can only use LPM to access flash memory ? YES! 
 ;
 ; forth: all constants in flash
@@ -77,7 +80,6 @@
 ;
 ; why ? flash memory suports only 10.000 cycles 
 ;
- 
 ;----------------------------------------------------------------------
 ; starts just above sram ends 
 ;
@@ -134,6 +136,152 @@ _link:
 HEADER "ZZZZ", "ZZZZ",
     .word ENDS 
  
+;********************************************************************** 
+;
+;   bios i/O 
+;
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+; beware, it blocks while test if can receive a char 
+;
+HEADER "KEY", "KEY", F_LEAP
+    NOOP 
+1: 
+    sbis 0x0b, 7 
+    rjmp 1b 
+2: 
+    pspush tos_low, tos_high
+    in tos_low, 0x0c 
+    clr tos_high 
+    POON 
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- 0 | w) 
+; test if can receive a char, or return FALSE 
+;
+HEADER "KEY?", "QKEY", F_LEAP
+    NOOP 
+3: 
+    sbis 0x0b, 7 
+    rjmp _ffalse 
+    rjmp 2b 
+ 
+;----------------------------------------------------------------------
+;
+; ok ( w -- ) 
+; beware, it blocks while test if can send a char 
+;
+HEADER "EMIT", "EMIT", F_LEAP
+    NOOP 
+1: 
+    sbis 0x0b, 5 
+    rjmp 1b 
+2: 
+    out 0x0c, tos_low 
+    pspull tos_low, tos_high
+    POON 
+ 
+;----------------------------------------------------------------------
+;
+; ok ( w -- w 0) 
+; test if can send a char, or return FALSE 
+;
+HEADER "EMIT?", "QEMIT", F_LEAP
+    NOOP 
+3: 
+    sbis 0x0b, 5 
+    rjmp _ffalse 
+    rjmp 2b 
+ 
+;----------------------------------------------------------------------
+;
+; ok ( u u w -- ) 
+;
+HEADER ">EEPROM", "TOEEPROM", F_LEAP
+    NOOP 
+    pspull nos_low, nos_high
+
+EEPROM_write:
+; Wait for completion of previous write
+    sbic EECR, EEPE
+    rjmp EEPROM_write
+
+; Set up address  in address register
+    out EEARH, tos_high
+    out EEARL, tos_low
+; Write data to Data Register
+    out EEDR, nos_low
+; prepare    
+    in r2, __SREG__
+    cli
+; Write logical one to EEMPE
+    sbi EECR, EEMPE
+; Start eeprom write by setting EEPE
+    sbi EECR, EEPE
+; restore
+    out __SREG__, r2
+    sei
+    POON
+
+;----------------------------------------------------------------------
+;
+; ok ( w -- u ) 
+;
+HEADER "EEPROM>", "EEPROMTO", F_LEAP
+    NOOP 
+    pspull nos_low, nos_high
+
+EEPROM_read:
+; Wait for completion of previous write
+    sbic EECR, EEPE
+    rjmp EEPROM_read
+; Set up address in address register
+    out EEARH, tos_high
+    out EEARL, tos_low
+; Start eeprom read by writing EERE
+    sbi EECR, EERE
+; Read data from Data Register
+    in tos_low, EEDR
+    clr tos_high
+    POON
+
+;----------------------------------------------------------------------
+;
+; ok ( w -- u ) 
+; also io@
+;
+HEADER "PEEK", "PEEK", F_LEAP
+    NOOP 
+    movw zpm_low, tos_low  
+    ld tos_low, Z
+    clr tos_high
+    POON
+
+;----------------------------------------------------------------------
+;
+; ok ( u w -- ) 
+; also io!
+;
+HEADER "POKE", "POKE", F_LEAP
+    NOOP 
+    movw zpm_low, tos_low  
+    st Z, tos_low
+    pspull tos_low, tos_high
+    POON
+    
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+; push timer counter 
+;
+HEADER "MILLIS", "MILLIS", F_LEAP
+    NOOP 
+    pspush tos_low, tos_high 
+    mov tos_low, ticks_low 
+    mov tos_high, ticks_high 
+    POON 
  
 ;********************************************************************** 
 ;
@@ -329,12 +477,25 @@ HEADER "SWAP", "SWAP", F_LEAP
  
 ;----------------------------------------------------------------------
 ;
+; ok ( w2 w1 -- w2 w1 w2 ) 
+;
+HEADER "OVER", "OVER", F_LEAP
+    NOOP 
+    pspull nos_low, nos_high 
+    pspush nos_low, nos_high 
+    pspush tos_low, tos_high 
+    movw tos_low, nos_low
+    POON 
+ 
+;----------------------------------------------------------------------
+;
 ; ok ( 0 | w -- 0 | w w ) 
 ; dup if tos not zero 
 ;
 HEADER "?DUP", "ZDUP", F_LEAP
     NOOP 
-    test_zero tos_low, tos_high, 1f 
+    cp tos_low, tos_high
+    brst BIT_ZERO, 1f 
     pspush tos_low, tos_high 
 1: 
     POON 
@@ -467,7 +628,7 @@ HEADER "><", "ENDIAN", F_LEAP
  
 ;----------------------------------------------------------------------
 ;
-; ok ( branch next reference ) 
+; ok ( -- ) ( branch next reference ) 
 ; doing offsets in bytes 
 ;
 HEADER "BRANCH", "BRANCH", F_LEAP
@@ -561,7 +722,7 @@ HEADER "C!", "CTO", F_LEAP
     pspull tos_low, tos_high
     st Z, tos_low
     pspull tos_low, tos_high 
-    rjmp TO 
+    POON 
  
 ;----------------------------------------------------------------------
 ;
@@ -573,7 +734,7 @@ HEADER "C@", "CAT", F_LEAP
     movw zpm_low, tos_low
     ld tos_low, Z
     clr tos_high
-    rjmp AT 
+    POON 
  
 ;----------------------------------------------------------------------
 ;
@@ -710,76 +871,6 @@ HEADER "CMOVE>", "MOVEB", F_LEAP
     rspull psp_low, psp_high
     POON
 
-;********************************************************************** 
-;   usart i/O 
-;
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-; beware, it blocks while test if can receive a char 
-;
-HEADER "KEY", "KEY", F_LEAP
-    NOOP 
-1: 
-    sbis 0x0b, 7 
-    rjmp 1b 
-2: 
-    pspush tos_low, tos_high
-    in tos_low, 0x0c 
-    clr tos_high 
-    POON 
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- 0 | w) 
-; test if can receive a char, or return FALSE 
-;
-HEADER "KEY?", "QKEY", F_LEAP
-    NOOP 
-3: 
-    sbis 0x0b, 7 
-    rjmp _ffalse 
-    rjmp 2b 
- 
-;----------------------------------------------------------------------
-;
-; ok ( w -- ) 
-; beware, it blocks while test if can send a char 
-;
-HEADER "EMIT", "EMIT", F_LEAP
-    NOOP 
-1: 
-    sbis 0x0b, 5 
-    rjmp 1b 
-2: 
-    out 0x0c, tos_low 
-    pspull tos_low, tos_high
-    POON 
- 
-;----------------------------------------------------------------------
-;
-; ok ( w -- w 0) 
-; test if can send a char, or return FALSE 
-;
-HEADER "EMIT?", "QEMIT", F_LEAP
-    NOOP 
-3: 
-    sbis 0x0b, 5 
-    rjmp _ffalse 
-    rjmp 2b 
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-; push timer counter 
-;
-HEADER "MILLIS", "MILLIS", F_LEAP
-    NOOP 
-    pspush tos_low, tos_high 
-    mov tos_low, ticks_low 
-    mov tos_high, ticks_high 
-    POON 
- 
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- 0 ) 
@@ -812,8 +903,7 @@ HEADER "2", "TWO", F_LEAP
     pspush tos_low, tos_high 
     clr tos_low 
     clr tos_high 
-    inc tos_low
-    inc tos_low
+    adiw tos_low, 2
     POON 
  
 ;********************************************************************** 
@@ -897,7 +987,7 @@ HEADER "ALLOT", "ALLOT",
  
 ;----------------------------------------------------------------------
 ;
-; ok ( w2 w1 -- w2 ) 
+; ok ( w2 w1 -- w1 ) 
 ;
 HEADER "NIP", "NIP",
     .word SWAP, DROP, ENDS 
@@ -913,8 +1003,8 @@ HEADER "SWIP", "SWIP",
 ;
 ; ok ( w2 w1 -- w2 w1 w2 ) 
 ;
-HEADER "OVER", "OVER",
-    .word TOR, DUP, RTO, SWAP, ENDS 
+;HEADER "OVER", "OVER",
+;    .word TOR, DUP, RTO, SWAP, ENDS 
  
 ;----------------------------------------------------------------------
 ;

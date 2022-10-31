@@ -1,5 +1,4 @@
 
-
 /*
  *  DISCLAIMER
  *
@@ -206,39 +205,9 @@ is_\label:
 .endm
 
 ;----------------------------------------------------------------------
-; also io@
-;
-.macro peek address, register
-    .if (\address < $40)
-    in \register, \address
-    .else
-    lds \register, \address
-    .endif
-.endm
-
-;----------------------------------------------------------------------
-; also io!
-;
-.macro poke address, register
-    .if (\address < $40)
-    out \address, \register
-    .else
-    sts \address, \register
-    .endif
-.endm
-
-;----------------------------------------------------------------------
-; test, skip next if not zero
 ;
 ; for Atmega8:
-; BIT_ZERO is 1
 ;
-; non destructive, check
-;
-.macro test_zero low, high, address
-    cp \high, \low
-    brbs BIT_ZERO, \address
-.endm
 
 ;----------------------------------------------------------------------
 ; all primitives must start with NOOP and end with POON
@@ -332,6 +301,8 @@ WRITE_TO_READ_ONLY = -20
 NOT_A_NUMBER = -24
 
 ;---------------------------------------------------------------------
+; ASCII constants
+;
 ; Flow Control
 ; assumes that all line edit is done at remote!
 ; no backspace, no delete, no moving cursor, just a static line.
@@ -352,9 +323,17 @@ BS_    =   0x08    ; ascii backspace ^H
 
 BL_    =   0x20    ; ascii space 
 
-BIT_ZERO = 1
+;----------------------------------------------------------------------
+; AVR SREG constants
+;
 
 BIT_CARRY = 0
+
+BIT_ZERO = 1
+
+BIT_NEG = 2
+
+;----------------------------------------------------------------------
 
 #ifdef atmega8
 
@@ -403,8 +382,6 @@ E2P_END = 0x1FF
 /* for flash flush */
 
 ; buffer for flush flash
-
-FIB_SIZE = SPM_SIZE
 
 /* where start forth */
 
