@@ -1,6 +1,3 @@
-Makefile:HEADERS = 
-Makefile:%.o : %.c $(HEADERS)
-Makefile:%.s : %.c $(HEADERS)
 MaybeRiscV.S:HEADER "CSAME", "csame"
 MaybeRiscV.S:HEADER "CMOVE", "cmove"
 MaybeRiscV.S:HEADER "BMOVE", "bmove"
@@ -60,13 +57,6 @@ forth.S:HEADER "C@", "CAT", F_LEAP
 forth.S:HEADER "CSAME", "CSAME", F_LEAP
 forth.S:HEADER "CMOVE", "MOVEF", F_LEAP
 forth.S:HEADER "CMOVE>", "MOVEB", F_LEAP
-forth.S:HEADER "TIB", "TIB", F_LEAP
-forth.S:HEADER "LATEST", "LATEST", F_LEAP
-forth.S:HEADER "STATE", "STATE", F_LEAP
-forth.S:HEADER "BASE", "BASE", F_LEAP
-forth.S:HEADER "(sram)", "sram_", F_LEAP
-forth.S:HEADER "(eeprom)", "eeprom_", F_LEAP
-forth.S:HEADER "(flash)", "flash_", F_LEAP
 forth.S:HEADER "KEY", "KEY", F_LEAP
 forth.S:HEADER "KEY?", "QKEY", F_LEAP
 forth.S:HEADER "EMIT", "EMIT", F_LEAP
@@ -75,6 +65,16 @@ forth.S:HEADER "MILLIS", "MILLIS", F_LEAP
 forth.S:HEADER "0", "ZERO", F_LEAP
 forth.S:HEADER "1", "ONE", F_LEAP
 forth.S:HEADER "2", "TWO", F_LEAP
+forth.S:HEADER "TIB", "TIB",
+forth.S:HEADER "LATEST", "LATEST",
+forth.S:HEADER "STATE", "STATE",
+forth.S:HEADER "BASE", "BASE",
+forth.S:HEADER "(sram)", "sram_",
+forth.S:HEADER "(eeprom)", "eeprom_",
+forth.S:HEADER "(flash)", "flash_",
+forth.S:HEADER "HERE", "HERE",
+forth.S:HEADER "ALLOT", "ALLOT",
+forth.S:HEADER "NIP", "NIP",
 forth.S:HEADER "SWIP", "SWIP",
 forth.S:HEADER "OVER", "OVER",
 forth.S:HEADER "ROT", "ROTU",
@@ -99,8 +99,8 @@ forth.S:HEADER "COMP", "COMP",
 forth.S:HEADER "EXIT", "EXIT",
 forth.S:HEADER "EXEC", "EXEC",
 forth.S:HEADER "TAIL", "TAIL",
-forth.S:HEADER "BACK", "BACK", F_IMMEDIATE,
-forth.S:HEADER "MARK", "MARK", F_IMMEDIATE,
+forth.S:HEADER "TOBACK", "TOBACK", F_IMMEDIATE,
+forth.S:HEADER "MARKTO", "MARKTO", F_IMMEDIATE,
 forth.S:HEADER "BEGIN", "BEGIN", F_IMMEDIATE,
 forth.S:HEADER "AGAIN", "AGAIN", F_IMMEDIATE,
 forth.S:HEADER "UNTIL", "UNTIL", F_IMMEDIATE,
@@ -111,6 +111,10 @@ forth.S:HEADER "THEN", "THEN", F_IMMEDIATE,
 forth.S:HEADER "ELSE", "ELSE", F_IMMEDIATE,
 forth.S:HEADER "WHILE", "WHILE", F_IMMEDIATE,
 forth.S:HEADER "REPEAT", "REPEAT", F_IMMEDIATE,
+forth.S:HEADER "HOOK", "HOOK", F_IMMEDIATE,
+forth.S:HEADER "BACK", "BACK", F_IMMEDIATE,
+forth.S:HEADER "FOR", "FOR", 
+forth.S:HEADER "NEXT", "NEXT",
 forth.S:HEADER "DO", "DO", F_IMMEDIATE,
 forth.S:HEADER "DONT", "DONT", F_IMMEDIATE,
 forth.S:HEADER "QDO", "QDO", F_IMMEDIATE,
@@ -127,23 +131,22 @@ forth.S:HEADER ">CFA", "TOCFA",
 forth.S:HEADER "HIDDEN", "HIDDEN",
 forth.S:HEADER "IMMEDIATE", "IMMEDIATE", 
 forth.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY",
-forth.S:HEADER "HERE", "HERE", F_LEAP
-forth.S:HEADER "ALLOT", "ALLOT", F_LEAP
 forth.S:HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE
 forth.S:HEADER "CREATE", "CREATE",
 forth.S:HEADER "PARSE", "PARSE"
+forth.S:HEADER "FIND", "FIND",
 forth.S:HEADER ":", "COLON",
 forth.S:HEADER ";", "SEMMI",
 forth.S:;HEADER "INTERPRET", "INTERPRET",
-inside.S:HEADER "(parse)", "parse"
+inside.S:HEADER "(skip)", "skip"
+inside.S:HEADER "(scan)", "scan"
+inside.S:HEADER "(word)", "word"
 inside.S:HEADER "(refill)", "refill"
 inside.S:HEADER "(find)", "find"
 inside.S:HEADER "(basemul)", "basemul"
 inside.S:HEADER "(basediv)", "basediv"
 inside.S:HEADER "]", "isexecute"
 inside.S:HEADER "[", "iscompile"
-inside.S:HEADER "(nopostpone)", "nopostpone"
-inside.S:HEADER "(postpone)", "ispostpone"
 inside.S:HEADER  "(eval)", "evaluate"
 inside.S:HEADER "(number)", "number"
 inside.S:HEADER ".\"", "dotquote"

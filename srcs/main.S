@@ -58,31 +58,20 @@ KEEP:	.word 0		; next free cell in eeprom
 STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile, 2 postpone
 RADX:	.word 0		; numeric radix for convertion
 
-TIBP:	.word 0		; offset in TIB
-TIBC:	.word 0		; count down
-
-FIBP:	.word 0		; offset in FIB
-FIBC:	.word 0		; count down
-
-PTRP:   .word 0     ; offset in PAD
-CTRC:   .word 0     ; count down 
-
 PAGE:   .word 0     ; flash page to flush 
-PADS:   .word 0     ; reference to scratch area 
+TOIN:   .word 0     ; offset in TIB
 
-FIB0:	.space FIB_SIZE, 0x0
+TIBS:	.word 0		; count down
+CURS:   .word 0     ; count down 
+
 TIB0:	.space TIB_SIZE, 0x0
 
-PSZ:	.space STACK_SIZE, 0x0
-RSZ:	.space STACK_SIZE, 0x0
-SPZ:	.space STACK_SIZE, 0x0
+SP0 = SRAM_END
+PS0 = SP0 - STACK_SIZE
+RS0 = PS0 - STACK_SIZE
+FREE = RS0 - STACK_SIZE
 
-PS0 = PSZ + STACK_SIZE
-RS0 = RSZ + STACK_SIZE
-SP0 = SPZ + STACK_SIZE
-
-
-;.equ free_sram, SRAM_END - .
+;.equ free_sram, FREE - TIB_SIZE
 
 ;----------------------------------------------------------------------
 .p2align 1, 0x00

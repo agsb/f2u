@@ -66,15 +66,14 @@
 ; parameter stack pointer r28:r29 as Y 
 ; return stack pointer r26:r27 as X 
 ; top of stack r24:r25 
-; temporary second of stack r22:r23 
-; temporary working r20:r21 
-; instruction pointer r18:r19 
+; nos, temporary next of stack r22:r23 
+; wrk, temporary working r20:r21 
 ;
 ; Can only use LPM to access flash memory ? YES! 
 ;
 ; forth: all constants in flash
 ;
-; user: all constants and all variables in sdram 
+; user: no constants and variables in sdram 
 ;
 ; why ? flash memory suports only 10.000 cycles 
 ;
@@ -111,8 +110,7 @@ _next:
  
 ; if zero (NULL) is a primitive word 
 _void:
-    mov _work_, wrk_low 
-    or _work_, wrk_high 
+    cp wrk_low, wrk_high 
     brbs BIT_ZERO, _jump
  
 ; else is a reference ( 2 extra cycles )
@@ -149,7 +147,7 @@ HEADER "ZZZZ", "ZZZZ",
 ;
 HEADER "0=", "ZEQU", F_LEAP
     NOOP 
-    or tos_low, tos_high
+    cp tos_low, tos_high
     brbs BIT_ZERO, _ftrue
 _ffalse:
     clr tos_low 
@@ -169,21 +167,9 @@ HEADER "!", "TO", F_LEAP
     NOOP 
     movw  zpm_low, tos_low
     pspull tos_low, tos_high 
-
-; if above _forth_ is flash 
-    ldi wrk_high, hi8(_forth_) 
-    cpi zpm_low, lo8(_forth_) 
-    cpc zpm_high, wrk_high 
-    brge _isflash_to 
- 
-_isram_to: 
     srsave tos_low 
     srsave tos_high
     pspull tos_low, tos_high 
-    POON 
- 
-_isflash_to: 
-;   do flash flush, later :( still not done zzzz
     POON 
  
 ;----------------------------------------------------------------------
@@ -194,20 +180,8 @@ _isflash_to:
 HEADER "@", "AT", F_LEAP
     NOOP 
     movw zpm_low, tos_low 
- 
-; if above _forth_ is flash 
-    ldi wrk_high, hi8(_forth_) 
-    cpi zpm_low, lo8(_forth_) 
-    cpc zpm_high, wrk_high 
-    brge _isflash_at 
- 
-_isram_at: 
     srload tos_low 
     srload tos_high 
-    POON
- 
-_isflash_at: 
-    pmload tos_low, tos_high 
     POON
  
 ;----------------------------------------------------------------------
@@ -276,7 +250,7 @@ HEADER "R@", "RAT", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
     rspull tos_low, tos_high 
-    rspush tos_low, tos_high 
+    subi psp_low, 2 
     POON 
  
 ;----------------------------------------------------------------------
@@ -302,7 +276,7 @@ HEADER "PS!", "SPTO", F_LEAP
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- rsp) 
-; put the top of return stack at tos
+; put the address to top of return stack at tos
 ;
 HEADER "RS@", "RPAT", F_LEAP
     NOOP 
@@ -313,7 +287,7 @@ HEADER "RS@", "RPAT", F_LEAP
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- psp ) 
-; put the top of parameter stack at tos
+; put the address to top of parameter stack at tos
 ;
 HEADER "PS@", "SPAT", F_LEAP
     NOOP 
@@ -486,9 +460,9 @@ _shr:
 ;
 HEADER "><", "ENDIAN", F_LEAP
     NOOP 
-    mov _work_, tos_low
+    mov wrk_low, tos_low
     mov tos_low, tos_high
-    mov tos_high, _work_
+    mov tos_high, wrk_low
     POON 
  
 ;----------------------------------------------------------------------
@@ -502,10 +476,9 @@ _branch:
     rspull zpm_low, zpm_high 
     pmload nos_low, nos_high 
     sbiw zpm_low, 2
-    ; if negative ????
     add zpm_low, nos_low 
     adc zpm_high, nos_high 
-    rspull zpm_low, zpm_high 
+    rspush zpm_low, zpm_high 
     POON 
  
 ;----------------------------------------------------------------------
@@ -517,7 +490,8 @@ HEADER "?BRANCH", "ZBRANCH", F_LEAP
     NOOP 
     movw nos_low, tos_low
     pspull tos_low, tos_high
-    test_zero nos_low, nos_high, _branch 
+    cp nos_low, nos_high
+    brbs BIT_ZERO, _branch 
     ; skips forward
     rspull zpm_low, zpm_high 
     adiw zpm_low, 2 
@@ -528,6 +502,7 @@ HEADER "?BRANCH", "ZBRANCH", F_LEAP
 ;
 ;  ok DOCON ( -- w ), 
 ;  push a value from flash to data stack 
+;   also DOLIT
 ;
 HEADER "DOCON", "DOCON", F_LEAP
     NOOP 
@@ -736,86 +711,6 @@ HEADER "CMOVE>", "MOVEB", F_LEAP
     POON
 
 ;********************************************************************** 
-;    load variables 
-;
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
-HEADER "TIB", "TIB", F_LEAP
-    NOOP
-    pspush tos_low, tos_high
-    ldi tos_low, lo8(TIB0) 
-    ldi tos_high, hi8(TIB0) 
-    POON 
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
-HEADER "LATEST", "LATEST", F_LEAP
-    NOOP 
-    pspush tos_low, tos_high
-    ldi tos_low, lo8(LIST) 
-    ldi tos_high, hi8(LIST) 
-    POON 
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
-HEADER "STATE", "STATE", F_LEAP
-    NOOP 
-    pspush tos_low, tos_high
-    ldi tos_low, lo8(STAT) 
-    ldi tos_high, hi8(STAT) 
-    POON 
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
-HEADER "BASE", "BASE", F_LEAP
-    NOOP 
-    pspush tos_low, tos_high
-    ldi tos_low, lo8(RADX) 
-    ldi tos_high, hi8(RADX) 
-    POON 
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
-HEADER "(sram)", "sram_", F_LEAP
-    NOOP 
-    pspush tos_low, tos_high
-    ldi tos_low, lo8(LAST) 
-    ldi tos_high, hi8(LAST) 
-    POON 
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
-HEADER "(eeprom)", "eeprom_", F_LEAP
-    NOOP 
-    pspush tos_low, tos_high
-    ldi tos_low, lo8(KEEP) 
-    ldi tos_high, hi8(KEEP) 
-    POON 
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
-HEADER "(flash)", "flash_", F_LEAP
-    NOOP 
-    pspush tos_low, tos_high
-    ldi tos_low, lo8(HEAP) 
-    ldi tos_high, hi8(HEAP) 
-    POON 
- 
-;********************************************************************** 
 ;   usart i/O 
 ;
 ;----------------------------------------------------------------------
@@ -881,7 +776,8 @@ HEADER "EMIT?", "QEMIT", F_LEAP
 HEADER "MILLIS", "MILLIS", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
-    movw tos_low, ticks_low 
+    mov tos_low, ticks_low 
+    mov tos_high, ticks_high 
     POON 
  
 ;----------------------------------------------------------------------
@@ -931,6 +827,74 @@ HEADER "2", "TWO", F_LEAP
 ;
 ;    (some adapted from old fig-forth listings) 
 ;
+;********************************************************************** 
+;
+;    load variables 
+;
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "TIB", "TIB",
+    .word DOCON, TIB0, ENDS
+    POON 
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "LATEST", "LATEST",
+    .word DOVAR, LIST, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "STATE", "STATE",
+    .word DOVAR, STAT, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "BASE", "BASE",
+    .word DOVAR, BASE, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "(sram)", "sram_",
+    .word DOVAR, LAST, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "(eeprom)", "eeprom_",
+    .word DOVAR, KEEP, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "(flash)", "flash_",
+    .word DOVAR, HEAP, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; is HERE 
+;
+HEADER "HERE", "HERE",
+    .word HEAP, AT, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is ALLOT 
+;
+HEADER "ALLOT", "ALLOT",
+    .word HEAP, PLUSTO, ENDS 
+ 
 ;----------------------------------------------------------------------
 ;
 ; ok ( w2 w1 -- w2 ) 
@@ -1096,27 +1060,27 @@ HEADER "EXIT", "EXIT",
 ; ok compile a eow 
 ;
 HEADER "EXEC", "EXEC",
-    .word RTO, ENDS
+    .word TOR, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok compile a eow 
 ;
 HEADER "TAIL", "TAIL",
-    .word RAT, TWOMINUS, RTO, ENDS
+    .word RAT, CELL, MINUS, RTO, ENDS
 
 ;----------------------------------------------------------------------
 ;
-; ok BACK 
+; ok TOBACK 
 ;
-HEADER "BACK", "BACK", F_IMMEDIATE,
+HEADER "TOBACK", "TOBACK", F_IMMEDIATE,
     .word HERE, SWAP, MINUS, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
-; ok MARK 
+; ok MARKTO 
 ;
-HEADER "MARK", "MARK", F_IMMEDIATE,
+HEADER "MARKTO", "MARKTO", F_IMMEDIATE,
     .word HERE, DOCON, 0x0000, ENDS 
  
 ;----------------------------------------------------------------------
@@ -1131,14 +1095,14 @@ HEADER "BEGIN", "BEGIN", F_IMMEDIATE,
 ; ok AGAIN resolves a backward branch 
 ;
 HEADER "AGAIN", "AGAIN", F_IMMEDIATE,
-    .word COMP, BRANCH, BACK, ENDS 
+    .word COMP, BRANCH, TOBACK, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok UNTIL 
 ;
 HEADER "UNTIL", "UNTIL", F_IMMEDIATE,
-    .word COMP, ZBRANCH, BACK, ENDS 
+    .word COMP, ZBRANCH, TOBACK, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -1152,7 +1116,7 @@ HEADER "UNLESS", "UNLESS", F_IMMEDIATE,
 ; ok IF 
 ;
 HEADER "IF", "IF", F_IMMEDIATE,
-    .word COMP, ZBRANCH, MARK, ENDS 
+    .word COMP, ZBRANCH, MARKTO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -1174,7 +1138,7 @@ HEADER "THEN", "THEN", F_IMMEDIATE,
 ; ok ELSE 
 ;
 HEADER "ELSE", "ELSE", F_IMMEDIATE,
-    .word COMP, BRANCH, MARK, SWAP, ENDIF, ENDS 
+    .word COMP, BRANCH, MARKTO, SWAP, ENDIF, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -1189,6 +1153,35 @@ HEADER "WHILE", "WHILE", F_IMMEDIATE,
 ;
 HEADER "REPEAT", "REPEAT", F_IMMEDIATE,
     .word TOR, TOR, AGAIN, RAT, RAT, MINUS, ENDIF, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is HOOK 
+;
+HEADER "HOOK", "HOOK", F_IMMEDIATE,
+    .word HERE, TOR, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is BACK 
+;
+HEADER "BACK", "BACK", F_IMMEDIATE,
+    .word COMP, BRANCH, RTO, HERE, SWAP, MINUS, COMMA, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is FOR ( u -- ) R:( -- h u )
+;
+HEADER "FOR", "FOR", 
+    .word HERE, TOR, TOR, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is NEXT ( -- ) R:( -- h u ) 
+;
+HEADER "NEXT", "NEXT",
+    .word RTO, ONEMINUS, IF, RTO, DROP, 
+    .word ELSE, RAT, SWAP, TOR, TOR, THEN, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -1282,7 +1275,7 @@ HEADER "]", "RBRAC",
 ;
 ; is \[ 
 ;
-HEADER "[", "LBRAC", F_IMMEDIATE | F_LEAP
+HEADER "[", "LBRAC", F_IMMEDIATE
     .word ZERO, STATE, TO, ENDS 
  
 ;----------------------------------------------------------------------
@@ -1295,6 +1288,7 @@ HEADER "TOGGLE", "TOGGLE",
 ;----------------------------------------------------------------------
 ;
 ; is >NFA ( a f -- )
+; from link to c_name
 ;
 HEADER ">NFA", "TONFA",
     .word CELL, PLUS, ENDS
@@ -1302,7 +1296,7 @@ HEADER ">NFA", "TONFA",
 ;----------------------------------------------------------------------
 ;
 ; is >CFA ( a f -- )
-;
+; from link to code
 HEADER ">CFA", "TOCFA", 
     .word CELL, PLUS, DUP, AT, F_UNMASK, AND, PLUS, ENDS
 
@@ -1329,21 +1323,7 @@ HEADER "COMPILE_ONLY", "COMPILE_ONLY",
 
 ;----------------------------------------------------------------------
 ;
-; is HERE 
-;
-HEADER "HERE", "HERE", F_LEAP
-    .word HEAP, AT, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; is ALLOT 
-;
-HEADER "ALLOT", "ALLOT", F_LEAP
-    .word HEAP, PLUSTO, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; is compile a header 
+; is compile a codeptr xt 
 ;
 HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE
     .word FIND, COMMA, ENDS
@@ -1385,7 +1365,6 @@ HEADER ";", "SEMMI",
     .word EXIT, LBRAC, ENDS 
   
 
-;----------------------------------------------------------------------
 ;----------------------------------------------------------------------
 ;
 ; is  

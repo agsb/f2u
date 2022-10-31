@@ -44,30 +44,26 @@
 ;
 ;    about registers 
 ;
-; r1:r0 reserved and used in internal atmega8 instructions, as spm, mul, des, etc
-;
+; r1:r0 reserved and used in internal atmega8
+;   instructions, as spm, mul, des, etc
+;   do not use inside interrupts
 
 #define _reserved_r0_ r0
 #define _reserved_r1_ r1
 
-; generic scratch 
-#define _work_ r2
-
-; always zero, keep by interrupt
-#define _zero_ r3
+;----------------------------------------------------------------------
+;
+;  reserved for use inside timer0 interrupt
+;
+; sreg keep in interrupts
+#define _sreg_ r2
 
 ; offset for adjust timer0 interrupt counter
-#define _offs_ r4
-
-; sreg keep in interrupts
-#define _sreg_ r5
+#define _offs_ r3
 
 ; ticks counter for timer0 at 1 ms, (count 65 sec)
-#define ticks_low r6
-#define ticks_high r7
-
-; work used only at boot in pseudo bios
-#define bios_work r16
+#define ticks_low r4
+#define ticks_high r5
 
 ;-----------------------------------------------------------------------
 ;
@@ -89,7 +85,7 @@
 #define tos_low r24
 #define tos_high r25
 
-; nos, Next on parameter stack
+; nos, Next temporary
 #define nos_low r22
 #define nos_high r23
 
@@ -97,19 +93,18 @@
 #define wrk_low r20
 #define wrk_high r21
 
-; ips, instruction for jump and link return
-#define ips_low r18
-#define ips_high r19
+; extras
+#define _zero_ r6
+#define _work_ r7
 
-
-; r8 to r17 free
+; registers r8 to r19 free
 
 ;----------------------------------------------------------------------
 ;
 ;  trick adapted from amforth-6.9
 ;
 .macro STRINGS string
-;    .word DOSLIT
+;    .word DOSCON
     .byte 8f - 7f
 7:  .ascii "\\string"
 8:  .balign 2
@@ -238,11 +233,10 @@ is_\label:
 ; for Atmega8:
 ; BIT_ZERO is 1
 ;
-; non destructive
+; non destructive, check
 ;
 .macro test_zero low, high, address
-    mov _work_, \low
-    or _work_, \high
+    cp \high, \low
     brbs BIT_ZERO, \address
 .endm
 
@@ -251,17 +245,9 @@ is_\label:
 ;    a  nop (0x0000) is used as a null reference, and marks all primitives
 ;    as they are really a branch and link mark
 ;
-; many primitives saves work register at end, 
-;    then for save bytes, ends with WOOP, 
-;    that goes to _pushw, that goes to POON 
-;
 
 .macro NOOP
     nop
-.endm
-
-.macro WOOP
-    rjmp _pushw
 .endm
 
 .macro POON
@@ -278,20 +264,24 @@ is_\label:
 ;    sizes
 ;
 ; "Column 72 means Continue", 72 always \0
-; Readability is good
-; standart is 80
+; Readability is good standart is 80
+;
 TIB_SIZE = 72
 
 ; stacks 18 words deep. WISE as M00re said.
+;
 STACK_SIZE = 36
 
 ; default cell size
+;
 CELL_SIZE = 2
 
 ; maximum word size
+;
 WORD_SIZE = 15
 
 ; default base
+;
 BASE_DEFAULT = 16
 
 ;----------------------------------------------------------------------
@@ -302,10 +292,10 @@ e_void = eeprom + 0  ; always zero
 e_seed = eeprom + 2  ; seed for random
 e_turn = eeprom + 4  ; routine after boot
 e_rest = eeprom + 6  ; routine before reset
-e_word = eeprom + 8  ; last link addres to dictionary 
-e_heap = eeprom + 10 ; next free flash address for dictionary
-e_last = eeprom + 12 ; next free sram address for variables, as stack
-e_erom = eeprom + 14 ; next free eprom address for values, as stack
+e_list = eeprom + 8  ; link to last word in dictionary 
+e_last = eeprom + 10 ; next free flash address for dictionary
+e_heap = eeprom + 12 ; next free sram address for variables, as stack
+e_keep = eeprom + 14 ; next free eprom address for values, as stack
 
 ;----------------------------------------------------------------------
 ;   words can be 1 to 15 chars lenght, 
@@ -419,6 +409,5 @@ FIB_SIZE = SPM_SIZE
 /* where start forth */
 
 FORTH_INI = SRAM_END + 1
-
 
 ;----------------------------------------------------------------------

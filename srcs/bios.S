@@ -105,64 +105,14 @@ RESET:
 ; clear interrupts
     cli
 ; init _zero_ as zero
-    clr r3
-    out __SREG__, r3 ; clear sreg
+    clr _zero_
+    out __SREG__, _zero_ ; clear sreg
 ; init real sp at end of sram
-    ldi r25, hi8(SRAM_END)
-    out __SP_H__, r25
     ldi r24, lo8(SRAM_END)
+    ldi r25, hi8(SRAM_END)
+; reserve
     out __SP_L__, r24
-; enable interrupts
-    sei
-    rjmp BOOT
-
-;----------------------------------------------------------------------
-;
-;   do not use r0 and r1 are scratch registers used in spm, mul, des, etc
-;
-;   generic:
-;   r2 , how knows ?
-;   r3 , always zero
-;   r4 , offset to prescale
-;      
-;   for timer0:
-;   r5 , saved SREG
-;   r6 , counter each 1ms low byte
-;   r7 , counter each 1ms high byte
-;
-;   timer0 prescale 
-;   for 8 MHz, prescale 64, offset 131, results about 1 ms
-;   64 * 125 = 8000 ; 
-;   256 - 125 = 131 ; offset for miliseconds
-;
-;   ticks counts till 65 seconds
-;
-; interrupt routine
-TIM0_OVF:
-; save flags
-    in r2, __SREG__
-; disable interrups
-    cli
-; increase counter and also clear 
-    clc
-; do not use r0 or r1 elsewhere
-    clr r3
-    inc r3
-    add ticks_low, r3
-    dec r3
-    adc ticks_high, r3
-; offset counter 256 - 125 = 131
-; but was 10 clocks till out, 
-; then 131 + 10 = 141
-OFFSETCNT = 141
-    out TCNT0, r4
-; reset watch dog
-    wdr
-; load flags and return
-    out __SREG__, r2
-; enable interrups
-    sei
-    reti
+    out __SP_H__, r25
 
 ;----------------------------------------------------------------------
 /*
@@ -175,34 +125,39 @@ CFLAGS += '-DMAX_TIME_COUNT=F_CPU>>4' '-DOSC_CAL=142' '-DNUM_LED_FLASHES=2' -DBA
 */
 
 ;----------------------------------------------------------------------
-; hook to init hardware
-BOOT:
-   cli
-
-;----------------------------------------------------------------------
-; init timer0, with internal clock 8MHz, from gcc public code, io ports as constants
+; init timer0, with internal clock 8MHz, 
+;   from gcc public code, io ports as constants
 ;
 ; preset of timer0, with internal clock 8MHz ; cycle 64 ; offset 131
 ; timer cycle * offset / clock = 8k/8M = 1ms
+;
+; so it counts 125 clocks inside the interrup routines
+;
+; offset counter 256 - 125 = 131
+; but was 8 clocks in routine timer0, 
+; then 131 + 12 = 143
+OFFSETCNT = 143
 ;
 TIMER0_SET:
 ; enable pre-escaler
     in r16, TCCR0
     ori r16, (1 << 1) | (1 << 0)
     out TCCR0, r16
-; offset counter, so it counts 125 clocks inside the interrup routines
+; offset counter
     ldi r16, OFFSETCNT
 ; preserve offset
-    mov r4, r16
+    mov r3, r16
     out TCNT0, r16
 ; enable counter
     in r16, TIMSK
     ori r16, (1 << 0) 
     out TIMSK, r16
+;   clear click counter
+    clr r4
+    clr r5
 
 ;----------------------------------------------------------------------
 ; init watch dog, from avr-gcc public code, io ports as constants
-;
 ; write logical one to WDCE and WDE, set WDP2, WDP1, WDP0 to ~ 2.0 s
 ;
 WATCHDOG_SET:
@@ -217,18 +172,18 @@ WATCHDOG_SET:
 ;   defaults to 9600, 8N1, no control
 ;
 USART_SET:
-    clr wrk_low
-    out UCSRC, wrk_low
-    ldi wrk_low, lo8(52)
-    out UBRRL, wrk_low
-    in wrk_low, UCSRB
-    ori wrk_low, lo8(24)
-    out UCSRB, wrk_low
-    ldi wrk_low, lo8(-114)
-    out UCSRC, wrk_low
-    in wrk_low, UCSRC
-    ori wrk_low,lo8(64)
-    out UCSRC, wrk_low
+    clr r16
+    out UCSRC, r16
+    ldi r16, lo8(52)
+    out UBRRL, r16
+    in r16, UCSRB
+    ori r16, lo8(24)
+    out UCSRB, r16
+    ldi r16, lo8(-114)
+    out UCSRC, r16
+    in r16, UCSRC
+    ori r16,lo8(64)
+    out UCSRC, r16
 
 ;----------------------------------------------------------------------
 ; enable interrupts
@@ -236,8 +191,48 @@ GOOD:
     sei
     rjmp COLD 
 
-#ifdef EEPS
+;----------------------------------------------------------------------
+;
+;   do not use r0 and r1 are scratch registers used in spm, mul, des, etc
+;
+;   generic:
+;   r2 , save_SREG
+;   r3 , offset prescale timer0
+;   r4 , counter each 1ms low byte
+;   r5 , counter each 1ms high byte
+;   r6 , _zero_
 
+;   timer0 prescale 
+;   for 8 MHz, prescale 64, offset 131, results about 1 ms
+;   64 * 125 = 8000 ; 
+;   256 - 125 = 131 ; offset for miliseconds
+;   plus 12 cycles inside routine
+;
+;   ticks counts till 65 seconds
+;
+; interrupt routine
+TIM0_OVF:
+; save flags
+    in r2, __SREG__
+; disable interrups
+    cli
+; increase counter and also clear 
+    inc r4
+    brbs BIT_ZERO, TIM0_ADJ
+    inc r5
+TIM0_ADJ:
+    out TCNT0, r3
+; reset watch dog
+    wdr
+; load flags and return
+    out __SREG__, r2
+; clear _zero_  
+    clr r6
+; enable interrups
+    sei
+    reti
+
+#ifdef EEPS
 ;----------------------------------------------------------------------
 ;
 ;   Assembly Code Example, from AVR manual
