@@ -77,7 +77,7 @@ and forth core start at address of sram_end plus one.
 The gap between bios_end and forth_ini, could be used to expand bios
 routines and store default messages.
 
-4. Buffers, reserved for Forth
+### 1. Buffers, reserved for Forth
 
 TIB     terminal input buffer, 72 bytes
 
@@ -111,7 +111,7 @@ TIBZ    size of TIB (72 bytes)
 
 VERS    version (2 bytes) from 0.00.00 to 6.55.36 as release.version.revision
 
-6. Flags defined, inline
+### 2. Flags defined, inline
 
 CELL_SIZE   size of a cell in bytes, 2
 
@@ -129,7 +129,7 @@ TRUE    -1
 
 FALSE    0
 
-7. Ascii control, inline
+### 3. Ascii control, inline
 
 very minimal edit, 
     
