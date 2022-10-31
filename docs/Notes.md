@@ -8,7 +8,9 @@
 
 - include non standart words HOOK and BACK, as " ~~~ WORD ~~~ IF ~~~ WORD; THEN ~~~ ", cited by Moore in http://www.ultratechnology.com/1xforth.htm
 
-- review of flash write strategy
+- review of all stacks, now order is SP0, RS0, PS0, all with 18 words and growing backwards from SRAM_END, as AVR default
+
+- review of flash write strategy, no reserved buffer, just compile to sram and write when got a flash command FLASH, PAD will be at 18 bytes from end of TIB for link+size+name 
 
 # 28/10/2022
 
