@@ -35,178 +35,118 @@ For the AVR Atmega328, by Harvard architeture, memory is separed in 1024 bytes e
 
 ## the sram are mapped as:
 
-    grows downwards:
+grows upwards:
 
-    0x100   start of user ram, 2048 bytes
-    
-    0x100   start of terminal input buffer, 80 bytes
+0x060   start of non volatile, cells that need be periodic saved to eeprom
+       
+        VOID,   ever zero
+        SEED,   seed for pseudo random
+        TURN,   routine to run after boot
+        REST,   routine to run before reset
+        LIST,   reference to last word in flash dictionary
+        LAST,   next free cell in flash dicitionary (forward)
+        HEAP,   next free cell in static ram (backward)
+        KEEP,   next free cell in eeprom (forward)
 
-    0x150   start of flash buffer, 64 bytes
-    
-    0x190   start of pad buffer, 18 bytes
-    
-    forth variables  (bytes)
-    
-    0x1a2   state
-    0x1a3   base
-    0x1a4   fpt number of flash page at buffer (0 .. flash_max_pages) as dpt / flash_buffer_size
-    0x1a5   ncf next char in flash buffer (0 .. flash_buffer_size)
-    
-    forth variables (words)
-    
-    0x1a6   rpt next free adress in sram
-    0x1a8   dpt next free address in flash
-    0x1ac
-    0x1a2   start of free ram
-  
-  
-    grows upwards:
+0x070   start of volatiles
 
-    0x893   end of stacks area
+        STAT,   hold state of interpreter
+        BASE,   hold radix for numbers
+        PAGE,   hold page flash
+        TOIN,   offser in TIB
+        
+        TIB0,   start of TIB terminal input buffer, 72 bytes
+        
+        RS0,     top of forth return stack, 36 bytes, 18 celld, backwards
+        PS0,     top of forth data stack, 36, 18 cells, backwards
+        SP0,     top of system stack, 36, 18 cells, backwards
+        
+        CURS,   cursor forward in sram
 
-    0x8b7   top of parameter stack, 36 bytes, 18 cells
+note: system stack is for extra libraries, not for forth
+Use of memory
 
-    0x8db   top of return stack, 36 bytes, 18 cells
+There no way to run forth in sram only, then the dictionary goes to flash
+and values and variables goes to sram.
 
-    0x8ff   top of stack pointer, 36 bytes, 18 cells
+For easy, any reference less than SRAM_END are mapped in sram else in flash.
 
-note: last stack is reserved for system and libraries, not used by forth    
+So, the bios (basic input output system) follow avr interrupt table, 
+and forth core start at address of sram_end plus one. 
 
-## Use of memory
+The gap between bios_end and forth_ini, could be used to expand bios
+routines and store default messages.
 
 ### 1. Buffers, reserved for Forth
 
-    TIB     terminal input buffer, 80 bytes
+TIB     terminal input buffer, 72 bytes
+
+TIB is less than Forth standart, but as "column 72 is continue", is enough;
+
+5. Constants, inline
+
+SP0     top of mcu stack reserved
+
+PS0     top of forth parameter stack
+
+RS0     top of forth return stack
+
+TIB0    top of terminal input buffer
+
+DP0     next cell at flash memory
+
+UP0     next cell at static memory
+
+EP0     next cell at eeprom
+
+BASE0   default base radix (10)
+
+SPZ     size of stack (18 cells)
+
+PSZ     size of stack (18 cells)
+
+RSZ     size of stack (18 cells)
+
+TIBZ    size of TIB (72 bytes)
+
+VERS    version (2 bytes) from 0.00.00 to 6.55.36 as release.version.revision
+
+### 2. Flags defined, inline
+
+CELL_SIZE   size of a cell in bytes, 2
+
+WORD_SIE    size of maximum word, 15
+
+F_IMMEDIATE     flag for immediate words, 0x80
+
+F_COMPILE       flag for compile only words, 0x40
+
+F_HIDDEN        flag for temporary hidden word, 0x20
+
+F_GLOBBER       reserved, 0x10
+
+TRUE    -1
+
+FALSE    0
+
+### 3. Ascii control, inline
+
+very minimal edit, 
     
-    FIB     flash internal buffer, 64 bytes
-    
+    assuming all edition is done by terminal program at host
 
-    Notes:
-    
-    TIB is less than Forth standart, but as "column 72 is continue", is enough;
-    
-    FIB is for buffer compile words and flush to flash
+    all extras are ignored,  
 
-### 2. Variables non volatile, cells that need be periodic saved to eeprom
+    all are translated to uppercase.
 
-    void    always zero, 2 bytes
-    
-    seed    seed for ramdom routine, 2 bytes
+BS      0x08    \b, ^H
 
-    turn    routine to run after boot, 2 bytes
+LF      0x0A    \n, ^J
 
-    rest    routine to run before rest, 2 bytes
-    
-    last    last entry in dictionary, 2 bytes
+CR      0X0D    \r, ^M
 
-    fshm    next free cell in flash memory, 2 bytes
-    
-    sram    next free cell in sram memory, 2 bytes
-    
-    erom    next free cell in eeprom, 2 bytes
-   
-### 3. variables volatiles, use as half cells
+BL      0x30    whitespace
 
-    state   state of interpreter, 2 byte
-    
-    radx    numeric radix, 2 byte
-    
-    toin    cursor in TIB as offset, 2 byte
-    
-    page    last flash page in buffer. 2 bytes
-        
-### 4. Stacks
+XON     0x11    ^Q
 
-    SP      reserved for mcu stack, 36 bytes
-    
-    PS      parameter stack, 36 bytes
-    
-    RS      return stack, 36 bytes
-
-### 5. Constants, inline
-
-    SP0     top of mcu stack reserved
-
-    PS0     top of forth parameter stack
-
-    RS0     top of forth return stack
-    
-    TIB0    top of terminal input buffer
-    
-    FIB0    top of scratch pad buffer
-    
-    PIC0    top of numeric format buffer
-    
-    DP0     next cell at flash memory
-    
-    UP0     next cell at static memory
-    
-    EP0     next cell at eeprom
-    
-    BASE0   default base radix (10)
-    
-    SPZ     size of stack (18 cells)
-    
-    PSZ     size of stack (18 cells)
-    
-    RSZ     size of stack (18 cells)
-    
-    TIBZ    size of TIB (72 bytes)
-    
-    FIBZ    size of PAD (64 bytes)
-    
-    PICZ    size of HLD (16 bytes)
-    
-    VERS    version (2 bytes) from 0.00.00 to 6.55.36 as release.version.revision
-
-### 6. Flags defined, inline
-
-    CELL_SIZE   size of a cell in bytes, 2
-    
-    WORD_SIE    size of maximum word, 15
-
-    F_IMMEDIATE     flag for immediate words, 0x80
-    
-    F_COMPILE_ONLY  flag for compile only words, 0x40
-    
-    F_HIDDEN        flag for temporary hidden word, 0x20
-    
-    F_GLOBBER       reserved, 0x10
-
-    TRUE    -1
-
-    FALSE    0
-
-### 7. Ascii control, inline
-
-    NIL     0x00    \0, ^@
-
-    ETX     0x03    ^C
-
-    EOT     0x04    ^D
-    
-    BELL    0x07    \a, ^G
-
-    BS      0x08    \b, ^H
-
-    TAB     0x09    \t, ^I
-
-    LF      0x0A    \n, ^J
-
-    VT      0x0B    \v, ^K
-
-    FF      0x0C    \f, ^L
-
-    CR      0X0D    \r, ^M
-
-    XON     0x11    ^Q
-
-    XOFF    0x13    ^S
-
-    CAN     0x18    ^X
-
-    ESC     0x1B    \e, ^[
-
-    SPC     0x30    whitespace
-
-
+XOFF    0x13    ^S
