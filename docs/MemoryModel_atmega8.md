@@ -40,30 +40,35 @@ By the way, this forth is not multi-user or multi-task, no memory.
 
     grows upwards:
 
-    0x060   start of user sram
-
-            STATE, hold state of interpreter
-            BASE, hold radix for numbers
-            LATEST, hold link to last word
-            FENCE, hold value for HERE
-            TOIN, offset in TIB
-            TOFH, offset in FIB
-
-    0x36a   start of FIB flash internal buffer, 64 bytes
-   
-    0x3aa   start of TIB terminal input buffer, 72 bytes
+    0x060   start of non volatile, cells that need be periodic saved to eeprom
+           
+            VOID,   ever zero
+            SEED,   seed for pseudo random
+            TURN,   routine to run after boot
+            REST,   routine to run before reset
+            LIST,   reference to last word in flash dictionary
+            LAST,   next free cell in flash dicitionary (forward)
+            HEAP,   next free cell in static ram (backward)
+            KEEP,   next free cell in eeprom (forward)
     
-    0x3f2   end of TIB
-
-    0x416   top of forth parameter stack, 36 bytes, 18 cells
-
-    0x43a   top of forth return stack, 36 bytes, 18 cells
-
-    0x45e   reserved for stack pointer, 36 bytes, 18 cells
-
-    0x45f   reserved for _SREG_
-
-note: last stack is for extra libraries, not for forth    
+    0x070   start of volatiles
+    
+            STAT,   hold state of interpreter
+            BASE,   hold radix for numbers
+            PAGE,   hold page flash
+            TOIN,   offser in TIB
+            
+            TIB0,   start of TIB terminal input buffer, 72 bytes
+            
+            RS0,     top of forth return stack, 36 bytes, 18 celld, backwards
+            PS0,     top of forth data stack, 36, 18 cells, backwards
+            SP0,     top of system stack, 36, 18 cells, backwards
+            
+            CURS,   cursor forward in sram
+            
+            
+            
+note: system stack is for extra libraries, not for forth    
 
 ## Use of memory
 
@@ -82,63 +87,17 @@ note: last stack is for extra libraries, not for forth
 
     TIB     terminal input buffer, 72 bytes
     
-    FIB     flash internal buffer, 64 bytes
-    
-    Notes:
-    
     TIB is less than Forth standart, but as "column 72 is continue", is enough;
-    
-    FIB is a buffer for compile words and flush to flash
-    
-### 2. Variables non volatile, cells that need be periodic saved to eeprom
-
-    void    always zero, 2 bytes
-    
-    seed    seed for random routine, 2 bytes
-
-    turn    routine to run after boot, 2 bytes
-
-    rest    routine to run before rest, 2 bytes
-    
-    latest  last entry in dictionary, 2 bytes
-
-    e_here    next free cell in flash memory, 2 bytes
-    
-    e_sram    next free cell in sram memory, 2 bytes
-    
-    e_erom    next free cell in eeprom, 2 bytes
-   
-### 3. variables volatiles, use as half cells
-
-    state   state of interpreter, 2 byte
-    
-    base    numeric radix, 2 byte
-    
-    toin    cursor in TIB as offset, 2 byte
-    
-    ftoin    cursor in FIB as offset, 2 bytes
-
-    fpage    last flash page in buffer, 2 bytes
         
-### 4. Stacks
-
-    SP      reserved for mcu stack, 36 bytes
-    
-    PS      parameter stack, 36 bytes
-    
-    RS      return stack, 36 bytes
-
-### 5. Constants, inline
+### 2. Constants, inline
 
     SP0     top of mcu stack reserved
 
-    P0     top of forth parameter stack
+    PS0     top of forth parameter stack
 
-    S0     top of forth return stack
+    RS0     top of forth return stack
     
     TIB0    top of terminal input buffer
-    
-    FIB0    top of scratch pad buffer
     
     DP0     next cell at flash memory
     
@@ -156,8 +115,6 @@ note: last stack is for extra libraries, not for forth
     
     TIBZ    size of TIB (72 bytes)
     
-    FIBZ    size of FIB (64 bytes)
-    
     VERS    version (2 bytes) from 0.00.00 to 6.55.36 as release.version.revision
 
 ### 6. Flags defined, inline
@@ -168,7 +125,7 @@ note: last stack is for extra libraries, not for forth
 
     F_IMMEDIATE     flag for immediate words, 0x80
     
-    F_COMPILE_ONLY  flag for compile only words, 0x40
+    F_COMPILE       flag for compile only words, 0x40
     
     F_HIDDEN        flag for temporary hidden word, 0x20
     
