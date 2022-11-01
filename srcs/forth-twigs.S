@@ -1,5 +1,4 @@
 
-
 /*
  *  DISCLAIMER
  *
@@ -126,6 +125,14 @@ HEADER "HERE", "HERE",
 ;
 HEADER "ALLOT", "ALLOT",
     .word HEAP, PLUSTO, ENDS 
+ 
+
+;----------------------------------------------------------------------
+;
+; is ALIGN 
+;
+HEADER "ALIGN", "ALIGN",
+    .word HEAP, AT, ALIGNED, HEAP, TO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -277,8 +284,8 @@ HEADER ",", "COMMA",
 ;
 ; ok this puts next cell into stack and compiles into HERE 
 ;
-HEADER "COMP", "COMP",
-    .word DOCON, COMMA, ENDS 
+HEADER "COMPILE", "COMP",
+    .word RTO, DUP, AT, COMMA, CELLPLUS, TOR, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -303,17 +310,24 @@ HEADER "TAIL", "TAIL",
 
 ;----------------------------------------------------------------------
 ;
-; ok TOBACK 
+; ok compile a eow 
 ;
+HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE,
+    .word FIND, COMMA, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; ok TOBACK 
+; keep as offset
 HEADER "TOBACK", "TOBACK", F_IMMEDIATE,
-    .word HERE, SWAP, MINUS, COMMA, ENDS 
+    .word HERE, SWAP, MINUS, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok MARKTO 
 ;
 HEADER "MARKTO", "MARKTO", F_IMMEDIATE,
-    .word HERE, DOCON, 0x0000, ENDS 
+    .word HERE, DOCON, 0x0000, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -327,14 +341,14 @@ HEADER "BEGIN", "BEGIN", F_IMMEDIATE,
 ; ok AGAIN resolves a backward branch 
 ;
 HEADER "AGAIN", "AGAIN", F_IMMEDIATE,
-    .word COMP, BRANCH, TOBACK, ENDS 
+    .word COMP, BRANCH, TOBACK, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok UNTIL 
 ;
 HEADER "UNTIL", "UNTIL", F_IMMEDIATE,
-    .word COMP, ZBRANCH, TOBACK, ENDS 
+    .word COMP, ZBRANCH, TOBACK, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -353,10 +367,9 @@ HEADER "IF", "IF", F_IMMEDIATE,
 ;----------------------------------------------------------------------
 ;
 ; ok ENDIF resolves a forward branch 
-; note: use of store if addres is not 'here' 
-;
+; uses TO for backward
 HEADER "ENDIF", "ENDIF", F_IMMEDIATE,
-    .word DUP, HERE, MINUS, SWAP, TO, ENDS 
+    .word DUP, TOBACK, TO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -377,14 +390,14 @@ HEADER "ELSE", "ELSE", F_IMMEDIATE,
 ; ok WHILE 
 ;
 HEADER "WHILE", "WHILE", F_IMMEDIATE,
-    .word IF, ENDS 
+    .word IF, SWAP, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok REPEAT 
 ;
 HEADER "REPEAT", "REPEAT", F_IMMEDIATE,
-    .word TOR, TOR, AGAIN, RAT, RAT, MINUS, ENDIF, ENDS 
+    .word COMP, BRANCH, TOBACK, ENDIF, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -398,23 +411,30 @@ HEADER "HOOK", "HOOK", F_IMMEDIATE,
 ; is BACK 
 ;
 HEADER "BACK", "BACK", F_IMMEDIATE,
-    .word COMP, BRANCH, RTO, HERE, SWAP, MINUS, COMMA, ENDS 
+    .word COMP, BRANCH, RTO, TOBACK, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is FOR ( u -- ) R:( -- h u )
 ;
-HEADER "FOR", "FOR", 
-    .word HERE, TOR, TOR, ENDS 
+HEADER "FOR", "FOR", F_IMMEDIATE
+    .word COMP, TOR, HERE, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is TXEN ( -- ) R:( -- h u ) 
+;
+HEADER "TXEN", "TXEN", F_IMMEDIATE
+    .word RTO, ONEMINUS, DUP, IF, DROP, DROP 
+    .word ELSE, TOR, DUP, EXEC, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is NEXT ( -- ) R:( -- h u ) 
 ;
-HEADER "NEXT", "NEXT",
-    .word RTO, DUP, IF, DROP, RTO, DROP, 
-    .word ELSE, RAT, SWAP, TOR, TOR, THEN, ENDS 
- 
+HEADER "NEXT", "NEXT", F_IMMEDIATE
+    .word COMP, TXEN, TOBACK, COMMA, ENDS
+
 ;----------------------------------------------------------------------
 ;
 ; DO and LOOP runs from 0x8000 till 0x7FFF, -32768 to 32767
@@ -553,13 +573,6 @@ HEADER "IMMEDIATE", "IMMEDIATE",
 ;
 HEADER "COMPILE_ONLY", "COMPILE_ONLY",
     .word LATEST, TONFA, F_COMPILE, TOGGLE, ENDS 
-
-;----------------------------------------------------------------------
-;
-; is compile a codeptr xt 
-;
-HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE
-    .word FIND, COMMA, ENDS
 
 ;----------------------------------------------------------------------
 ;

@@ -1,5 +1,4 @@
 
-
 /*
  *  DISCLAIMER
  *
@@ -629,7 +628,7 @@ HEADER "><", "ENDIAN", F_LEAP
 ;
 ; ok ( -- ) ( branch next reference ) 
 ; doing offsets in bytes 
-;
+; R> DUP @ PLUS >R 
 HEADER "BRANCH", "BRANCH", F_LEAP
     NOOP 
 _branch: 
@@ -645,6 +644,7 @@ _branch:
 ;
 ; ok ( u -- ) 
 ; branch IF tos IS zero 
+; IF BRANCH THEN
 ;
 HEADER "?BRANCH", "ZBRANCH", F_LEAP
     NOOP 
@@ -652,7 +652,7 @@ HEADER "?BRANCH", "ZBRANCH", F_LEAP
     pspull tos_low, tos_high
     cp nos_low, nos_high
     brbs BIT_ZERO, _branch 
-    ; skips forward
+    ; skips offset
     rspull zpm_low, zpm_high 
     adiw zpm_low, 2 
     rspull zpm_low, zpm_high 
@@ -660,11 +660,10 @@ HEADER "?BRANCH", "ZBRANCH", F_LEAP
  
 ;----------------------------------------------------------------------
 ;
-;  ok DOCON ( -- w ), 
+;  ok LIT ( a -- w ), 
 ;  push a value from flash to data stack 
-;   also DOLIT
-;
-HEADER "DOCON", "DOCON", F_LEAP
+;  
+HEADER "LIT", "LIT", F_LEAP
     NOOP 
     pspush tos_low, tos_high
     rspull zpm_low, zpm_high
@@ -674,25 +673,11 @@ HEADER "DOCON", "DOCON", F_LEAP
  
 ;----------------------------------------------------------------------
 ;
-;  ok DOVAR ( -- w ),  
-;  push a reference from flash to data stack 
-;
-HEADER "DOVAR", "DOVAR", F_LEAP
-    NOOP 
-    pspush tos_low, tos_high
-    rspull tos_low, tos_high
-    adiw tos_low, 2
-    rspush tos_low, tos_high
-    sbiw tos_low, 2
-    POON 
- 
-;----------------------------------------------------------------------
-;
 ; ok ( w -- w ) 
 ;  data space pointer align to CELL, atmega is always 
  
 ;
-HEADER "ALIGN", "ALLIGN", F_LEAP
+HEADER "ALIGNED", "ALIGNED", F_LEAP
     NOOP 
     adiw tos_low, 1 
     cbr tos_low, 0 
