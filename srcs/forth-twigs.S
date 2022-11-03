@@ -419,14 +419,14 @@ HEADER "REPEAT", "REPEAT", F_IMMEDIATE,
 ; is HOOK 
 ;
 HEADER "HOOK", "HOOK", F_IMMEDIATE,
-    .word HERE, TOR, ENDS 
+    .word BEGIN, TOR, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is BACK 
 ;
 HEADER "BACK", "BACK", F_IMMEDIATE,
-    .word RTO, COMMA, ENDS 
+    .word RTO, AGAIN, ENDS 
  
 ;----------------------------------------------------------------------
 ;
