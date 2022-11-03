@@ -16,7 +16,7 @@
 
 # 30/10/2022
 
-- include non standart words HOOK and BACK, as " ~~~ WORD ~~~ IF ~~~ WORD; THEN ~~~ ", cited by Moore in http://www.ultratechnology.com/1xforth.htm
+- include non standart words HOOK and BACK, as " ~~~ WORD ~~~ IF ~~~ WORD; THEN ~~~ ", cited by Moore in http://www.ultratechnology.com/1xforth.htm, these words uses return stack to preserve where to go.
 
 - review of all stacks, now order is SP0, RS0, PS0, all with 18 words and growing backwards from SRAM_END, as AVR default
 
