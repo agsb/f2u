@@ -495,6 +495,26 @@ HEADER "?DUP", "ZDUP", F_LEAP
     pspush tos_low, tos_high 
 1: 
     POON 
+
+;----------------------------------------------------------------------
+;
+; ok ( w1 w2 -- w3 f ) 
+;   unsigned plus 
+;
+HEADER "UM+", "UMPLUS", F_LEAP
+    NOOP 
+    pspull nos_low, nos_high 
+    clc 
+    add tos_low, nos_low 
+    adc tos_high, nos_high 
+    pspush tos_low, tos_high
+    clr tos_high
+    clr tos_low
+    brcc 1f
+    inc tos_low
+1:
+    POON 
+ 
 ;----------------------------------------------------------------------
 ;
 ; ok ( w1 w2 -- w2 + w1 ) 
@@ -627,36 +647,31 @@ HEADER "><", "ENDIAN", F_LEAP
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- ) ( branch next reference ) 
-; doing offsets in bytes 
-; R> DUP @ PLUS >R 
+;   no more offsets then no more branch
 HEADER "BRANCH", "BRANCH", F_LEAP
     NOOP 
 _branch: 
     rspull zpm_low, zpm_high 
     pmload nos_low, nos_high 
-    sbiw zpm_low, 2
-    add zpm_low, nos_low 
-    adc zpm_high, nos_high 
     rspush zpm_low, zpm_high 
     POON 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( u -- ) 
-; branch IF tos IS zero 
-; IF BRANCH THEN
-;
+; if tos is not zero, skip next 
+; 
 HEADER "?BRANCH", "ZBRANCH", F_LEAP
     NOOP 
     movw nos_low, tos_low
     pspull tos_low, tos_high
     cp nos_low, nos_high
     brbs BIT_ZERO, _branch 
-    ; skips offset
+    ; skips
     rspull zpm_low, zpm_high 
     adiw zpm_low, 2 
-    rspull zpm_low, zpm_high 
-    POON 
+    rspush zpm_low, zpm_high 
+    POON
  
 ;----------------------------------------------------------------------
 ;

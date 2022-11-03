@@ -112,6 +112,8 @@ HEADER "(eeprom)", "eeprom_",
 HEADER "(flash)", "flash_",
     .word DOVAR, HEAP, ENDS
  
+;********************************************************************** 
+
 ;----------------------------------------------------------------------
 ;
 ; is HERE 
@@ -126,13 +128,26 @@ HEADER "HERE", "HERE",
 HEADER "ALLOT", "ALLOT",
     .word HEAP, PLUSTO, ENDS 
  
-
 ;----------------------------------------------------------------------
 ;
 ; is ALIGN 
 ;
 HEADER "ALIGN", "ALIGN",
     .word HEAP, AT, ALIGNED, HEAP, TO, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is DOVAR 
+;
+HEADER "DOVAR", "DOVAR",
+    .word LIT, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is DOCON 
+;
+HEADER "DOCON", "DOCON",
+    .word LIT, AT, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -183,6 +198,7 @@ HEADER "TUCK", "TUCK",
 HEADER "FLIP", "FLIP",
     .word SWAP, SWIP, SWAP, ENDS 
 
+;********************************************************************** 
 ;----------------------------------------------------------------------
 ;
 ; ok ( w1 w2 -- 0 | -1) 
@@ -314,20 +330,19 @@ HEADER "TAIL", "TAIL",
 ;
 HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE,
     .word FIND, COMMA, ENDS 
- 
+
 ;----------------------------------------------------------------------
 ;
-; ok TOBACK 
-; keep as offset
-HEADER "TOBACK", "TOBACK", F_IMMEDIATE,
-    .word HERE, SWAP, MINUS, ENDS 
+; Control words review. there is no more BRANCH.
+;
+;----------------------------------------------------------------------
  
 ;----------------------------------------------------------------------
 ;
 ; ok MARKTO 
 ;
-HEADER "MARKTO", "MARKTO", F_IMMEDIATE,
-    .word HERE, DOCON, 0x0000, COMMA, ENDS 
+HEADER "MARK", "MARK", F_IMMEDIATE,
+    .word HERE, DUP, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -341,14 +356,14 @@ HEADER "BEGIN", "BEGIN", F_IMMEDIATE,
 ; ok AGAIN resolves a backward branch 
 ;
 HEADER "AGAIN", "AGAIN", F_IMMEDIATE,
-    .word COMP, BRANCH, TOBACK, COMMA, ENDS 
+    .word COMP, BRANCH, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok UNTIL 
 ;
 HEADER "UNTIL", "UNTIL", F_IMMEDIATE,
-    .word COMP, ZBRANCH, TOBACK, COMMA, ENDS 
+    .word COMP, ZBRANCH, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -362,14 +377,7 @@ HEADER "UNLESS", "UNLESS", F_IMMEDIATE,
 ; ok IF 
 ;
 HEADER "IF", "IF", F_IMMEDIATE,
-    .word COMP, ZBRANCH, MARKTO, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; ok ENDIF resolves a forward branch 
-; uses TO for backward
-HEADER "ENDIF", "ENDIF", F_IMMEDIATE,
-    .word DUP, TOBACK, TO, ENDS 
+    .word COMP, ZBRANCH, MARK, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -380,10 +388,17 @@ HEADER "THEN", "THEN", F_IMMEDIATE,
  
 ;----------------------------------------------------------------------
 ;
+; ok ENDIF resolves a forward branch 
+;
+HEADER "ENDIF", "ENDIF", F_IMMEDIATE,
+    .word COMP, BRANCH, HERE, SWAP, TO, ENDS 
+ 
+;----------------------------------------------------------------------
+;
 ; ok ELSE 
 ;
 HEADER "ELSE", "ELSE", F_IMMEDIATE,
-    .word COMP, BRANCH, MARKTO, SWAP, ENDIF, ENDS 
+    .word COMP, BRANCH, MARK, SWAP, ENDIF, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -397,7 +412,7 @@ HEADER "WHILE", "WHILE", F_IMMEDIATE,
 ; ok REPEAT 
 ;
 HEADER "REPEAT", "REPEAT", F_IMMEDIATE,
-    .word COMP, BRANCH, TOBACK, ENDIF, ENDS 
+    .word COMP, BRANCH, COMMA, ENDIF, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -411,7 +426,7 @@ HEADER "HOOK", "HOOK", F_IMMEDIATE,
 ; is BACK 
 ;
 HEADER "BACK", "BACK", F_IMMEDIATE,
-    .word COMP, BRANCH, RTO, TOBACK, COMMA, ENDS 
+    .word RTO, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -433,7 +448,7 @@ HEADER "TXEN", "TXEN", F_IMMEDIATE
 ; is NEXT ( -- ) R:( -- h u ) 
 ;
 HEADER "NEXT", "NEXT", F_IMMEDIATE
-    .word COMP, TXEN, TOBACK, COMMA, ENDS
+    .word COMP, TXEN, COMMA, ENDS
 
 ;----------------------------------------------------------------------
 ;
