@@ -22,7 +22,7 @@
 
 - review of flash write strategy, no reserved buffer, just compile to sram and write when got a flash command FLASH, PAD will be at 18 bytes from end of TIB for link+size+name 
 
-- bad day for my country, a convicted was elect.
+- bad. terrible day for my country, the convicted nine was elected.
 
 # 28/10/2022
 
