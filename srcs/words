@@ -39,6 +39,7 @@ forth-leafs.S:HEADER "DUP", "DUP", F_LEAP
 forth-leafs.S:HEADER "SWAP", "SWAP", F_LEAP
 forth-leafs.S:HEADER "OVER", "OVER", F_LEAP
 forth-leafs.S:HEADER "?DUP", "ZDUP", F_LEAP
+forth-leafs.S:HEADER "UM+", "UMPLUS", F_LEAP
 forth-leafs.S:HEADER "+", "PLUS", F_LEAP
 forth-leafs.S:HEADER "-", "MINUS", F_LEAP
 forth-leafs.S:HEADER "NAND", "NAND", F_LEAP
@@ -70,6 +71,9 @@ forth-twigs.S:HEADER "(flash)", "flash_",
 forth-twigs.S:HEADER "HERE", "HERE",
 forth-twigs.S:HEADER "ALLOT", "ALLOT",
 forth-twigs.S:HEADER "ALIGN", "ALIGN",
+forth-twigs.S:HEADER "DOVAR", "DOVAR",
+forth-twigs.S:HEADER "DOCON", "DOCON",
+forth-twigs.S:HEADER "DOTO", "DOTO",
 forth-twigs.S:HEADER "NIP", "NIP",
 forth-twigs.S:HEADER "SWIP", "SWIP",
 forth-twigs.S:;HEADER "OVER", "OVER",
@@ -96,18 +100,21 @@ forth-twigs.S:HEADER "EXIT", "EXIT",
 forth-twigs.S:HEADER "EXEC", "EXEC",
 forth-twigs.S:HEADER "TAIL", "TAIL",
 forth-twigs.S:HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE,
-forth-twigs.S:HEADER "TOBACK", "TOBACK", F_IMMEDIATE,
 forth-twigs.S:HEADER "MARKTO", "MARKTO", F_IMMEDIATE,
+forth-twigs.S:HEADER "TOMARK", "TOMARK", F_IMMEDIATE,
 forth-twigs.S:HEADER "BEGIN", "BEGIN", F_IMMEDIATE,
 forth-twigs.S:HEADER "AGAIN", "AGAIN", F_IMMEDIATE,
 forth-twigs.S:HEADER "UNTIL", "UNTIL", F_IMMEDIATE,
-forth-twigs.S:HEADER "UNLESS", "UNLESS", F_IMMEDIATE,
+forth-twigs.S:HEADER "UNLESS", "UNLESS", F_IMMEDIATE, 
 forth-twigs.S:HEADER "IF", "IF", F_IMMEDIATE,
-forth-twigs.S:HEADER "ENDIF", "ENDIF", F_IMMEDIATE,
+forth-twigs.S:HEADER "GO", "GO", F_IMMEDIATE,
 forth-twigs.S:HEADER "THEN", "THEN", F_IMMEDIATE,
+forth-twigs.S:HEADER "ENDIF", "ENDIF", F_IMMEDIATE,
 forth-twigs.S:HEADER "ELSE", "ELSE", F_IMMEDIATE,
 forth-twigs.S:HEADER "WHILE", "WHILE", F_IMMEDIATE,
 forth-twigs.S:HEADER "REPEAT", "REPEAT", F_IMMEDIATE,
+forth-twigs.S:HEADER "AHEAD", "AHEAD", F_IMMEDIATE,
+forth-twigs.S:HEADER "AFT", "AFT", F_IMMEDIATE,
 forth-twigs.S:HEADER "HOOK", "HOOK", F_IMMEDIATE,
 forth-twigs.S:HEADER "BACK", "BACK", F_IMMEDIATE,
 forth-twigs.S:HEADER "FOR", "FOR", F_IMMEDIATE
@@ -163,10 +170,6 @@ math.S:HEADER "/", "SDIV", F_LEAP
 math.S:HEADER "utoa", "utoa", F_LEAP 
 math.toa.S:HEADER "utoa", "utoa" 
 math.toa.S:HEADER "itoa", "itoa"
-MaybeRiscV.S:HEADER "CSAME", "csame"
-MaybeRiscV.S:HEADER "CMOVE", "cmove"
-MaybeRiscV.S:HEADER "BMOVE", "bmove"
-MaybeRiscV.S:HEADER "_EOF_", "_eof_"
 moves.S:HEADER "CSAME", "CSAME", F_LEAP
 moves.S:HEADER "CMOVE", "MOVEF", F_LEAP
 moves.S:HEADER "CMOVE>", "MOVEB", F_LEAP

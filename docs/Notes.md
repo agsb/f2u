@@ -8,9 +8,9 @@
 
 - bring back UM+ ( w1 w2 -- w3 c) 
 
-- review of BRANCH and 0BRANCH. No more relative offsets, as in GForth all address to be absolute.  
+- review of BRANCH and 0BRANCH. No more relative offsets, as in GForth all address to be absolute. BRANCH is R> @ >R  
 
-- review of DOCON and DOVAR, LIT as standart, and LIT is just : DOVAR >R DUP CELL+ >R ; and : DOCON DOVAR @ ;
+- review of DOCON and DOVAR, LIT as standart, and : LIT >R DUP CELL+ >R ; and : DOVAR LIT ; and : DOCON LIT @ ; and : DOTO LIT ! ;
 
 - fix for simply (accept) (parse) (word) (eval)
 

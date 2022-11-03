@@ -137,17 +137,24 @@ HEADER "ALIGN", "ALIGN",
  
 ;----------------------------------------------------------------------
 ;
-; is DOVAR 
+; is DOVAR ( -- a )
 ;
 HEADER "DOVAR", "DOVAR",
     .word LIT, ENDS 
  
 ;----------------------------------------------------------------------
 ;
-; is DOCON 
-;
+; is DOCON ( -- w ) 
+;       
 HEADER "DOCON", "DOCON",
     .word LIT, AT, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is DOTO ( w -- ) 
+;
+HEADER "DOTO", "DOTO",
+    .word LIT, TO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -312,38 +319,48 @@ HEADER "EXIT", "EXIT",
 
 ;----------------------------------------------------------------------
 ;
-; ok compile a eow 
+; ok execute xt from tos
 ;
 HEADER "EXEC", "EXEC",
     .word TOR, ENDS
 
 ;----------------------------------------------------------------------
 ;
-; ok compile a eow 
+; ok make a word recursive 
 ;
 HEADER "TAIL", "TAIL",
     .word RAT, CELL, MINUS, RTO, ENDS
 
 ;----------------------------------------------------------------------
 ;
-; ok compile a eow 
+; ok unconditional compile next word 
 ;
 HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE,
     .word FIND, COMMA, ENDS 
 
 ;----------------------------------------------------------------------
 ;
-; Control words review. there is no more BRANCH.
+; Control words review. there is no more offset BRANCH.
 ;
 ;----------------------------------------------------------------------
  
 ;----------------------------------------------------------------------
 ;
-; ok MARKTO 
-;
-HEADER "MARK", "MARK", F_IMMEDIATE,
+; ok MARK 
+; places a address of next cell in tos
+; places a holder to self in next cell in dictionary
+HEADER "MARKTO", "MARKTO", F_IMMEDIATE,
     .word HERE, DUP, COMMA, ENDS 
  
+;----------------------------------------------------------------------
+;
+; ok MARK 
+; places a address of next cell in tos
+; places a holder to self in next cell in dictionary
+HEADER "TOMARK", "TOMARK", F_IMMEDIATE,
+    .word HERE, SWAP, TO, ENDS 
+ 
+;----------------------------------------------------------------------
 ;----------------------------------------------------------------------
 ;
 ; ok BEGIN 
@@ -353,14 +370,14 @@ HEADER "BEGIN", "BEGIN", F_IMMEDIATE,
  
 ;----------------------------------------------------------------------
 ;
-; ok AGAIN resolves a backward branch 
+; ok AGAIN resolves a unconditional branch 
 ;
 HEADER "AGAIN", "AGAIN", F_IMMEDIATE,
     .word COMP, BRANCH, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
-; ok UNTIL 
+; ok UNTIL resolves a conditional branch, as C do { ... } while (0) 
 ;
 HEADER "UNTIL", "UNTIL", F_IMMEDIATE,
     .word COMP, ZBRANCH, COMMA, ENDS 
@@ -369,15 +386,22 @@ HEADER "UNTIL", "UNTIL", F_IMMEDIATE,
 ;
 ; ok UNLESS 
 ;
-HEADER "UNLESS", "UNLESS", F_IMMEDIATE,
+HEADER "UNLESS", "UNLESS", F_IMMEDIATE, 
     .word INVERT, UNTIL, ENDS 
  
 ;----------------------------------------------------------------------
 ;
-; ok IF 
+; ok IF (executed if tos is not zero)
 ;
 HEADER "IF", "IF", F_IMMEDIATE,
-    .word COMP, ZBRANCH, MARK, ENDS 
+    .word COMP, ZBRANCH, MARKTO, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; ok GO (executed ever)
+;
+HEADER "GO", "GO", F_IMMEDIATE,
+    .word COMP, BRANCH, MARKTO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -391,14 +415,14 @@ HEADER "THEN", "THEN", F_IMMEDIATE,
 ; ok ENDIF resolves a forward branch 
 ;
 HEADER "ENDIF", "ENDIF", F_IMMEDIATE,
-    .word COMP, BRANCH, HERE, SWAP, TO, ENDS 
+    .word TOMARK, ENDS 
  
 ;----------------------------------------------------------------------
 ;
-; ok ELSE 
+; ok ELSE (executed if tos is zero)
 ;
 HEADER "ELSE", "ELSE", F_IMMEDIATE,
-    .word COMP, BRANCH, MARK, SWAP, ENDIF, ENDS 
+    .word GO, SWAP, TOMARK, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -412,7 +436,22 @@ HEADER "WHILE", "WHILE", F_IMMEDIATE,
 ; ok REPEAT 
 ;
 HEADER "REPEAT", "REPEAT", F_IMMEDIATE,
-    .word COMP, BRANCH, COMMA, ENDIF, ENDS 
+    .word AGAIN, TOMARK, ENDS 
+ 
+ 
+;----------------------------------------------------------------------
+; @eforth
+; is AHEAD (a forward goto)
+;
+HEADER "AHEAD", "AHEAD", F_IMMEDIATE,
+    .word GO, ENDS 
+ 
+;----------------------------------------------------------------------
+; @eforth
+; is AFT 
+;
+HEADER "AFT", "AFT", F_IMMEDIATE,
+    .word DROP, AHEAD, HERE, SWAP, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -431,7 +470,7 @@ HEADER "BACK", "BACK", F_IMMEDIATE,
 ;----------------------------------------------------------------------
 ;
 ; is FOR ( u -- ) R:( -- h u )
-;
+; count down, from +32767
 HEADER "FOR", "FOR", F_IMMEDIATE
     .word COMP, TOR, HERE, ENDS 
  
@@ -440,8 +479,7 @@ HEADER "FOR", "FOR", F_IMMEDIATE
 ; is TXEN ( -- ) R:( -- h u ) 
 ;
 HEADER "TXEN", "TXEN", F_IMMEDIATE
-    .word RTO, ONEMINUS, DUP, IF, DROP, DROP 
-    .word ELSE, TOR, DUP, EXEC, ENDS 
+    .word RTO, ONEMINUS, DUP, IF, TOR, DUP, EXEC, ELSE, DROP, DROP, ENDS 
  
 ;----------------------------------------------------------------------
 ;
