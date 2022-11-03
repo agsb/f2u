@@ -40,7 +40,7 @@ HEADER "(skip)", "skip"
     clr tos_high
     pspull zpm_low, zpm_high
 1:
-    lds nos_low, zpm_low
+    ld nos_low, zpm_low
     ; if \0
     cp tos_high, nos_low 
     breq 2f
@@ -48,9 +48,9 @@ HEADER "(skip)", "skip"
     breq 3f
     adiw zpm_low, 1
     rjmp 1b
-2:  mv tos_low, tos_high
+2:  mov tos_low, tos_high
     POON
-3:  mvw tos_low, zpm_low
+3:  movw tos_low, zpm_low
     POON
 
 ;----------------------------------------------------------------------
@@ -65,7 +65,7 @@ HEADER "(scan)", "scan"
     clr tos_high
     pspull zpm_low, zpm_high
 1:
-    lds nos_low, zpm_low
+    ld nos_low, zpm_low
     ; if \0
     cp tos_high, nos_low 
     breq 2f
@@ -73,9 +73,188 @@ HEADER "(scan)", "scan"
     brne 3f
     adiw zpm_low, 1
     rjmp 1b
-2:  mv tos_low, tos_high
+2:  mov tos_low, tos_high
     POON
-3:  mvw tos_low, zpm_low
+3:  movw tos_low, zpm_low
+    POON
+
+;----------------------------------------------------------------------
+;
+; ok ( a1 a2 u --- ) 
+;   copy u chars from a1 into a2, forward copy
+;   not standart, no check for overlaps, works only in sram
+;
+HEADER "(copy)", "copy"
+    NOOP
+    clr tos_high
+    pspull nos_low, nos_high
+    pspull zpm_low, zpm_high
+
+    rspush psp_low, psp_high
+    movw psp_low, nos_low
+10:
+    cp tos_low, tos_low
+    brbs BIT_ZERO, 20f
+    
+    ld nos_low, Z+
+    st Y+, nos_low
+    dec tos_low
+    rjmp 10b
+20:
+    rspull psp_low, psp_high
+    pspull tos_low, tos_high
+    POON
+    
+;----------------------------------------------------------------------
+;
+; ok ( a u --- u ) 
+;
+;   refills address till u chars read, u < 256
+;     its refill ( a u -- u )  NO ECHOES !!!
+;       no standart, always read from USART
+;
+HEADER "(refill)", "refill"
+    NOOP
+10: 
+    ; get buffer pointer 
+    pspull zpm_low, zpm_high
+    
+    ; keep a spc at start, so every word starts with spc, 
+    ; used later to make a counted string in site
+    ldi wrk_low, 32
+    srsave wrk_low
+    ; save for spc at init
+    dec tos_low 
+    ; save for \0 at end
+    dec tos_low
+
+    ; clear count
+    clr tos_high
+    ; clear last char
+    clr wrk_high
+
+;   loop counts from 0 to u
+20: 
+    ; end of buffer ?   
+    cp tos_low, tos_high
+    brbs BIT_ZERO, 70f
+
+30: 
+    ; waits a ASCII char
+    sbis 0xb, 7
+    rjmp 30b
+    in wrk_low, 0xc
+
+    ; no 8bits
+    cpi wrk_low, 128
+    brge 30b
+
+; process allowed control
+
+    ; not a control 
+    cpi wrk_low, 30
+    brge 60f
+
+40:
+    ; verify CR    \r
+    cpi wrk_low, 13 ; CR
+    breq 70f
+
+    ; verify LF \n
+    cpi wrk_low, 10 ; LF 
+    breq 70f
+
+42:
+    ; verify NAK, reset line 
+    cpi wrk_low, 21 ; NAK
+    brne 44f
+
+    ; process NAK
+    clr wrk_high
+    sub zpm_low, tos_high
+    sbc zpm_high, wrk_high
+    clr tos_high
+    rjmp 20b
+
+44:
+    ; verify BS \b
+    cpi wrk_low, 8 ; BS
+    brne 46f
+
+    ; process BS
+    ; no char ?
+    cp tos_high, tos_high
+    brbs BIT_ZERO, 30b
+
+    ; back one
+    dec tos_high
+    sbiw zpm_low, 1
+    rjmp 30b    
+
+46:
+    ; verify TAB \t
+    cpi wrk_low, 9
+    brne 48f
+
+    ; magic to 32
+    ldi wrk_low, 32
+    rjmp 60f
+    
+48:
+    ; not allow more controls
+    rjmp 30b
+
+/* 
+
+those are not for now
+
+    ; verify ESC \e
+    cpi wrk_low, 27 ; ESC
+
+    ; verify XON 
+    cpi wrk_low, 17 ; XON
+
+    ; verify XOFF 
+    cpi wrk_low, 19 ; XOFF
+
+*/
+
+; process ASCII chars
+60:    
+    ; is a spc ?
+    cpi wrk_low, 32
+    brne 62f
+
+    ; highlander it !
+    cp wrk_low, wrk_high
+    breq 30b
+
+62:
+.ifdef UPPERCASE    
+    ; to uppercase
+    cpi wrk_low, 61
+    brge 64f
+    cpi wrk_low, 123
+    brge 64f
+    subi wrk_low, 32
+.endif
+
+64: 
+    ; save char to buffer
+    inc tos_high
+    srsave wrk_low
+    mov wrk_high, wrk_low
+    rjmp 20b
+  
+70: 
+    ; push counter
+    ; always add \0 terminator
+    clr wrk_low
+    srsave wrk_low
+
+    ; save counter
+    mov tos_low, tos_high
+    clr tos_high
     POON
 
 ;----------------------------------------------------------------------
@@ -84,6 +263,7 @@ HEADER "(scan)", "scan"
 ;    search address for next word delimited by c or \0
 ;    returns start of word and u lenght
 ;    or zero if no word
+;    max lenght is 255 bytes
 ;
 HEADER "(word)", "word"
     NOOP
@@ -119,192 +299,15 @@ HEADER "(word)", "word"
     sub zpm_low, wrk_low
     sbc zpm_high, wrk_high
     pspull wrk_low, wrk_high
-    movw tos_low, wrk_low
+    movw tos_low, zpm_low
     rjmp 20f
-10:
+    
+15:
     ; end of buffer
     clr tos_low
     clr tos_high
 20:
     POON
-
-;----------------------------------------------------------------------
-;
-; ok ( a u --- u ) 
-;
-;   refills address till u chars read, u < 256
-;     its refill ( a u -- u )  NO ECHOES !!!
-;
-HEADER "(refill)", "refill"
-    NOOP
-10: 
-    pspull nos_low, nos_high
-    pspull zpm_low, zpm_high
-
-    ; keep a spc at start, so every word starts with spc, 
-    ; used later to make a counted string in site
-    ldi tos_low, 32
-    srsave tos_low
-    dec nos_low
-
-    clr tos_low  ; clear comments \
-    clr tos_high ; clear comments ()
-
-    clr nos_high ; counter to 255
-    dec nos_low  ; save for \0
-
-11: 
-    ; end of     
-    cp nos_low, nos_high
-    brbs BIT_ZERO, 21f
-
-12: 
-    ; waits a ASCII char
-    sbis 0xb, 7
-    rjmp 12b
-    in wrk_low, 0xc
-
-13: 
-    ; no 8bits
-    cpi wrk_low, 128
-    brge 12b
-
-    ; not a control 
-    cpi wrk_low, 30
-    brge 40f
-
-30:
-    ; verify CR    \r
-    cpi wrk_low, 13 ; CR
-    breq 21f
-
-    ; verify LF \n
-    cpi wrk_low, 10 ; LF 
-    breq 21f
-
-    ; verify BS \b
-    cpi wrk_low,  8  ; BS
-    brne 32f
-
-    ; process BS
-    ; no char ?
-    cp nos_high, nos_high
-    breq 12b
-
-    ; back one
-    dec nos_high
-    sbiw zpm_low, 1
-    rjmp 12b    
-
-32:
-    ; verify TAB \t
-    cpi wrk_low, 9
-    brne 34f
-
-    ; magic to 32
-    ldi wrk_low, 32
-    rjmp 40f
-    
-34:
-    ; verify ESC \e
-    cpi wrk_low, 27 ; ESC
-    brne 35f
-    ; process ESC void still
-    rjmp 12b
-
-35:
-    ; verify XON 
-    cpi wrk_low, 17 ; XON
-    brne 36f
-    ; process XON void still
-    rjmp 12b
-
-36:
-    ; verify XOFF 
-    cpi wrk_low, 19 ; XOFF
-    brne 37f
-    ; process XOFF void still
-    rjmp 12b
-
-37:
-    ; not allow more controls
-    rjmp 12b
-
-40:    
-    ; is a spc ?
-    cpi wrk_low, 32
-    brne 42f
-
-;    ; verify if a " \ " alone
-;    tst tos_low
-;    brne 41f
-;    dec tos_low
-;    dec tos_low
-
-41:
-    ; highlander it !
-    cp wrk_low, wrk_high
-    breq 12b
-
-; verify comments
-42: 
-    ; is a ( ?
-    cpi wrk_low, 40
-    brne 44f
-    inc tos_high
-    rjmp 12b
-
-44: 
-    ; is a ) ?
-    cpi wrk_low, 41
-    brne 46f
-    dec tos_high
-    rjmp 12b
-
-46: 
-    ; is a \ ?
-    cpi wrk_low, 92 
-    brne 48f
-    inc tos_low
-    rjmp 12b
-
-48: 
-    ; skip comments
-    tst tos_low
-    brne 12b
-    tst tos_high
-    brne 12b
-
-.ifdef UPPERCASE    
-    ; to uppercase
-    cpi wrk_low, 61
-    brge 20f
-    cpi wrk_low, 123
-    brge 20f
-    subi wrk_low, 32
-.endif
-
-20: 
-    ; save char to buffer
-    inc nos_high
-    srsave wrk_low
-    mov wrk_high, wrk_low
-    rjmp 11b
-  
-21: 
-    ; push counter
-    ; always add \0 terminator
-    clr wrk_low
-    srsave wrk_low
-
-    ; update zero to TOIN
-    sts (TOIN+1), wrk_low
-    sts (TOIN+0), wrk_low
-
-    ; save counter
-    mov wrk_low, wrk_high
-    clr wrk_high
-    WOOP
 
 ;----------------------------------------------------------------------
 ;
@@ -392,7 +395,7 @@ HEADER "(find)", "find"
     dec tos_low
     brbs BIT_ZERO, 20f
 
-    ld wrl_low, Y+
+    ld wrk_low, Y+
     cp wrk_low, nos_high
     brne 10b
 
@@ -477,9 +480,9 @@ HEADER "(basemul)", "basemul"
     inc wrk_high
 10:
     pspush tos_low, tos_high    
-    mov wrk_low, wrk_high
-    clr wrk_high
-    WOOP
+    mov tos_low, wrk_high
+    clr tos_high
+    POON
 
 ;----------------------------------------------------------------------
 ;
@@ -497,7 +500,7 @@ HEADER "(basediv)", "basediv"
     ; clear remainder
     clr wrk_low               
     ; 16 bits rounds
-    ldi wrk_high,0x10         
+    ldi wrk_high, 0x10         
 20:  
     ; next dividend bit to wrk_low
     lsl tos_low
@@ -523,77 +526,8 @@ HEADER "(basediv)", "basediv"
     ; push quotient
     pspush tos_low, tos_high
     ; push remainder
-    WOOP
-
-;----------------------------------------------------------------------
-;    ok ( -- ) 
-;    set bit_compile in STATE to zero
-HEADER "]", "isexecute"
-    NOOP
-    lds wrk_low, STAT+0
-    cbr wrk_low, BIT_COMPILE
-states:
-    sts STAT, wrk_low
+    movw tos_low, wrk_low
     POON
-
-;----------------------------------------------------------------------
-;    ok ( -- ) 
-;    set bit_compile in STATE to one
-HEADER "[", "iscompile"
-    NOOP
-    lds wrk_low, STAT+0
-    sbr wrk_low, BIT_COMPILE
-    rjmp states
-
-;----------------------------------------------------------------------
-;    ok ( xt f -- ) 
-;
-;    f flag  1 immediate, -1 common
-;     state = 0 execute, 1 compile,  3 postone
-;
-HEADER  "(eval)", "evaluate"
-    NOOP
-
-    ; load flags
-    pspull wrk_low, wrk_high
-
-10:
-    ; load state
-    lds tos_low, STAT+0
-
-    ; ever execute 
-    cpi tos_low, 0
-    breq 18f
-
-    ; default check
-    cpi tos_low, 1
-    breq 14f
-
-    ; ever compile
-    ; clear postpone
-    cbr tos_high, BIT_POSTPONE ; must not be bit 0
-    sts STAT+0, tos_high
-    rjmp 16f    
-    
-14:
-    ; if not IMMEDIATE and COMPILE 
-    cpi wrk_low, 1
-    breq 18f
- 
-16:
-    ; compile
-    ldi wrk_low, lo8(comma)
-    ldi wrk_high, hi8(comma)
-    rjmp 20
-
-18:
-    ; execute
-    pspull wrk_low, wrk_high
-
-20:
-    ; resolve 
-    rspush wrk_low, wrk_high
-    POON 
 
 ;----------------------------------------------------------------------
 ;
@@ -727,142 +661,7 @@ HEADER "(number)", "number"
 
 100:
     ; push digits
-    WOOP
-
-;----------------------------------------------------------------------
-;
-;     nok ( --- a2 u ) 
-HEADER ".\"", "dotquote"
-    NOOP
-    POON    
-    
-;----------------------------------------------------------------------
-;    ok ( a u -- ) 
-;
-;    called after parse ;)
-;
-HEADER    "(create)", "create"
-    NOOP
-    ; sram buffer
-    lds zpm_low, THIS+0
-    lds zpm_high, THIS+1
-
-    ; save link 
-    lds wrk_low, LAST+0
-    lds wrk_high, LAST+1
-    st Z+, wrk_low
-    st Z+, wrk_high
-    
-    ; save size word
-    pspull tos_low, tos_high
-    st Z+, tos_low
-
-    ; if odd
-    sbrc tos_low, 0
-    inc tos_low
-
-    ; keep size
-    mov tos_high, tos_low
-
-    ; get address
-    pspull wrk_low, wrk_high
-
-    ; save psp
-    rspush psp_low, psp_high
-
-    ; copy it
-    movw psp_low, wrk_low
-10:
-    ld wrk_low, X+
-    st Z+, wrk_low
-    dec tos_high
-    brne 10b
-
-    ; load psp
-    rspull psp_low, psp_high
-
-    ; LAST and HERE are update as SEMI is executed
-    ; but if is out of a : ; ?
-    ; if is a  execute ?
-/*
-
-; Recall that words defined by CREATE  
-; return the address of the next free dictionary 
-; location at the time they werecreated.
-
-    ; point to next free cell
-    ; push dp to stack
-    lds wrk_low, HERE+0
-    lds wrk_high, HERE+1
-    ; add link
-    adiw wrk_low, 2
-    ; add size 
-    add wrk_low, tos_low
-    adc wrk_low, tos_high
-    ; 
-    pspush wrk_low, wrk_high
-    
-    OR just use: create HERE 
-*/
-    ; updates
-    rjmp line_void
-
-;----------------------------------------------------------------------
-;
-; ok ( w --- ) 
-HEADER "(comma)", "comma"
-    NOOP
-    ; copy from psp to sram buffer
-    lds zpm_low, THIS+0
-    lds zpm_high, THIS+1
-
-    pspull wrk_low, wrk_high
-    st Z+, wrk_low
-    st Z+, wrk_high
-
-    clr tos_high
-    clr tos_low
-
-line_void:
-
-10:
-    ; update this 
-    sts THIS+0, zpm_low
-    sts THIS+1, zpm_high
-
-    ; SRAM hold bottom of free ram
-    ; verify free ram
-    lds wrk_low, SRAM+0
-    lds wrk_high, SRAM+1
-    cp wrk_high, zpm_high
-    cpc wrk_low, zpm_low
-    brlt 20f
-
-    ; no more free ram    
-    ldi wrk_low, INVALID_MEMORY
-    rjmp WARM
-
-20:
-    ; update here
-    lds wrk_low, HERE+0
-    lds wrk_high, HERE+1
-    add wrk_low, tos_low
-    adc wrk_low, tos_high
-    ; point to next free cell
-    adiw wrk_low, 2
-    sts HERE+0, wrk_low
-    sts HERE+1, wrk_high
-
-; FLASH_STOP is bottom of free flash
-    ; verify free flash
-    cpi wrk_high, hi8(FLASH_STOP)
-    cpi wrk_low, lo8(FLASH_STOP)
-    brlt 30f
-
-    ; no more free flash
-    ldi wrk_low, WRITE_TO_READ_ONLY
-    rjmp WARM
-
-30:
+    movw tos_low, wrk_low
     POON
+
 
