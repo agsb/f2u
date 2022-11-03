@@ -4,6 +4,16 @@
 
 *still lots of english errors, please correct me*
 
+# 02/11/2022
+
+- bring back UM+ ( w1 w2 -- w3 c) 
+
+- review of BRANCH and 0BRANCH. No more relative offsets, as in GForth all address to be absolute.  
+
+- review of DOCON and DOVAR, LIT as standart, and LIT is just : DOVAR >R DUP CELL+ >R ; and : DOCON DOVAR @ ;
+
+- fix for simply (accept) (parse) (word) (eval)
+
 # 30/10/2022
 
 - include non standart words HOOK and BACK, as " ~~~ WORD ~~~ IF ~~~ WORD; THEN ~~~ ", cited by Moore in http://www.ultratechnology.com/1xforth.htm
@@ -11,6 +21,8 @@
 - review of all stacks, now order is SP0, RS0, PS0, all with 18 words and growing backwards from SRAM_END, as AVR default
 
 - review of flash write strategy, no reserved buffer, just compile to sram and write when got a flash command FLASH, PAD will be at 18 bytes from end of TIB for link+size+name 
+
+- bad day for my country, a convicted was elect.
 
 # 28/10/2022
 
