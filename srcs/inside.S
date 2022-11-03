@@ -40,7 +40,7 @@ HEADER "(skip)", "skip"
     clr tos_high
     pspull zpm_low, zpm_high
 1:
-    ld nos_low, zpm_low
+    ld nos_low, Z
     ; if \0
     cp tos_high, nos_low 
     breq 2f
@@ -65,7 +65,7 @@ HEADER "(scan)", "scan"
     clr tos_high
     pspull zpm_low, zpm_high
 1:
-    ld nos_low, zpm_low
+    ld nos_low, Z
     ; if \0
     cp tos_high, nos_low 
     breq 2f
@@ -273,7 +273,7 @@ HEADER "(word)", "word"
     clr tos_high
 1:  
     ; skips while equal delimiter
-    lds nos_low, zpm_low
+    ld nos_low, Z
     ; if \0
     cp tos_high, nos_low
     breq 10f
@@ -281,12 +281,11 @@ HEADER "(word)", "word"
     brne 2f
     adiw zpm_low, 1
     rjmp 1b
-
 2:  
     ; keep address
     movw wrk_low, zpm_low
 3:  
-    lds nos_low, zpm_low
+    ld nos_low, Z
     ; if \0
     cp tos_high, nos_low
     breq 10f
@@ -301,12 +300,146 @@ HEADER "(word)", "word"
     pspull wrk_low, wrk_high
     movw tos_low, zpm_low
     rjmp 20f
-    
 15:
     ; end of buffer
     clr tos_low
     clr tos_high
 20:
+    POON
+
+;----------------------------------------------------------------------
+;
+;   not official ? (ud1 c-addr1 u1 -- ud2 c-addr2 u2)
+;
+;    ok (a -- a 0 | ud n)    
+;    assumes a not a counted string, but ends with 32 or \0
+;
+;    uses all but X, Y
+;    ips, wrk, tos, nds, _zero_, _work_, r0, r1
+;
+HEADER "(number)", "number"
+    NOOP
+
+    ; pull address from
+    pspull zpm_low, zpm_high
+    ; keep it
+    pspush zpm_low, zpm_high
+
+      clr _zero_
+    ; clear result
+    clr tos_low
+    clr tos_high
+
+    ; get actual base
+    lds wrk_low, BASE+0
+2:
+    ; hold base
+    mov _work_, wrk_low
+10:
+    srload wrk_low
+
+    ; allow first char change base
+    tst _zero_
+    brne 18f
+12:
+    ; goes hexadecimal
+    cpi wrk_low, '$'
+    brne 14f
+    ldi wrk_low, 16
+    rjmp 2b
+
+14: 
+    ; goes decimal
+    cpi wrk_low, '#'
+    brne 16f
+    ldi wrk_low, 10
+    rjmp 2b
+
+16:    
+    ; no binary, no octal, no more bases
+
+    ; how do negative ? just two-complement at end ?
+
+18:
+    ; test end 
+
+    cpi wrk_low, 0
+    breq 80f
+     
+    cpi wrk_low, 32
+    breq 80f
+
+    ; sorry no lowercases
+    subi wrk_low, '0'
+
+    ; ends ?
+    tst wrk_low
+    brlt 50f
+
+    cpi wrk_low, 9
+    brcc 20f
+
+    ; mind the gap !
+    subi wrk_low, 7
+
+20:
+    ; ends ?
+    cp wrk_low, _work_
+    brge 50f
+
+    ; add to result
+    clr wrk_high
+    add tos_low, wrk_low
+    adc tos_high, wrk_high
+
+    ; multiply by base
+    movw nos_low, tos_low
+
+    ; Multiply LSB
+    mul nos_low, _work_
+    ; copy MSB result to result byte 1
+    mov tos_low, R0 
+    ; copy MSB result to result byte 2
+    mov tos_high, R1
+
+    ; Multiply MSB
+    mul nos_high, _work_
+    ; copy MSB result to result byte 3
+    mov wrk_high, R1 
+    ; add LSB result to result byte 2
+    add tos_high, R0 
+    brcc 30f ; if not carry, jump
+    inc wrk_high
+30:
+    ; test overflow
+    tst wrk_high
+    brne 40f
+
+    ; count digits 
+    inc _zero_
+    ; next digit
+    rjmp 10b
+
+40:
+    ; overflow 16bits
+    ldi wrk_low, OVERFLOW
+    rjmp WARM
+    
+50:
+    ; NaN    
+    ldi wrk_low, NOT_A_NUMBER
+    rjmp WARM
+
+80:
+    ; discards addr
+    pspull zpm_low, zpm_high
+
+    ; push value
+    pspush tos_low, tos_high
+
+100:
+    ; push digits
+    movw tos_low, wrk_low
     POON
 
 ;----------------------------------------------------------------------
@@ -448,220 +581,4 @@ HEADER "(find)", "find"
 40:    
     ; save results
     POON
-
-;----------------------------------------------------------------------
-; ok ( mul mut -- d )
-; 16*8 multiplication, 24 bit result, two words result
-; multipicand nd_high:nos_low by multiplier wrk_low, 
-; result low word quotient in tos_high:tos_low, remainder in wrk_low
-;
-HEADER "(basemul)", "basemul"
-    NOOP
-    ; pull multiplicanrd
-    pspull nos_low, nos_high
-    ; pull multiplier
-    pspull wrk_low, wrk_high
-    clr wrk_high
-;
-; Multiply
-;
-    ; Multiply LSB
-    mul nos_low, wrk_low 
-    ; copy result to result register
-    mov tos_low, R0 
-    mov tos_high, R1
-    ; Multiply MSB
-    mul nos_high, wrk_low 
-    ; copy MSB result to result byte 3
-    mov wrk_high, R1 
-    ; add LSB result to result byte 2
-    add tos_high, R0 
-    brcc 10f ; if not carry, jump
-    inc wrk_high
-10:
-    pspush tos_low, tos_high    
-    mov tos_low, wrk_high
-    clr tos_high
-    POON
-
-;----------------------------------------------------------------------
-;
-; 16/8 division, 16 bit result, 8 bit remainder, two words result
-; dividend nos_high:tos_low by divisor tos_low, 
-; quotient in tos_high:tos_low, remainder in wrk_low
-;
-HEADER "(basediv)", "basediv"
-    NOOP
-    ; pull dividend
-    pspull nos_low, nos_high
-    ; pull divisor
-    pspull tos_low, tos_high
-10:
-    ; clear remainder
-    clr wrk_low               
-    ; 16 bits rounds
-    ldi wrk_high, 0x10         
-20:  
-    ; next dividend bit to wrk_low
-    lsl tos_low
-    rol tos_high
-    rol wrk_low             
-    ; this should never, ever, happen
-    brcs 30f                    
-    ; trial subtraction
-    cp wrk_low, nos_low    
-    ; not big enough
-    brcs 40f                    
-30:
-    ; ok, subtract it
-    sub wrk_low, nos_low      
-    ; add this power of 2 to quotient
-    inc tos_low               
-40:  
-    ; count bit
-    dec wrk_high      
-    ; do until done
-    brne 20b           
-     
-    ; push quotient
-    pspush tos_low, tos_high
-    ; push remainder
-    movw tos_low, wrk_low
-    POON
-
-;----------------------------------------------------------------------
-;
-;   not official ? (ud1 c-addr1 u1 -- ud2 c-addr2 u2)
-;
-;    ok (a -- a 0 | ud n)    
-;    assumes a not a counted string, but ends with 32 or \0
-;
-;    uses all but X, Y
-;    ips, wrk, tos, nds, _zero_, _work_, r0, r1
-;
-HEADER "(number)", "number"
-    NOOP
-
-    ; pull address from
-    pspull zpm_low, zpm_high
-    ; keep it
-    pspush zpm_low, zpm_high
-
-      clr _zero_
-    ; clear result
-    clr tos_low
-    clr tos_high
-
-    ; get actual base
-    lds wrk_low, BASE+0
-2:
-    ; hold base
-    mov _work_, wrk_low
-10:
-    srload wrk_low
-
-    ; allow first char change base
-    tst _zero_
-    brne 18f
-12:
-    ; goes hexadecimal
-    cpi wrk_low, '$'
-    brne 14f
-    ldi wrk_low, 16
-    rjmp 2b
-
-14: 
-    ; goes decimal
-    cpi wrk_low, '#'
-    brne 16f
-    ldi wrk_low, 10
-    rjmp 2b
-
-16:    
-    ; no binary, no octal, no more bases
-
-    ; how do negative ? just two-complement at end ?
-
-18:
-    ; test end 
-
-    cpi wrk_low, 0
-    breq 80f
-     
-    cpi wrk_low, 32
-    breq 80f
-
-    ; sorry no lowercases
-    subi wrk_low, '0'
-
-    ; ends ?
-    tst wrk_low
-    brlt 50f
-
-    cpi wrk_low, 9
-    brcc 20f
-
-    ; mind the gap !
-    subi wrk_low, 7
-
-20:
-    ; ends ?
-    cp wrk_low, _work_
-    brge 50f
-
-    ; add to result
-    clr wrk_high
-    add tos_low, wrk_low
-    adc tos_high, wrk_high
-
-    ; multiply by base
-    movw nos_low, tos_low
-
-    ; Multiply LSB
-    mul nos_low, _work_
-    ; copy MSB result to result byte 1
-    mov tos_low, R0 
-    ; copy MSB result to result byte 2
-    mov tos_high, R1
-
-    ; Multiply MSB
-    mul nos_high, _work_
-    ; copy MSB result to result byte 3
-    mov wrk_high, R1 
-    ; add LSB result to result byte 2
-    add tos_high, R0 
-    brcc 30f ; if not carry, jump
-    inc wrk_high
-30:
-    ; test overflow
-    tst wrk_high
-    brne 40f
-
-    ; count digits 
-    inc _zero_
-    ; next digit
-    rjmp 10b
-
-40:
-    ; overflow 16bits
-    ldi wrk_low, OVERFLOW
-    rjmp WARM
-    
-50:
-    ; NaN    
-    ldi wrk_low, NOT_A_NUMBER
-    rjmp WARM
-
-80:
-    ; discards addr
-    pspull zpm_low, zpm_high
-
-    ; push value
-    pspush tos_low, tos_high
-
-100:
-    ; push digits
-    movw tos_low, wrk_low
-    POON
-
 

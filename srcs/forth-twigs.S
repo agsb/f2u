@@ -499,8 +499,7 @@ HEADER "NEXT", "NEXT", F_IMMEDIATE
 ; ok DO (Forth-83)
 ;
 HEADER "DO", "DO", F_IMMEDIATE,
-    .word HERE, TOR, DOCON, 0x8000, 
-    .word PLUS, DUP, TOR, MINUS, TOR, ENDS 
+    .word HERE, TOR, DOCON, 0x8000, PLUS, DUP, TOR, MINUS, TOR, ENDS 
  
 ;----------------------------------------------------------------------
 ;
