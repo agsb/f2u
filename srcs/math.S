@@ -125,19 +125,28 @@ HEADER "ABS", "ABS", F_LEAP
 ;   is ( w1 w2 -- w) 
 ;
 HEADER "MAX", "MAX", F_LEAP
-    .word ENDS
+    .word TWODUP, LTHAN, IF, SWAP, THEN, DROP, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ;   is ( w1 w2 -- w) 
 ;
 HEADER "MIN", "MIN", F_LEAP
+    .word SWAP, MAX, ENDS
+
+;----------------------------------------------------------------------
+;
+;   is ( w1 w2 w3 -- f ) 
+;
+HEADER "WITHIN", "WITHIN", F_LEAP
     .word ENDS
 
 ;----------------------------------------------------------------------
 ; a 64 bit half number, 7FFF FFFF FFFF FFFF is 9.223.372.036.854.775.807
 ;----------------------------------------------------------------------
-;
+
+
+;----------------------------------------------------------------------
 ; adapted from AVR-200 
 ; "mpy16u" "- 16x16 Bit Unsigned Multiplication
 ;
@@ -154,9 +163,9 @@ HEADER "UM*", "UMUL", F_LEAP
 ;
 mul16u: 
     ldi wrk_low, 16
-    mov _work_, wrk_low     ;init loop counter
-    sub wrk_low, wrk_low    ;clear high result Low byte
-    sub wrk_high, wrk_high    ;clear high result High byte and carry
+    mov _work_, wrk_low       ;init loop counter
+    clr wrk_low               ;clear high result Low byte
+    clr wrk_high              ;clear high result High byte and carry
 
     ; multiplier shift rigth
     lsr nos_high
@@ -164,16 +173,16 @@ mul16u:
 
 m16u_1: 
     brcc noad8                 ;if carry, bit 0, of multiplier set
-    add wrk_low, tos_low     ;add multiplicand Low to byte 2 of res
+    add wrk_low, tos_low       ;add multiplicand Low to byte 2 of res
     adc wrk_high, tos_high     ;add multiplicand high to byte 3 of res
 
 noad8: 
-    ror wrk_high             ;shift right result byte 3
-    ror wrk_low             ;rotate right result byte 2
-    ror nos_high            ;rotate result byte 1 and multiplier High
+    ror wrk_high               ;shift right result byte 3
+    ror wrk_low                ;rotate right result byte 2
+    ror nos_high               ;rotate result byte 1 and multiplier High
     ror nos_low                ;rotate result byte 0 and multiplier Low
     dec _work_                 ;decrement loop counter
-    brne m16u_1             ;if not done, loop more
+    brne m16u_1                ;if not done, loop more
 
 m16ures: 
 m16result:    
@@ -200,25 +209,27 @@ HEADER "UM/MOD", "UMBYMOD", F_LEAP
 div16u: 
     ldi wrk_low, 17
     mov _work_, wrk_low     ;init loop counter
-    sub wrk_low, wrk_low    ;clear remainder Low byte
-    sub wrk_high, wrk_high    ;clear remainder High byte and carry
+    clr wrk_low             ;clear remainder Low byte
+    clr wrk_high            ;clear remainder High byte and carry
 
 d16u_1: 
-    rol nos_low             ;shift left dividend
+    rol nos_low              ;shift left dividend
     rol nos_high
-    dec _work_                 ;decrement counter
+    dec _work_               ;decrement counter
     breq d16ures             ;if done
 
 d16u_2: 
-    rol wrk_low             ;shift dividend into remainder
+    rol wrk_low              ;shift dividend into remainder
     rol wrk_high
     sub wrk_low, tos_low     ;remainder = remainder - divisor
-    sbc wrk_high, tos_high     ;
-    brcc d16u_3             ;if result negative
+    sbc wrk_high, tos_high   
+
+    brcc d16u_3              ;if result negative
     add wrk_low, tos_low     ; restore remainder
     adc wrk_high, tos_high
-    clc                     ; clear carry to be shifted into result
-    rjmp d16u_1             ;else
+    clc                      ; clear carry to be shifted into result
+    rjmp d16u_1              ;else
+
 d16u_3: 
     sec                      ; set carry to be shifted into result
     rjmp d16u_1

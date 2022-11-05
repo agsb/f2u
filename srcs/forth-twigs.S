@@ -60,102 +60,8 @@
 ;
 ;********************************************************************** 
 ;
-;    load variables 
+;   stack words
 ;
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
-HEADER "TIB", "TIB",
-    .word DOCON, TIB0, ENDS
-    POON 
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
-HEADER "LATEST", "LATEST",
-    .word DOVAR, LIST, ENDS
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
-HEADER "STATE", "STATE",
-    .word DOVAR, STAT, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
-HEADER "BASE", "BASE",
-    .word DOVAR, BASE, ENDS
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
-HEADER "(sram)", "sram_",
-    .word DOVAR, LAST, ENDS
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
-HEADER "(eeprom)", "eeprom_",
-    .word DOVAR, KEEP, ENDS
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
-HEADER "(flash)", "flash_",
-    .word DOVAR, HEAP, ENDS
- 
-;********************************************************************** 
-
-;----------------------------------------------------------------------
-;
-; is HERE 
-;
-HEADER "HERE", "HERE",
-    .word HEAP, AT, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; is ALLOT 
-;
-HEADER "ALLOT", "ALLOT",
-    .word HEAP, PLUSTO, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; is ALIGN 
-;
-HEADER "ALIGN", "ALIGN",
-    .word HEAP, AT, ALIGNED, HEAP, TO, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; is DOVAR ( -- a )
-;
-HEADER "DOVAR", "DOVAR",
-    .word LIT, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; is DOCON ( -- w ) 
-;       
-HEADER "DOCON", "DOCON",
-    .word LIT, AT, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; is DOTO ( w -- ) 
-;
-HEADER "DOTO", "DOTO",
-    .word LIT, TO, ENDS 
- 
 ;----------------------------------------------------------------------
 ;
 ; ok ( w2 w1 -- w1 ) 
@@ -205,7 +111,6 @@ HEADER "TUCK", "TUCK",
 HEADER "FLIP", "FLIP",
     .word SWAP, SWIP, SWAP, ENDS 
 
-;********************************************************************** 
 ;----------------------------------------------------------------------
 ;
 ; ok ( w1 w2 -- 0 | -1) 
@@ -296,6 +201,106 @@ HEADER "2-", "TWOMINUS",
 HEADER "+!", "PLUSTO",
     .word SWAP, OVER, AT, PLUS, SWAP, TO, ENDS 
  
+;********************************************************************** 
+;
+;    load variables 
+;
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "TIB", "TIB",
+    .word DOCON, TIB0, ENDS
+    POON 
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "LATEST", "LATEST",
+    .word DOVAR, LIST, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "STATE", "STATE",
+    .word DOVAR, STAT, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "BASE", "BASE",
+    .word DOVAR, BASE, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "(sram)", "sram_",
+    .word DOVAR, LAST, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "(eeprom)", "eeprom_",
+    .word DOVAR, KEEP, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "(flash)", "flash_",
+    .word DOVAR, HEAP, ENDS
+ 
+;********************************************************************** 
+; 
+;   basic words
+;
+;----------------------------------------------------------------------
+;
+; is HERE 
+;
+HEADER "HERE", "HERE",
+    .word HEAP, AT, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is ALLOT 
+;
+HEADER "ALLOT", "ALLOT",
+    .word HEAP, PLUSTO, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is ALIGN 
+;
+HEADER "ALIGN", "ALIGN",
+    .word HEAP, AT, ALIGNED, HEAP, TO, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is DOVAR ( -- a )
+;
+HEADER "DOVAR", "DOVAR",
+    .word LIT, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is DOCON ( -- w ) 
+;       
+HEADER "DOCON", "DOCON",
+    .word LIT, AT, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is DOTO ( w -- ) 
+;
+HEADER "DOTO", "DOTO",
+    .word LIT, TO, ENDS 
+ 
 ;----------------------------------------------------------------------
 ;
 ; ok COMMMA ( w -- ) 
@@ -306,8 +311,8 @@ HEADER ",", "COMMA",
 ;----------------------------------------------------------------------
 ;
 ; ok this puts next cell into stack and compiles into HERE 
-;
-HEADER "COMPILE", "COMP",
+; used only in precompiled word :) as those in twigs
+HEADER "COMPILE", "COMPILE",
     .word RTO, DUP, AT, COMMA, CELLPLUS, TOR, ENDS 
  
 ;----------------------------------------------------------------------
@@ -315,7 +320,7 @@ HEADER "COMPILE", "COMP",
 ; ok compile a eow 
 ;
 HEADER "EXIT", "EXIT",
-    .word COMP, ENDS, ENDS
+    .word COMPILE, ENDS, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -361,7 +366,6 @@ HEADER "TOMARK", "TOMARK", F_IMMEDIATE,
     .word HERE, SWAP, TO, ENDS 
  
 ;----------------------------------------------------------------------
-;----------------------------------------------------------------------
 ;
 ; ok BEGIN 
 ;
@@ -373,14 +377,14 @@ HEADER "BEGIN", "BEGIN", F_IMMEDIATE,
 ; ok AGAIN resolves a unconditional branch 
 ;
 HEADER "AGAIN", "AGAIN", F_IMMEDIATE,
-    .word COMP, BRANCH, COMMA, ENDS 
+    .word COMPILE, BRANCH, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok UNTIL resolves a conditional branch, as C do { ... } while (0) 
 ;
 HEADER "UNTIL", "UNTIL", F_IMMEDIATE,
-    .word COMP, ZBRANCH, COMMA, ENDS 
+    .word COMPILE, ZBRANCH, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -394,14 +398,14 @@ HEADER "UNLESS", "UNLESS", F_IMMEDIATE,
 ; ok IF (executed if tos is not zero)
 ;
 HEADER "IF", "IF", F_IMMEDIATE,
-    .word COMP, ZBRANCH, MARKTO, ENDS 
+    .word COMPILE, ZBRANCH, MARKTO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok GO (executed ever)
 ;
 HEADER "GO", "GO", F_IMMEDIATE,
-    .word COMP, BRANCH, MARKTO, ENDS 
+    .word COMPILE, BRANCH, MARKTO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -472,7 +476,7 @@ HEADER "BACK", "BACK", F_IMMEDIATE,
 ; is FOR ( u -- ) R:( -- h u )
 ; count down, from +32767
 HEADER "FOR", "FOR", F_IMMEDIATE
-    .word COMP, TOR, HERE, ENDS 
+    .word COMPILE, TOR, HERE, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -486,52 +490,8 @@ HEADER "TXEN", "TXEN", F_IMMEDIATE
 ; is NEXT ( -- ) R:( -- h u ) 
 ;
 HEADER "NEXT", "NEXT", F_IMMEDIATE
-    .word COMP, TXEN, COMMA, ENDS
+    .word COMPILE, TXEN, COMMA, ENDS
 
-;----------------------------------------------------------------------
-;
-; DO and LOOP runs from 0x8000 till 0x7FFF, -32768 to 32767
-; counting from 0 to 65535, as Forth-83
-; ZZZZ
-;
-;----------------------------------------------------------------------
-;
-; ok DO (Forth-83)
-;
-HEADER "DO", "DO", F_IMMEDIATE,
-    .word HERE, TOR, DOCON, 0x8000, PLUS, DUP, TOR, MINUS, TOR, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; ok DONT (not Forth-83)
-;
-HEADER "DONT", "DONT", F_IMMEDIATE,
-    .word DROP, DROP, HERE, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; is QDO ( u n -- ) (Forth-83)
-;
-HEADER "QDO", "QDO", F_IMMEDIATE,
-    .word OVER, OVER, MINUS, COMP, ZBRANCH, HERE, DO, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; ok LOOP (Forth-83)
-;
-HEADER "LOOP", "LOOP", F_IMMEDIATE,
-    .word RAT, ONEPLUS, ZBRANCH, ZZZZ 
-    .word RPAT, CELL, MINUS, CELL, MINUS
-    .word ENDS 
- 
-;----------------------------------------------------------------------
-;
-; ok LEAVE (Forth-83)
-;
-HEADER "LEAVE", "LEAVE", F_IMMEDIATE,
-    .word RTO, RTO, MINUS, ZZZZ, ENDS 
- 
-;--------------------------------------------------------------------
 ;
 ;----------------------------------------------------------------------
 ;
@@ -565,9 +525,7 @@ HEADER "WARM", "WARM", F_LEAP
 ; does reset 
 ;
 HEADER "BYE", "BYE", F_LEAP
-    NOOP 
-    rjmp RESET 
-    POON 
+    .word REST, AT, EXEC, RESET, ENDS 
 
 ;----------------------------------------------------------------------
 ;

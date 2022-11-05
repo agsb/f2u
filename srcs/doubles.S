@@ -77,6 +77,13 @@ HEADER "2R@", "TWORAT",
 ;
 ; ok ( w1 w2 -- w1 w2 w1 w2 ) 
 ;
+HEADER "2DROP", "TWODROP",
+     .word DROP, DROP, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; ok ( w1 w2 -- w1 w2 w1 w2 ) 
+;
 HEADER "2DUP", "TWODUP",
      .word OVER, OVER, ENDS 
  

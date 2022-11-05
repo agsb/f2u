@@ -44,13 +44,16 @@ HEADER "(skip)", "skip"
     ; if \0
     cp tos_high, nos_low 
     breq 2f
+    ; if c
     cp tos_low, nos_low 
     breq 3f
     adiw zpm_low, 1
     rjmp 1b
-2:  mov tos_low, tos_high
-    POON
-3:  movw tos_low, zpm_low
+2:  
+    clr zpm_low
+    clr zpm_high
+3:  
+    movw tos_low, zpm_low
     POON
 
 ;----------------------------------------------------------------------
@@ -69,13 +72,16 @@ HEADER "(scan)", "scan"
     ; if \0
     cp tos_high, nos_low 
     breq 2f
+    ; if c
     cp tos_low, nos_low 
     brne 3f
     adiw zpm_low, 1
     rjmp 1b
-2:  mov tos_low, tos_high
-    POON
-3:  movw tos_low, zpm_low
+2:  
+    clr zpm_low
+    clr zpm_high
+3:  
+    movw tos_low, zpm_low
     POON
 
 ;----------------------------------------------------------------------
@@ -121,15 +127,20 @@ HEADER "(refill)", "refill"
     
     ; keep a spc at start, so every word starts with spc, 
     ; used later to make a counted string in site
-    ldi wrk_low, 32
-    srsave wrk_low
-    ; save for spc at init
-    dec tos_low 
+    
     ; save for \0 at end
     dec tos_low
 
+    ; save for BL at init
+    dec tos_low 
+
+    ; place a BL at init
+    ldi wrk_low, 32
+    srsave wrk_low
+
     ; clear count
     clr tos_high
+
     ; clear last char
     clr wrk_high
 
@@ -156,7 +167,7 @@ HEADER "(refill)", "refill"
     brge 60f
 
 40:
-    ; verify CR    \r
+    ; verify CR \r
     cpi wrk_low, 13 ; CR
     breq 70f
 
@@ -165,11 +176,11 @@ HEADER "(refill)", "refill"
     breq 70f
 
 42:
-    ; verify NAK, reset line 
+    ; verify NAK \u 
     cpi wrk_low, 21 ; NAK
     brne 44f
-
-    ; process NAK
+    ; how echo NAK ?
+    ; process NAK, reset line 
     clr wrk_high
     sub zpm_low, tos_high
     sbc zpm_high, wrk_high
@@ -206,8 +217,6 @@ HEADER "(refill)", "refill"
 
 /* 
 
-those are not for now
-
     ; verify ESC \e
     cpi wrk_low, 27 ; ESC
 
@@ -240,6 +249,7 @@ those are not for now
 .endif
 
 64: 
+    ; need echo ?
     ; save char to buffer
     inc tos_high
     srsave wrk_low
@@ -255,6 +265,53 @@ those are not for now
     ; save counter
     mov tos_low, tos_high
     clr tos_high
+    POON
+
+;----------------------------------------------------------------------
+;
+; ok ( a c --- a u | 0 ) 
+;    search address for next word delimited by c or \0
+;    returns start of word and u lenght
+;    or zero if no word
+;    max lenght is 255 bytes
+;
+HEADER "(parse)", "parse"
+    NOOP
+    ; start at 
+    pspull zpm_low, zpm_high
+
+    ; keep address
+    movw wrk_low, zpm_low
+
+    ; for \0 check
+    clr tos_high
+1:  
+    ; skips while not equal delimiter
+    ld nos_low, Z
+    
+    ; if \0
+    cp tos_high, nos_low
+    breq 10f
+
+    ; if \c
+    cp tos_low, nos_low
+    breq 2f
+    
+    ; next on 
+    adiw zpm_low, 1
+    rjmp 1b
+2:  
+    ; found
+    pspush zpm_low, zpm_high
+    sub zpm_low, wrk_low
+    sbc zpm_high, wrk_high
+    movw tos_low, zpm_low
+    rjmp 20f 
+15:
+    ; end of buffer
+    clr tos_low
+    clr tos_high
+20:
     POON
 
 ;----------------------------------------------------------------------
@@ -284,7 +341,9 @@ HEADER "(word)", "word"
 2:  
     ; keep address
     movw wrk_low, zpm_low
+
 3:  
+    ; scans while not equal delimiter
     ld nos_low, Z
     ; if \0
     cp tos_high, nos_low
@@ -297,7 +356,7 @@ HEADER "(word)", "word"
     ; found
     sub zpm_low, wrk_low
     sbc zpm_high, wrk_high
-    pspull wrk_low, wrk_high
+    pspush wrk_low, wrk_high
     movw tos_low, zpm_low
     rjmp 20f
 15:

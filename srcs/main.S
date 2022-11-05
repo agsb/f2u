@@ -49,6 +49,7 @@ REST:	.word 0		; routine to run before reset
 
 LIST:	.word 0		; reference to latest word in dictionary
 LAST:	.word 0		; next free cell in flash dictionary
+
 HEAP:   .word 0		; next free cell in static ram 
 KEEP:	.word 0		; next free cell in eeprom
 
@@ -59,8 +60,11 @@ RADX:	.word 0		; numeric radix for convertion
 PAGE:   .word 0     ; flash page to flush 
 TOIN:   .word 0     ; offset in TIB
 
-TIBS:	.word 0		; count down
-CURS:   .word 0     ; count down 
+TIBS:	.word 0		; counter
+CURS:   .word 0     ; counter 
+
+HAND:   .word 0     ; hold for chain 
+LEAV:   .word 0     ; hold for leave
 
 TIB0:	.space TIB_SIZE, 0x0
 
@@ -83,8 +87,14 @@ FREE = RS0 - STACK_SIZE
 
 ;----------------------------------------------------------------------
 .p2align 1, 0x00
-;#include "forth.S"
 #include "forth-leafs.S"
+
+;----------------------------------------------------------------------
+.p2align 1, 0x00
+#include "flush.S"
+
+;----------------------------------------------------------------------
+.p2align 1, 0x00
 #include "forth-twigs.S"
 
 ;----------------------------------------------------------------------
@@ -93,15 +103,11 @@ FREE = RS0 - STACK_SIZE
 
 ;----------------------------------------------------------------------
 ;.p2align 1, 0x00
-#include "inside.S"
-
-;----------------------------------------------------------------------
-;.p2align 1, 0x00
 #include "math.S"
 
 ;----------------------------------------------------------------------
-.p2align 1, 0x00
-#include "flush.S"
+;.p2align 1, 0x00
+#include "inside.S"
 
 ;----------------------------------------------------------------------
 .equ free_flash, .

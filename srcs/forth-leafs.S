@@ -327,16 +327,43 @@ HEADER "0=", "ZEQU", F_LEAP
  
 ;----------------------------------------------------------------------
 ;
-; ok ( w1 w2 -- 0 | -1 ) 
+; ok ( u1 u2 -- f ) 
+;   unsigned lessthan 
+;   if u1 < u2, true, else, false
 ;
-HEADER "<", "LTHAN", F_LEAP
+HEADER "U<", "UMLESS", F_LEAP
     NOOP 
     pspull nos_low, nos_high 
-    cp tos_low, nos_low 
+    clc 
+    cp  tos_low, nos_low 
     cpc tos_high, nos_high 
-    brlt _iftrue 
-    brge _iffalse 
+1:    
+    brlt 2f 
+    rjmp _iffalse
+2:
+    rjmp _iftrue
     POON
+
+;----------------------------------------------------------------------
+;
+; ok ( w1 w2 -- w3 f ) 
+;   unsigned plus 
+;
+HEADER "UM+", "UMPLUS", F_LEAP
+    NOOP 
+    pspull nos_low, nos_high 
+    clc 
+    add tos_low, nos_low 
+    adc tos_high, nos_high 
+    pspush tos_low, tos_high
+1:
+    clr tos_high
+    clr tos_low
+2:    
+    brcc 3f
+    inc tos_low
+3:
+    POON 
  
 ;----------------------------------------------------------------------
 ;
@@ -498,22 +525,18 @@ HEADER "?DUP", "ZDUP", F_LEAP
 
 ;----------------------------------------------------------------------
 ;
-; ok ( w1 w2 -- w3 f ) 
-;   unsigned plus 
+; ok ( w1 w2 -- 0 | -1 ) 
 ;
-HEADER "UM+", "UMPLUS", F_LEAP
+HEADER "<", "LTHAN", F_LEAP
     NOOP 
     pspull nos_low, nos_high 
-    clc 
-    add tos_low, nos_low 
-    adc tos_high, nos_high 
-    pspush tos_low, tos_high
-    clr tos_high
-    clr tos_low
-    brcc 1f
-    inc tos_low
+    cp tos_low, nos_low 
+    cpc tos_high, nos_high 
+    brlt 1f 
+    rjmp _iffalse
 1:
-    POON 
+    rjmp _iftrue
+    POON
  
 ;----------------------------------------------------------------------
 ;
@@ -661,7 +684,7 @@ _branch:
 ; ok ( u -- ) 
 ; if tos is not zero, skip next 
 ; 
-HEADER "?BRANCH", "ZBRANCH", F_LEAP
+HEADER "0BRANCH", "ZBRANCH", F_LEAP
     NOOP 
     movw nos_low, tos_low
     pspull tos_low, tos_high
