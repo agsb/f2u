@@ -120,9 +120,12 @@
 ; set start reverse linked list
 ;
 .set _link_, 0x0
+.set _list_, 0x0
+.set _last_, 0x0
 
 .macro HEADER name, label, flags=0x0
 is_\label:
+10:
     .p2align 1, 0x00
 7:    
     .word _link_
@@ -133,6 +136,9 @@ is_\label:
 9:    
     .p2align 1, 0x20
 \label:
+11:
+    .set _last_, _list_
+    .set _list_, _last_ + (11b - 10b + 1)
 .endm
 
 ;----------------------------------------------------------------------

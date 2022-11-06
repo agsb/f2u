@@ -111,7 +111,7 @@ _next:
  
 ; if zero (NULL) is a primitive word 
 _void:
-    cp wrk_low, wrk_high 
+    or wrk_low, wrk_high 
     brbs BIT_ZERO, _jump
  
 ; else is a reference ( 2 extra cycles )
@@ -127,13 +127,6 @@ _jump:
 ; then link, for continue 
 _link: 
     rjmp _unnest 
- 
-;----------------------------------------------------------------------
-;
-; is ZZZZ, hook for incompleteness 
-;
-HEADER "ZZZZ", "ZZZZ",
-    .word ENDS 
  
 ;********************************************************************** 
 ;
@@ -196,7 +189,8 @@ HEADER "EMIT?", "QEMIT", F_LEAP
  
 ;----------------------------------------------------------------------
 ;
-; ok ( u u w -- ) 
+; ok ( u u e -- ) 
+;   write to eprom (2 cells)
 ;
 HEADER ">EEPROM", "TOEEPROM", F_LEAP
     NOOP 
@@ -212,9 +206,10 @@ EEPROM_write:
     out EEARL, tos_low
 ; Write data to Data Register
     out EEDR, nos_low
+
 ; prepare    
-    in r2, __SREG__
     cli
+    in r2, __SREG__
 ; Write logical one to EEMPE
     sbi EECR, EEMWE
 ; Start eeprom write by setting EEWE
@@ -226,7 +221,8 @@ EEPROM_write:
 
 ;----------------------------------------------------------------------
 ;
-; ok ( w -- u ) 
+; ok ( e -- u ) 
+;   read eeprom
 ;
 HEADER "EEPROM>", "EEPROMTO", F_LEAP
     NOOP 
@@ -394,7 +390,6 @@ HEADER "@", "AT", F_LEAP
 ;----------------------------------------------------------------------
 ;
 ; ok ( w -- ) ( -- W) 
-;      
 ;
 HEADER ">R", "TOR", F_LEAP
     NOOP 
@@ -405,7 +400,6 @@ HEADER ">R", "TOR", F_LEAP
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w ) ( w -- ) 
-;     
 ;
 HEADER "R>", "RTO", F_LEAP
     NOOP 
@@ -676,7 +670,7 @@ HEADER "BRANCH", "BRANCH", F_LEAP
 _branch: 
     rspull zpm_low, zpm_high 
     pmload nos_low, nos_high 
-    rspush zpm_low, zpm_high 
+    rspush nos_low, nos_high 
     POON 
  
 ;----------------------------------------------------------------------
@@ -698,7 +692,7 @@ HEADER "0BRANCH", "ZBRANCH", F_LEAP
  
 ;----------------------------------------------------------------------
 ;
-;  ok LIT ( a -- w ), 
+;  ok LIT ( -- w ), 
 ;  push a value from flash to data stack 
 ;  
 HEADER "LIT", "LIT", F_LEAP
@@ -789,6 +783,7 @@ HEADER "2", "TWO", F_LEAP
     pspush tos_low, tos_high 
     clr tos_low 
     clr tos_high 
-    adiw tos_low, 2
+    inc tos_low
+    inc tos_low
     POON 
  

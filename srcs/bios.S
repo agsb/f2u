@@ -227,10 +227,10 @@ GOOD:
 ;
 ; interrupt routine
 TIM0_OVF:
-; save flags
-    in r2, __SREG__
 ; disable interrups
     cli
+; save flags
+    in r2, __SREG__
 ; increase counter and also clear 
     inc r4
     brbs BIT_ZERO, TIM0_ADJ
@@ -239,10 +239,10 @@ TIM0_ADJ:
     out TCNT0, r3
 ;  reset watch dog
     wdr
-; load flags and return
-    out __SREG__, r2
 ; clear _zero_  
     clr r6
+; load flags and return
+    out __SREG__, r2
 ; enable interrups
     sei
     reti

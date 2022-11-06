@@ -40,6 +40,8 @@
 ;----------------------------------------------------------------------
 .section data
 .org SRAM_START
+
+;----------------------------------------------------------------------
 ; those are non volatile, must be saved in eeprom
 VOID:	.word 0		; always 0x0000
 SEED:	.word 0		; seed for pseudo random
@@ -47,35 +49,34 @@ SEED:	.word 0		; seed for pseudo random
 TURN:	.word 0		; routine to run after boot
 REST:	.word 0		; routine to run before reset
 
-LIST:	.word 0		; reference to latest word in dictionary
-LAST:	.word 0		; next free cell in flash dictionary
+LAST:	.word 0		; reference to latest word in dictionary
+VDP:	.word 0		; next free cell in flash dictionary
 
-HEAP:   .word 0		; next free cell in static ram 
-KEEP:	.word 0		; next free cell in eeprom
+VUP:    .word 0     ; next free cell in static ram 
+USP:    .word 0     ; next free cell in static ram (from end) 
 
+VEP: 	.word 0		; next free cell in eeprom
+
+;----------------------------------------------------------------------
 ; those are volatile, dont care
 STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile
 RADX:	.word 0		; numeric radix for convertion
 
-PAGE:   .word 0     ; flash page to flush 
 TOIN:   .word 0     ; offset in TIB
-
-TIBS:	.word 0		; counter
-CURS:   .word 0     ; counter 
-
-HAND:   .word 0     ; hold for chain 
 LEAV:   .word 0     ; hold for leave
 
+;----------------------------------------------------------------------
 TIB0:	.space TIB_SIZE, 0x0
+UH0 = .
 
 ;----------------------------------------------------------------------
 ; stacks at end of sram
 SP0 = SRAM_END
 PS0 = SP0 - STACK_SIZE
 RS0 = PS0 - STACK_SIZE
-FREE = RS0 - STACK_SIZE
+US0 = RS0 - STACK_SIZE
 
-;.equ free_sram, FREE - TIB_SIZE
+;.equ free_sram, US0 - UH0
 
 ;----------------------------------------------------------------------
 .p2align 1, 0x00
@@ -111,6 +112,8 @@ FREE = RS0 - STACK_SIZE
 
 ;----------------------------------------------------------------------
 .equ free_flash, .
+
+FULL: .word  _list_
 
 ;----------------------------------------------------------------------
 

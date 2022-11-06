@@ -4,6 +4,12 @@
 
 *still lots of english errors, please correct me*
 
+# 05/11/2022
+
+- future code: shrink, replace " pull tos_low, tos_high; POON; " with rjmp DROP
+
+- do all work in sram, when compile done use flash do write.
+
 # 02/11/2022
 
 - bring back UM+ ( w1 w2 -- w3 c) 

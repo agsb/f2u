@@ -57,21 +57,21 @@ HEADER "4-", "FOURMINUS",
 ; ok ( w1 w2 -- ) 
 ;
 HEADER "2>R", "TWOTOR",
-     .word SWAP, SWIP, SWAP, RTO, RTO, ENDS 
+     .word SWAP, RTO, RTO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w1 w2 -- ) 
 ;
 HEADER "2R>", "TWORTO",
-     .word RTO, RTO, SWAP, SWIP, SWAP, ENDS 
+     .word RTO, RTO, SWAP, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w1 w2 -- ) 
 ;
 HEADER "2R@", "TWORAT",
-     .word RTO, RTO, RAT, SWAP, TOR, SWIP, SWAP, ENDS 
+     .word RTO, RTO, TWODUP, TOR, TOR, SWAP, ENDS
  
 ;----------------------------------------------------------------------
 ;
@@ -92,14 +92,14 @@ HEADER "2DUP", "TWODUP",
 ; ok ( w1 w2 w3 w4 -- w3 w4 w1 w2 ) 
 ;
 HEADER "2SWAP", "TWOSWAP",
-     .word TOR, SWAP, SWIP, TOR, SWAP, SWIP, ENDS 
+     .word ROTU, TOR, ROTU, TOR, ENDS 
      
 ;----------------------------------------------------------------------
 ;
 ; ok ( w1 w2 w3 w4 -- w3 w4 + w1 w2 ) 
 ;
 HEADER "D+", "DPLUS",
-     .word ENDS 
+     .word TOR, SWAP, TOR, UMPLUS, RTO, RTO, UMPLUS, UMPLUS, ENDS 
      
 ;----------------------------------------------------------------------
 ;

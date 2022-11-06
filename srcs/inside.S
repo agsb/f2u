@@ -522,8 +522,8 @@ HEADER "(find)", "find"
     movw psp_low, nos_low
     
     ; prepare loop    
-    lds zpm_low, (LIST+0)
-    lds zpm_high, (LIST+1)
+    lds zpm_low, (LAST+0)
+    lds zpm_high, (LAST+1)
     
     ; push aword for first loop
     rspush psp_low, psp_high

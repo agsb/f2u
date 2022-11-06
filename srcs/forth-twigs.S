@@ -58,6 +58,14 @@
 ;
 ;    (some adapted from old fig-forth listings) 
 ;
+
+;----------------------------------------------------------------------
+;
+; is ZZZZ, hook for incompleteness 
+;
+HEADER "ZZZZ", "ZZZZ",
+    .word LIT, undef, LIT, 12, TYPE, ENDS 
+ 
 ;********************************************************************** 
 ;
 ;   stack words
@@ -102,7 +110,7 @@ HEADER "-ROT", "ROTD",
 ; ok ( w2 w1 --  w1 w2 w1 ) 
 ;
 HEADER "TUCK", "TUCK",
-    .word DUP, SWIP, ENDS 
+    .word SWAP, OVER, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -210,7 +218,7 @@ HEADER "+!", "PLUSTO",
 ; ok ( -- w) 
 ;
 HEADER "TIB", "TIB",
-    .word DOCON, TIB0, ENDS
+    .word LIT, TIB0, ENDS
     POON 
  
 ;----------------------------------------------------------------------
@@ -218,42 +226,49 @@ HEADER "TIB", "TIB",
 ; ok ( -- w) 
 ;
 HEADER "LATEST", "LATEST",
-    .word DOVAR, LIST, ENDS
+    .word LIT, LAST, ENDS
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w) 
 ;
 HEADER "STATE", "STATE",
-    .word DOVAR, STAT, ENDS 
+    .word LIT, STAT, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w) 
 ;
 HEADER "BASE", "BASE",
-    .word DOVAR, BASE, ENDS
+    .word LIT, BASE, ENDS
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w) 
 ;
-HEADER "(sram)", "sram_",
-    .word DOVAR, LAST, ENDS
+HEADER "DP", "DP",
+    .word LIT, VDP, ENDS
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w) 
 ;
-HEADER "(eeprom)", "eeprom_",
-    .word DOVAR, KEEP, ENDS
+HEADER "UP", "UP",
+    .word LIT, VUP, ENDS
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w) 
 ;
-HEADER "(flash)", "flash_",
-    .word DOVAR, HEAP, ENDS
+HEADER "EP", "EPP",
+    .word LIT, VEP, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+; stack for variables from end of stacks
+HEADER "US", "US",
+    .word LIT, USP, ENDS
  
 ;********************************************************************** 
 ; 
@@ -264,21 +279,21 @@ HEADER "(flash)", "flash_",
 ; is HERE 
 ;
 HEADER "HERE", "HERE",
-    .word HEAP, AT, ENDS 
+    .word DP, AT, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is ALLOT 
 ;
 HEADER "ALLOT", "ALLOT",
-    .word HEAP, PLUSTO, ENDS 
+    .word DP, PLUS, DP, TO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is ALIGN 
 ;
 HEADER "ALIGN", "ALIGN",
-    .word HEAP, AT, ALIGNED, HEAP, TO, ENDS 
+    .word DP, AT, ALIGNED, DP, TO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -311,16 +326,17 @@ HEADER ",", "COMMA",
 ;----------------------------------------------------------------------
 ;
 ; ok this puts next cell into stack and compiles into HERE 
-; used only in precompiled word :) as those in twigs
-HEADER "COMPILE", "COMPILE",
-    .word RTO, DUP, AT, COMMA, CELLPLUS, TOR, ENDS 
+; used only in precompiled sources as forth-twigs
+;
+HEADER "COMP", "COMP",
+    .word LIT, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok compile a eow 
 ;
 HEADER "EXIT", "EXIT",
-    .word COMPILE, ENDS, ENDS
+    .word COMP, ENDS, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -377,14 +393,14 @@ HEADER "BEGIN", "BEGIN", F_IMMEDIATE,
 ; ok AGAIN resolves a unconditional branch 
 ;
 HEADER "AGAIN", "AGAIN", F_IMMEDIATE,
-    .word COMPILE, BRANCH, COMMA, ENDS 
+    .word COMP, BRANCH, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok UNTIL resolves a conditional branch, as C do { ... } while (0) 
 ;
 HEADER "UNTIL", "UNTIL", F_IMMEDIATE,
-    .word COMPILE, ZBRANCH, COMMA, ENDS 
+    .word COMP, ZBRANCH, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -398,14 +414,14 @@ HEADER "UNLESS", "UNLESS", F_IMMEDIATE,
 ; ok IF (executed if tos is not zero)
 ;
 HEADER "IF", "IF", F_IMMEDIATE,
-    .word COMPILE, ZBRANCH, MARKTO, ENDS 
+    .word COMP, ZBRANCH, MARKTO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok GO (executed ever)
 ;
 HEADER "GO", "GO", F_IMMEDIATE,
-    .word COMPILE, BRANCH, MARKTO, ENDS 
+    .word COMP, BRANCH, MARKTO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -476,21 +492,28 @@ HEADER "BACK", "BACK", F_IMMEDIATE,
 ; is FOR ( u -- ) R:( -- h u )
 ; count down, from +32767
 HEADER "FOR", "FOR", F_IMMEDIATE
-    .word COMPILE, TOR, HERE, ENDS 
+    .word COMP, TOR, HERE, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is TXEN ( -- ) R:( -- h u ) 
 ;
 HEADER "TXEN", "TXEN", F_IMMEDIATE
-    .word RTO, ONEMINUS, DUP, IF, TOR, DUP, EXEC, ELSE, DROP, DROP, ENDS 
+    .word RTO, ONEMINUS, DUP
+    .word ZBRANCH, 1f 
+    .word TOR, DUP, EXEC 
+    .word BRANCH, 2f
+1:
+    .word DROP, DROP
+2:
+     
  
 ;----------------------------------------------------------------------
 ;
 ; is NEXT ( -- ) R:( -- h u ) 
 ;
 HEADER "NEXT", "NEXT", F_IMMEDIATE
-    .word COMPILE, TXEN, COMMA, ENDS
+    .word COMP, TXEN, COMMA, ENDS
 
 ;
 ;----------------------------------------------------------------------
@@ -506,6 +529,8 @@ HEADER "COLD", "COLD", F_LEAP
     ldi psp_low, lo8(PS0) 
     ldi psp_high, hi8(PS0) 
 
+; update preload values
+
 ; preload to WARM 
     ; next word 
     ldi zpm_low, lo8(WARM) 
@@ -519,6 +544,7 @@ HEADER "WARM", "WARM", F_LEAP
     NOOP 
     ; verify error code 
     ; resets etc 
+    .word TURN, AT, EXEC, QUIT, ENDS 
     POON 
  
 ;----------------------------------------------------------------------
@@ -579,32 +605,10 @@ HEADER "IMMEDIATE", "IMMEDIATE",
 
 ;----------------------------------------------------------------------
 ;
-; is COMPILE_ONLY 
+; is COMP_ONLY 
 ;
 HEADER "COMPILE_ONLY", "COMPILE_ONLY",
     .word LATEST, TONFA, F_COMPILE, TOGGLE, ENDS 
-
-;----------------------------------------------------------------------
-;
-; is compile a header 
-;
-HEADER "CREATE", "CREATE",
-    .word ENDS
-
-;----------------------------------------------------------------------
-;
-; is gets a cc<chars>cc from source
-;   ( -- a n )
-;
-HEADER "PARSE", "PARSE"
-    .word ENDS
-
-;----------------------------------------------------------------------
-;
-; is compile a header 
-;
-HEADER "FIND", "FIND",
-    .word ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -623,6 +627,92 @@ HEADER ";", "SEMMI",
 
 ;----------------------------------------------------------------------
 ;
+; is  ( a u -- )
+;
+HEADER "CR", "CR",
+    .word LIT, 0x0D, EMIT, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( a u -- )
+;
+HEADER "LF", "LF",
+    .word LIT, 0x0A, EMIT, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( a u -- )
+;
+HEADER "BL", "BL",
+    .word LIT, 0x20, EMIT, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( a u -- )
+;
+HEADER "TYPE", "TYPE",
+1:
+    .word DUP, ZBRANCH, 2f
+    .word ONEMINUS, TOR, DUP, AT, EMIT, ONEPLUS, RTO
+    .word BRANCH, 1b
+2:
+    .word DROP, DROP, ENDS 
+  
+;----------------------------------------------------------------------
+;
+; is compile a header 
+;
+HEADER "CREATE", "CREATE",
+    .word ZZZZ, ENDS
+    
+
+;----------------------------------------------------------------------
+;
+; is gets a cc<chars>cc from source
+;   ( -- a n )
+;
+HEADER "PARSE", "PARSE"
+    .word ZZZZ, ENDS
+    
+
+;----------------------------------------------------------------------
+;
+; is compile a header 
+;
+HEADER "FIND", "FIND",
+    .word ZZZZ, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  
+;
+HEADER "EVAL", "EVAL",
+    .word ZZZZ, ENDS
+    
+;----------------------------------------------------------------------
+;
+; is  
+;
+HEADER "ACCEPT", "ACCEPT",
+    .word ZZZZ, ENDS
+    
+;----------------------------------------------------------------------
+;
+; is  
+;
+HEADER "QUIT", "QUIT",
+1:
+    .word LBRAC, RS0, RPTO, ACCEPT, EVAL
+    .word STATE, AT 
+    .word ZBRANCH, 2f
+    .word LIT, prompt, LIT, 4, TYPE 
+2:    
+    .word BRANCH, 1f 
+
+     
+  
+;----------------------------------------------------------------------
+;
 ; is  
 ;
 ;HEADER "INTERPRET", "INTERPRET",
@@ -633,5 +723,5 @@ HEADER ";", "SEMMI",
 ;    .word NIP, NIP, BRANCH, INTERPRET
 ;notnumber:
 ;    .word EUNDEFI, AT, EXECUTE, BRANCH, INTERPRET
-;    .word ENDS
+;    
 ;  

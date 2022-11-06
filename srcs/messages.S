@@ -25,9 +25,13 @@
  *
  */
 
+ disclaimer : 
  .ascii "DISCLAIMER this software is provided \"AS IS\".\n"
  .ascii "Copyright © 2020, Alvaro Gomes Sobral Barcellos,\n"
  .ascii "Licence Creative Commons,f8f98284-589e-4290-867c-0ac3824721ac,\n"
  .ascii "Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)\n"
-
-
+ prompt :
+ .ascii " OK\n"
+ undef:
+ .ascii " undefined?\n"
+ 

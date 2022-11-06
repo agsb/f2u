@@ -1,5 +1,4 @@
 
-
 /*
  *  DISCLAIMER
  *
@@ -202,10 +201,10 @@ HEADER "(save_flash)", "SVFLASH"
 
 ; call spm in NWWM
 _does_spm:
-    in _sreg_, __SREG__
     cli
+    in r2, __SREG__
     call OPTI_DO_SPM_SHORT
-    out __SREG__, _sreg_
+    out __SREG__, r2
     sei
 ; wait for complete
 1:  in      r0, 0x37        ; 55
