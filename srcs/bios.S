@@ -87,6 +87,10 @@ EEMWE =  2
 EERE  =  0
 
 ;----------------------------------------------------------------------
+; sleep register
+MCUCR = 0x35 
+
+;----------------------------------------------------------------------
 ;
 ; classic interrup vector table
 ;
@@ -115,6 +119,8 @@ EERE  =  0
 ;----------------------------------------------------------------------
 ; 
 RESET:
+;   yes, is a nop. 
+    nop
 ; clear interrupts
     cli
 ; init _zero_ as zero
@@ -247,3 +253,14 @@ TIM0_ADJ:
     sei
     reti
 
+;----------------------------------------------------------------------
+;
+;   do not use r0 and r1 are scratch registers used in spm, mul, des, etc
+;
+HALT:
+    nop
+    sei
+    ldi r16, 0x80 ; Enable sleep mode
+    out MCUCR, r16
+    sleep           ; Put MCU in sleep mode
+    rjmp RESET

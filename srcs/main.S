@@ -36,6 +36,22 @@
 .equ version, 12 ; 0.00.10
 
 #include "macros.S"
+;----------------------------------------------------------------------
+;
+; for sake stacks grows down, heaps grows up
+;
+;----------------------------------------------------------------------
+.section .eeprom
+.org 0x0
+
+e_void:	.word 0 ; always zero
+e_seed:	.word 0 ; seed for random
+e_turn:	.word 0 ; routine after boot
+e_rest:	.word 0 ; routine before reset
+e_last:	.word 0 ; link to last word in dictionary
+e_dp:	.word 0 ; next free flash address for dictionary
+e_up:	.word 0 ; next free sram address for variables, as stack
+e_ep:	.word 0 ; next free eprom address for values, as heap 
 
 ;----------------------------------------------------------------------
 .section data
@@ -52,9 +68,7 @@ REST:	.word 0		; routine to run before reset
 LAST:	.word 0		; reference to latest word in dictionary
 VDP:	.word 0		; next free cell in flash dictionary
 
-VUP:    .word 0     ; next free cell in static ram 
-USP:    .word 0     ; next free cell in static ram (from end) 
-
+VUP:    .word 0     ; next free cell in static ram (from end)
 VEP: 	.word 0		; next free cell in eeprom
 
 ;----------------------------------------------------------------------
@@ -64,6 +78,14 @@ RADX:	.word 0		; numeric radix for convertion
 
 TOIN:   .word 0     ; offset in TIB
 LEAV:   .word 0     ; hold for leave
+
+VUH:   .word 0      ; heap for user words, from tib
+VUS:   .word 0      ; stack for user variables, from stacks 
+
+TMP0:   .word 0     ; temporary
+TMP1:   .word 0     ; temporary
+TMP2:   .word 0     ; temporary
+TMP3:   .word 0     ; temporary
 
 ;----------------------------------------------------------------------
 TIB0:	.space TIB_SIZE, 0x0

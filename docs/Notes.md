@@ -4,9 +4,17 @@
 
 *still lots of english errors, please correct me*
 
+# 07/11/2022
+
+- future: review of byte for size and flags. Size still 1 to 15, usually good for almost 
+    all words, Flags changed, 0x80 marks the byte it self as size-flag, 
+    0x40 is IMMEDIATE, 0X20 is COMPILE_ONLY, 0x10 is HIDDEN. 
+    why ? FOr easy translate BODY> and <BODY, NAME> 
+
+
 # 05/11/2022
 
-- future code: shrink, replace " pull tos_low, tos_high; POON; " with rjmp DROP
+- future: review, shrink, replace " pull tos_low, tos_high; POON; " with rjmp DROP
 
 - do all work in sram, when compile done use flash do write.
 

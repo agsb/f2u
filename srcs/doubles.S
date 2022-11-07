@@ -28,18 +28,6 @@
 
 ;----------------------------------------------------------------------
 ;
-; ok ( -- 0 ) 
-;
-HEADER "4", "FOUR", F_LEAP
-    NOOP 
-    pspush tos_low, tos_high 
-    clr tos_low 
-    clr tos_high 
-    adiw tos_low, 4
-    POON 
-
-;----------------------------------------------------------------------
-;
 ; ok ( w -- w + 4 ) 
 ;
 HEADER "4+", "FOURPLUS",

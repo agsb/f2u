@@ -36,10 +36,10 @@ forth-leafs.S:HEADER "@", "AT", F_LEAP
 forth-leafs.S:HEADER ">R", "TOR", F_LEAP
 forth-leafs.S:HEADER "R>", "RTO", F_LEAP
 forth-leafs.S:HEADER "R@", "RAT", F_LEAP
-forth-leafs.S:HEADER "RS!", "RPTO", F_LEAP
-forth-leafs.S:HEADER "PS!", "SPTO", F_LEAP
-forth-leafs.S:HEADER "RS@", "RPAT", F_LEAP
-forth-leafs.S:HEADER "PS@", "SPAT", F_LEAP
+forth-leafs.S:HEADER "RS!", "RSTO", F_LEAP
+forth-leafs.S:HEADER "PS!", "PSTO", F_LEAP
+forth-leafs.S:HEADER "RS@", "RSAT", F_LEAP
+forth-leafs.S:HEADER "PS@", "PSAT", F_LEAP
 forth-leafs.S:HEADER "DROP", "DROP", F_LEAP
 forth-leafs.S:HEADER "DUP", "DUP", F_LEAP
 forth-leafs.S:HEADER "SWAP", "SWAP", F_LEAP
@@ -92,9 +92,9 @@ forth-twigs.S:HEADER "TIB", "TIB",
 forth-twigs.S:HEADER "LATEST", "LATEST",
 forth-twigs.S:HEADER "STATE", "STATE",
 forth-twigs.S:HEADER "BASE", "BASE",
+forth-twigs.S:HEADER "EP", "EPP",
 forth-twigs.S:HEADER "DP", "DP",
 forth-twigs.S:HEADER "UP", "UP",
-forth-twigs.S:HEADER "EP", "EPP",
 forth-twigs.S:HEADER "US", "US",
 forth-twigs.S:HEADER "HERE", "HERE",
 forth-twigs.S:HEADER "ALLOT", "ALLOT",
@@ -102,11 +102,11 @@ forth-twigs.S:HEADER "ALIGN", "ALIGN",
 forth-twigs.S:HEADER "DOVAR", "DOVAR",
 forth-twigs.S:HEADER "DOCON", "DOCON",
 forth-twigs.S:HEADER "DOTO", "DOTO",
-forth-twigs.S:HEADER ",", "COMMA",
-forth-twigs.S:HEADER "COMP", "COMP",
-forth-twigs.S:HEADER "EXIT", "EXIT",
-forth-twigs.S:HEADER "EXEC", "EXEC",
-forth-twigs.S:HEADER "TAIL", "TAIL",
+forth-twigs.S:HEADER ",", "COMMA", F_IMMEDIATE
+forth-twigs.S:HEADER "COMP", "COMP", F_IMMEDIATE
+forth-twigs.S:HEADER "EXIT", "EXIT", F_IMMEDIATE
+forth-twigs.S:HEADER "EXEC", "EXEC", 
+forth-twigs.S:HEADER "TAIL", "TAIL", 
 forth-twigs.S:HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE,
 forth-twigs.S:HEADER "MARKTO", "MARKTO", F_IMMEDIATE,
 forth-twigs.S:HEADER "TOMARK", "TOMARK", F_IMMEDIATE,
@@ -128,38 +128,39 @@ forth-twigs.S:HEADER "BACK", "BACK", F_IMMEDIATE,
 forth-twigs.S:HEADER "FOR", "FOR", F_IMMEDIATE
 forth-twigs.S:HEADER "TXEN", "TXEN", F_IMMEDIATE
 forth-twigs.S:HEADER "NEXT", "NEXT", F_IMMEDIATE
-forth-twigs.S:HEADER "COLD", "COLD", F_LEAP
-forth-twigs.S:HEADER "WARM", "WARM", F_LEAP
-forth-twigs.S:HEADER "BYE", "BYE", F_LEAP
-forth-twigs.S:HEADER "]", "RBRAC",
-forth-twigs.S:HEADER "[", "LBRAC", F_IMMEDIATE
-forth-twigs.S:HEADER "TOGGLE", "TOGGLE",
-forth-twigs.S:HEADER ">NFA", "TONFA",
-forth-twigs.S:HEADER ">CFA", "TOCFA", 
-forth-twigs.S:HEADER "HIDDEN", "HIDDEN",
-forth-twigs.S:HEADER "IMMEDIATE", "IMMEDIATE", 
-forth-twigs.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY",
-forth-twigs.S:HEADER ":", "COLON",
-forth-twigs.S:HEADER ";", "SEMMI",
 forth-twigs.S:HEADER "CR", "CR",
 forth-twigs.S:HEADER "LF", "LF",
 forth-twigs.S:HEADER "BL", "BL",
 forth-twigs.S:HEADER "TYPE", "TYPE",
-forth-twigs.S:HEADER "CREATE", "CREATE",
-forth-twigs.S:HEADER "PARSE", "PARSE"
-forth-twigs.S:HEADER "FIND", "FIND",
-forth-twigs.S:HEADER "EVAL", "EVAL",
-forth-twigs.S:HEADER "ACCEPT", "ACCEPT",
-forth-twigs.S:HEADER "QUIT", "QUIT",
-forth-twigs.S:;HEADER "INTERPRET", "INTERPRET",
+forth-twigs.S:HEADER "COLD", "COLD", F_LEAP
+forth-twigs.S:HEADER "WARM", "WARM", F_LEAP
+forth-twigs.S:HEADER "BYE", "BYE", F_LEAP
 inside.S:HEADER "(skip)", "skip"
 inside.S:HEADER "(scan)", "scan"
 inside.S:HEADER "(copy)", "copy"
+inside.S:HEADER "(same)", "same"
 inside.S:HEADER "(refill)", "refill"
 inside.S:HEADER "(parse)", "parse"
 inside.S:HEADER "(word)", "word"
 inside.S:HEADER "(number)", "number"
 inside.S:HEADER "(find)", "find"
+inside.S:HEADER "]", "RBRAC",
+inside.S:HEADER "[", "LBRAC", F_IMMEDIATE
+inside.S:HEADER "TOGGLE", "TOGGLE",
+inside.S:HEADER ">NFA", "TONFA",
+inside.S:HEADER ">CFA", "TOCFA", 
+inside.S:HEADER "HIDDEN", "HIDDEN",
+inside.S:HEADER "IMMEDIATE", "IMMEDIATE", 
+inside.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY",
+inside.S:HEADER ":", "COLON",
+inside.S:HEADER ";", "SEMMI",
+inside.S:HEADER "CREATE", "CREATE",
+inside.S:HEADER "PARSE", "PARSE"
+inside.S:HEADER "FIND", "FIND",
+inside.S:HEADER "EVAL", "EVAL",
+inside.S:HEADER "ACCEPT", "ACCEPT",
+inside.S:HEADER "QUIT", "QUIT",
+inside.S:;HEADER "INTERPRET", "INTERPRET",
 macros.S:.macro HEADER name, label, flags=0x0
 math.S:HEADER "HASH", "HASH", F_LEAP
 math.S:HEADER "RANDOM", "RANDOM", F_LEAP

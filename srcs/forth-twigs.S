@@ -246,6 +246,13 @@ HEADER "BASE", "BASE",
 ;
 ; ok ( -- w) 
 ;
+HEADER "EP", "EPP",
+    .word LIT, VEP, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
 HEADER "DP", "DP",
     .word LIT, VDP, ENDS
  
@@ -254,21 +261,14 @@ HEADER "DP", "DP",
 ; ok ( -- w) 
 ;
 HEADER "UP", "UP",
-    .word LIT, VUP, ENDS
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
-HEADER "EP", "EPP",
-    .word LIT, VEP, ENDS
+    .word LIT, VUH, ENDS
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w) 
 ; stack for variables from end of stacks
 HEADER "US", "US",
-    .word LIT, USP, ENDS
+    .word LIT, VUS, ENDS
  
 ;********************************************************************** 
 ; 
@@ -320,7 +320,7 @@ HEADER "DOTO", "DOTO",
 ;
 ; ok COMMMA ( w -- ) 
 ;
-HEADER ",", "COMMA",
+HEADER ",", "COMMA", F_IMMEDIATE
     .word HERE, TO, CELL, ALLOT, ENDS 
  
 ;----------------------------------------------------------------------
@@ -328,28 +328,28 @@ HEADER ",", "COMMA",
 ; ok this puts next cell into stack and compiles into HERE 
 ; used only in precompiled sources as forth-twigs
 ;
-HEADER "COMP", "COMP",
+HEADER "COMP", "COMP", F_IMMEDIATE
     .word LIT, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok compile a eow 
 ;
-HEADER "EXIT", "EXIT",
+HEADER "EXIT", "EXIT", F_IMMEDIATE
     .word COMP, ENDS, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok execute xt from tos
 ;
-HEADER "EXEC", "EXEC",
+HEADER "EXEC", "EXEC", 
     .word TOR, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok make a word recursive 
 ;
-HEADER "TAIL", "TAIL",
+HEADER "TAIL", "TAIL", 
     .word RAT, CELL, MINUS, RTO, ENDS
 
 ;----------------------------------------------------------------------
@@ -506,124 +506,14 @@ HEADER "TXEN", "TXEN", F_IMMEDIATE
 1:
     .word DROP, DROP
 2:
-     
- 
+    .word ENDS
+
 ;----------------------------------------------------------------------
 ;
 ; is NEXT ( -- ) R:( -- h u ) 
 ;
 HEADER "NEXT", "NEXT", F_IMMEDIATE
     .word COMP, TXEN, COMMA, ENDS
-
-;
-;----------------------------------------------------------------------
-;
-HEADER "COLD", "COLD", F_LEAP
-    NOOP 
-
-; restart return stack 
-    ldi rsp_low, lo8(RS0) 
-    ldi rsp_high, hi8(RS0) 
-
-; restart parameter stack 
-    ldi psp_low, lo8(PS0) 
-    ldi psp_high, hi8(PS0) 
-
-; update preload values
-
-; preload to WARM 
-    ; next word 
-    ldi zpm_low, lo8(WARM) 
-    ldi zpm_high, hi8(WARM) 
-    rspush zpm_low, zpm_high 
-    POON 
- 
-;----------------------------------------------------------------------
-;
-HEADER "WARM", "WARM", F_LEAP
-    NOOP 
-    ; verify error code 
-    ; resets etc 
-    .word TURN, AT, EXEC, QUIT, ENDS 
-    POON 
- 
-;----------------------------------------------------------------------
-; does reset 
-;
-HEADER "BYE", "BYE", F_LEAP
-    .word REST, AT, EXEC, RESET, ENDS 
-
-;----------------------------------------------------------------------
-;
-; is \]  
-;
-HEADER "]", "RBRAC",
-    .word ONE, STATE, TO, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; is \[ 
-;
-HEADER "[", "LBRAC", F_IMMEDIATE
-    .word ZERO, STATE, TO, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; is TOGGLE ( a f -- )
-;
-HEADER "TOGGLE", "TOGGLE",
-    .word OVER, AT, XOR, SWAP, TO, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; is >NFA ( a f -- )
-; from link to c_name
-;
-HEADER ">NFA", "TONFA",
-    .word CELL, PLUS, ENDS
-
-;----------------------------------------------------------------------
-;
-; is >CFA ( a f -- )
-; from link to code
-HEADER ">CFA", "TOCFA", 
-    .word CELL, PLUS, DUP, AT, F_UNMASK, AND, PLUS, ENDS
-
-;----------------------------------------------------------------------
-;
-; is HIDDEN 
-;
-HEADER "HIDDEN", "HIDDEN",
-    .word LATEST, TONFA, F_HIDDEN, TOGGLE, ENDS 
-
-;----------------------------------------------------------------------
-;
-; is IMMEDIATE 
-;
-HEADER "IMMEDIATE", "IMMEDIATE", 
-    .word LATEST, TONFA, F_IMMEDIATE, TOGGLE, ENDS 
-
-;----------------------------------------------------------------------
-;
-; is COMP_ONLY 
-;
-HEADER "COMPILE_ONLY", "COMPILE_ONLY",
-    .word LATEST, TONFA, F_COMPILE, TOGGLE, ENDS 
-
-;----------------------------------------------------------------------
-;
-; is  
-;
-HEADER ":", "COLON",
-    .word CREATE, RBRAC, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; is  
-;
-HEADER ";", "SEMMI",
-    .word EXIT, LBRAC, ENDS 
-  
 
 ;----------------------------------------------------------------------
 ;
@@ -660,68 +550,27 @@ HEADER "TYPE", "TYPE",
   
 ;----------------------------------------------------------------------
 ;
-; is compile a header 
+HEADER "COLD", "COLD", F_LEAP
+    NOOP 
+    .word LIT, PS0, PSTO
+    .word LIT, RS0, RSTO
+    .word LIT, US0, US, TO
+    .word LIT, 0x00, STATE, TO
+    .word LIT, 0x10, BASE, TO
+    .word LIT, WARM, RTO
+    .word ENDS 
+ 
+;----------------------------------------------------------------------
 ;
-HEADER "CREATE", "CREATE",
-    .word ZZZZ, ENDS
-    
+HEADER "WARM", "WARM", F_LEAP
+    NOOP 
+    ; verify error code 
+    ; resets etc 
+    .word TURN, AT, EXEC, QUIT, ENDS 
+ 
+;----------------------------------------------------------------------
+; does reset 
+;
+HEADER "BYE", "BYE", F_LEAP
+    .word REST, AT, EXEC, RESET, ENDS 
 
-;----------------------------------------------------------------------
-;
-; is gets a cc<chars>cc from source
-;   ( -- a n )
-;
-HEADER "PARSE", "PARSE"
-    .word ZZZZ, ENDS
-    
-
-;----------------------------------------------------------------------
-;
-; is compile a header 
-;
-HEADER "FIND", "FIND",
-    .word ZZZZ, ENDS
-
-;----------------------------------------------------------------------
-;
-; is  
-;
-HEADER "EVAL", "EVAL",
-    .word ZZZZ, ENDS
-    
-;----------------------------------------------------------------------
-;
-; is  
-;
-HEADER "ACCEPT", "ACCEPT",
-    .word ZZZZ, ENDS
-    
-;----------------------------------------------------------------------
-;
-; is  
-;
-HEADER "QUIT", "QUIT",
-1:
-    .word LBRAC, RS0, RPTO, ACCEPT, EVAL
-    .word STATE, AT 
-    .word ZBRANCH, 2f
-    .word LIT, prompt, LIT, 4, TYPE 
-2:    
-    .word BRANCH, 1f 
-
-     
-  
-;----------------------------------------------------------------------
-;
-; is  
-;
-;HEADER "INTERPRET", "INTERPRET",
-;    .word WORD, DUP2, FIND, DUP, QBRANCH, notfound
-;    .word LINK2XT, NIP, NIP, EXECUTE, BRANCH, INTERPRET
-;notfound:    
-;    .word DROP, DUP2, TONUMBER, QBRANCH, notnumber
-;    .word NIP, NIP, BRANCH, INTERPRET
-;notnumber:
-;    .word EUNDEFI, AT, EXECUTE, BRANCH, INTERPRET
-;    
-;  

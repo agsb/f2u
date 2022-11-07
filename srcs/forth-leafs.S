@@ -415,14 +415,14 @@ HEADER "R@", "RAT", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
     rspull tos_low, tos_high 
-    subi psp_low, 2 
+    rspush tos_low, tos_high 
     POON 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( rsp -- ) 
 ;
-HEADER "RS!", "RPTO", F_LEAP
+HEADER "RS!", "RSTO", F_LEAP
     NOOP 
     movw rsp_low, tos_low 
     pspull tos_low, tos_high 
@@ -432,7 +432,7 @@ HEADER "RS!", "RPTO", F_LEAP
 ;
 ; ok ( psp -- ) 
 ;
-HEADER "PS!", "SPTO", F_LEAP
+HEADER "PS!", "PSTO", F_LEAP
     NOOP 
     movw psp_low, tos_low 
     pspull tos_low, tos_high 
@@ -443,7 +443,7 @@ HEADER "PS!", "SPTO", F_LEAP
 ; ok ( -- rsp) 
 ; put the address to top of return stack at tos
 ;
-HEADER "RS@", "RPAT", F_LEAP
+HEADER "RS@", "RSAT", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
     movw tos_low, rsp_low 
@@ -454,7 +454,7 @@ HEADER "RS@", "RPAT", F_LEAP
 ; ok ( -- psp ) 
 ; put the address to top of parameter stack at tos
 ;
-HEADER "PS@", "SPAT", F_LEAP
+HEADER "PS@", "PSAT", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
     movw tos_low, psp_low 
@@ -769,9 +769,8 @@ HEADER "0", "ZERO", F_LEAP
 HEADER "1", "ONE", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
-    clr tos_low 
     clr tos_high 
-    inc tos_low
+    ldi tos_low, 1
     POON 
 
 ;----------------------------------------------------------------------
@@ -781,9 +780,18 @@ HEADER "1", "ONE", F_LEAP
 HEADER "2", "TWO", F_LEAP
     NOOP 
     pspush tos_low, tos_high 
-    clr tos_low 
     clr tos_high 
-    inc tos_low
-    inc tos_low
+    ldi tos_low, 2
+    POON 
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- 0 ) 
+;
+HEADER "4", "FOUR", F_LEAP
+    NOOP 
+    pspush tos_low, tos_high 
+    clr tos_high 
+    ldi tos_low, 4
     POON 
  

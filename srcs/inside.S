@@ -88,7 +88,7 @@ HEADER "(scan)", "scan"
 ;
 ; ok ( a1 a2 u --- ) 
 ;   copy u chars from a1 into a2, forward copy
-;   not standart, no check for overlaps, works only in sram
+;   not standart, max 255, no check for overlaps, works only in sram
 ;
 HEADER "(copy)", "copy"
     NOOP
@@ -111,6 +111,39 @@ HEADER "(copy)", "copy"
     pspull tos_low, tos_high
     POON
     
+;----------------------------------------------------------------------
+;
+; ok ( a1 a2 u --- ) 
+;   compare u chars from a1 to a2, 
+;   not standart, max 255, no check for overlaps, works only in sram
+;
+HEADER "(same)", "same"
+    NOOP
+    clr tos_high
+    pspull nos_low, nos_high
+    pspull zpm_low, zpm_high
+
+    rspush psp_low, psp_high
+    movw psp_low, nos_low
+10:
+    or tos_low, tos_low
+    breq 20f
+    dec tos_low
+    
+    ld wrk_low, Z+
+    ld wrk_high, Y+
+    cp wrk_low, wrk_high
+    breq 10b
+
+    clr tos_low
+    rjmp 30f
+20:
+    ser tos_low
+    ser tos_high
+30: 
+    POON
+
+
 ;----------------------------------------------------------------------
 ;
 ; ok ( a u --- u ) 
@@ -150,15 +183,28 @@ HEADER "(refill)", "refill"
     cp tos_low, tos_high
     brbs BIT_ZERO, 70f
 
+;   getch
 30: 
-    ; waits a ASCII char
+1: 
+    ; waits to receive
     sbis 0xb, 7
-    rjmp 30b
+    rjmp 1b
+
+    ; receive a char
     in wrk_low, 0xc
 
     ; no 8bits
     cpi wrk_low, 128
-    brge 30b
+    brge 1b
+
+    ; need echo ?
+2:
+    ; wait to send
+    sbis 0x0b, 5
+    rjmp 2b
+
+    ; send a char
+    out 0x0c, wrk_low
 
 ; process allowed control
 
@@ -249,7 +295,6 @@ HEADER "(refill)", "refill"
 .endif
 
 64: 
-    ; need echo ?
     ; save char to buffer
     inc tos_high
     srsave wrk_low
@@ -641,3 +686,141 @@ HEADER "(find)", "find"
     ; save results
     POON
 
+;----------------------------------------------------------------------
+;
+; is \]  
+;
+HEADER "]", "RBRAC",
+    .word ONE, STATE, TO, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is \[ 
+;
+HEADER "[", "LBRAC", F_IMMEDIATE
+    .word ZERO, STATE, TO, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is TOGGLE ( a f -- )
+;
+HEADER "TOGGLE", "TOGGLE",
+    .word OVER, AT, XOR, SWAP, TO, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is >NFA ( a f -- )
+; from link to c_name
+;
+HEADER ">NFA", "TONFA",
+    .word CELL, PLUS, ENDS
+
+;----------------------------------------------------------------------
+;
+; is >CFA ( a f -- )
+; from link to code
+HEADER ">CFA", "TOCFA", 
+    .word CELL, PLUS, DUP, AT, F_UNMASK, AND, PLUS, ENDS
+
+;----------------------------------------------------------------------
+;
+; is HIDDEN 
+;
+HEADER "HIDDEN", "HIDDEN",
+    .word LATEST, TONFA, F_HIDDEN, TOGGLE, ENDS 
+
+;----------------------------------------------------------------------
+;
+; is IMMEDIATE 
+;
+HEADER "IMMEDIATE", "IMMEDIATE", 
+    .word LATEST, TONFA, F_IMMEDIATE, TOGGLE, ENDS 
+
+;----------------------------------------------------------------------
+;
+; is COMP_ONLY 
+;
+HEADER "COMPILE_ONLY", "COMPILE_ONLY",
+    .word LATEST, TONFA, F_COMPILE, TOGGLE, ENDS 
+
+;----------------------------------------------------------------------
+;
+; is  
+;
+HEADER ":", "COLON",
+    .word CREATE, RBRAC, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is  
+;
+HEADER ";", "SEMMI",
+    .word EXIT, LBRAC, ENDS 
+
+;----------------------------------------------------------------------
+;
+; is compile a header 
+;
+HEADER "CREATE", "CREATE",
+    .word ZZZZ, ENDS
+    
+
+;----------------------------------------------------------------------
+;
+; is gets a cc<chars>cc from source
+;   ( -- a n )
+;
+HEADER "PARSE", "PARSE"
+    .word ZZZZ, ENDS
+    
+
+;----------------------------------------------------------------------
+;
+; is compile a header 
+;
+HEADER "FIND", "FIND",
+    .word ZZZZ, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  
+;
+HEADER "EVAL", "EVAL",
+    .word ZZZZ, ENDS
+    
+;----------------------------------------------------------------------
+;
+; is  
+;
+HEADER "ACCEPT", "ACCEPT",
+    .word ZZZZ, ENDS
+    
+;----------------------------------------------------------------------
+;
+; is  
+;
+HEADER "QUIT", "QUIT",
+1:
+    .word LBRAC, RS0, RSTO, ACCEPT, EVAL
+    .word STATE, AT 
+    .word ZBRANCH, 2f
+    .word LIT, prompt, LIT, 4, TYPE 
+2:    
+    .word BRANCH, 1b, ENDS 
+
+     
+  
+;----------------------------------------------------------------------
+;
+; is  
+;
+;HEADER "INTERPRET", "INTERPRET",
+;    .word WORD, DUP2, FIND, DUP, QBRANCH, notfound
+;    .word LINK2XT, NIP, NIP, EXECUTE, BRANCH, INTERPRET
+;notfound:    
+;    .word DROP, DUP2, TONUMBER, QBRANCH, notnumber
+;    .word NIP, NIP, BRANCH, INTERPRET
+;notnumber:
+;    .word EUNDEFI, AT, EXECUTE, BRANCH, INTERPRET
+;    
+;  

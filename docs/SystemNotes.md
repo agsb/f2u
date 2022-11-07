@@ -11,17 +11,15 @@
   watchdog,
   browup,
   
-  egetch,
-  eputch,
+?  egetch,
+?  eputch,
   
-  fgetch,
-  fputch,
+?  fgetch,
+?  fputch,
   
-  fhwrite,
-  fhread,
   
 
-## Forth words
+## extra Forth words
 
     SCAN, to find a byte in a buffer, 
     SKIP, to find a diferent byte in a buffer,
