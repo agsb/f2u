@@ -64,7 +64,7 @@
 ; is ZZZZ, hook for incompleteness 
 ;
 HEADER "ZZZZ", "ZZZZ",
-    .word LIT, undef, LIT, 12, TYPE, ENDS 
+    .word LIT, undefined, LIT, 12, TYPE, CR, ENDS 
  
 ;********************************************************************** 
 ;

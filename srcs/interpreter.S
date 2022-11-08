@@ -26,9 +26,12 @@
 
 ;----------------------------------------------------------------------
 ;
+; minimal interpreter, aka sector forth
 ; inside routines, not for user
 ;
 ;----------------------------------------------------------------------
+
+
 ;
 ; ok ( a1 c --- a2 | 0 ) internal
 ;   skips chars in address while not equal to c or 0x0
@@ -148,8 +151,10 @@ HEADER "(same)", "same"
 ; ok ( a u --- u ) 
 ;
 ;   refills address till u chars read, u < 256
-;     its refill ( a u -- u )  NO ECHOES !!!
+;     its refill ( a u -- u )
 ;       no standart, always read from USART
+;   only \n \r \b, all other control turns into space
+;   appends a bl at init and a \0 at end
 ;
 HEADER "(refill)", "refill"
     NOOP
@@ -158,7 +163,7 @@ HEADER "(refill)", "refill"
     pspull zpm_low, zpm_high
     
     ; keep a spc at start, so every word starts with spc, 
-    ; used later to make a counted string in site
+    ; used later to make a counted string
     
     ; save for \0 at end
     dec tos_low
@@ -220,22 +225,10 @@ HEADER "(refill)", "refill"
     cpi wrk_low, 10 ; LF 
     breq 70f
 
-42:
-    ; verify NAK \u 
-    cpi wrk_low, 21 ; NAK
-    brne 44f
-    ; how echo NAK ?
-    ; process NAK, reset line 
-    clr wrk_high
-    sub zpm_low, tos_high
-    sbc zpm_high, wrk_high
-    clr tos_high
-    rjmp 20b
-
 44:
     ; verify BS \b
     cpi wrk_low, 8 ; BS
-    brne 46f
+    brne 50f
 
     ; process BS
     ; no char ?
@@ -247,32 +240,11 @@ HEADER "(refill)", "refill"
     sbiw zpm_low, 1
     rjmp 30b    
 
-46:
-    ; verify TAB \t
-    cpi wrk_low, 9
-    brne 48f
-
+50:
+    ; not allow more controls
     ; magic to 32
     ldi wrk_low, 32
-    rjmp 60f
     
-48:
-    ; not allow more controls
-    rjmp 30b
-
-/* 
-
-    ; verify ESC \e
-    cpi wrk_low, 27 ; ESC
-
-    ; verify XON 
-    cpi wrk_low, 17 ; XON
-
-    ; verify XOFF 
-    cpi wrk_low, 19 ; XOFF
-
-*/
-
 ; process ASCII chars
 60:    
     ; is a spc ?
@@ -280,6 +252,7 @@ HEADER "(refill)", "refill"
     brne 62f
 
     ; highlander it !
+    ; ( collapse spaces )
     cp wrk_low, wrk_high
     breq 30b
 
@@ -309,53 +282,6 @@ HEADER "(refill)", "refill"
     ; save counter
     mov tos_low, tos_high
     clr tos_high
-    POON
-
-;----------------------------------------------------------------------
-;
-; ok ( a c --- a u | 0 ) 
-;    search address for next word delimited by c or \0
-;    returns start of word and u lenght
-;    or zero if no word
-;    max lenght is 255 bytes
-;
-HEADER "(parse)", "parse"
-    NOOP
-    ; start at 
-    pspull zpm_low, zpm_high
-
-    ; keep address
-    movw wrk_low, zpm_low
-
-    ; for \0 check
-    clr tos_high
-1:  
-    ; skips while not equal delimiter
-    ld nos_low, Z
-    
-    ; if \0
-    cp tos_high, nos_low
-    breq 10f
-
-    ; if \c
-    cp tos_low, nos_low
-    breq 2f
-    
-    ; next on 
-    adiw zpm_low, 1
-    rjmp 1b
-2:  
-    ; found
-    pspush zpm_low, zpm_high
-    sub zpm_low, wrk_low
-    sbc zpm_high, wrk_high
-    movw tos_low, zpm_low
-    rjmp 20f 
-15:
-    ; end of buffer
-    clr tos_low
-    clr tos_high
-20:
     POON
 
 ;----------------------------------------------------------------------
@@ -412,189 +338,6 @@ HEADER "(word)", "word"
 
 ;----------------------------------------------------------------------
 ;
-;   not official ! (ud1 c-addr1 u1 -- ud2 c-addr2 u2)
-;
-;    ok (a c -- a c f | n true)    
-;    assumes a counted c string
-;    f flag is -NaN, -OVERFLOW, FALSE or TRUE
-;    uses all but X, Y
-;    tos, nos, wrk, Z, _zero_, _work_, r0, r1
-;
-HEADER "(number)", "number"
-    NOOP
-
-    ; tst for < 1
-
-    clr tos_high
-    cp tos_high, tos_low
-    brlt 10f
-
-    ; no valid size < 1
-    pspush tos_low, tos_high
-    clr wrk_low
-    clr wrk_high
-    rjmp 100
-    
-10:
-    ; pull address from
-    pspull zpm_low, zpm_high
-
-    ; keep address
-    pspush zpm_low, zpm_high
-
-    ; keep counter
-    pspush tos_low, tos_high
-
-    ; keep counter
-    mov nos_high, tos_low
-
-    ; clear result
-    clr tos_low
-    clr tos_high
-
-    ; get actual base
-    lds _work_, BASE+0
-
-20:
-    ; test end of loop
-    cp nos_low, nos_high
-    brne 30f
-    rjmp 90f
-
-30:
-    ; load a char
-    srload wrk_low
-
-    ; allow first char change base
-    tst nos_high
-    brne 40f
-
-    ; goes hexadecimal
-    cpi wrk_low, '$'
-    brne 32f
-    ldi wrk_low, 16
-    mov _work_, wrk_low
-    rjmp 20b
-
-32: 
-    ; goes decimal
-    cpi wrk_low, '#'
-    brne 34f
-    ldi wrk_low, 10
-    mov _work_, wrk_low
-    rjmp 20b
-
-34:    
-    ; goes binary
-    cpi wrk_low, '%'
-    brne 36f
-    ldi wrk_low, 2
-    mov _work_, wrk_low
-    rjmp 20b
-
-36:    
-    ; no more bases
-
-    ; how do negative ? just two-complement at end ?
-
-40:
-    ; paranoic test end 
-
-    cpi wrk_low, 0
-    breq 90f
-     
-    cpi wrk_low, 32
-    breq 90f
-
-    ; sorry no lowercases
-    subi wrk_low, '0'
-
-    ; ends ? less than 0
-    tst wrk_low
-    brlt 80f
-
-    cpi wrk_low, 9
-    brcc 50f
-
-    ; mind the gap 0-9 ~ A-F
-    subi wrk_low, 7
-
-50:
-    ; ends ? over base
-    cp wrk_low, _work_
-    brge 80f
-
-;
-; multiply 16x8
-;
-
-    ; add to number
-    add tos_low, wrk_low
-    adc tos_high, _zero_
-
-    ; save counters
-    pspush nos_low, nos_high
-
-    ; multiply by base
-    movw nos_low, tos_low
-
-    ; Multiply LSB
-    mul nos_low, _work_
-    ; copy MSB result to result byte 2
-    mov tos_high, R1
-    ; copy LSB result to result byte 1
-    mov tos_low, R0 
-
-    ; Multiply MSB
-    mul nos_high, _work_
-    ; copy MSB result to result byte 3
-    mov nos_high, R1 
-    ; add LSB result to result byte 2
-    add tos_high, R0 
-    brcc 60f ; if not carry, jump
-    inc nos_high
-60:
-    ; test overflow
-    tst nos_high
-    brne 70f
-
-    ; load counters
-    pspull nos_low, nos_high
-
-    ; count digits 
-    inc nos_high
-
-    ; next digit
-    rjmp 10b
-
-70:
-    ; overflow 16bits
-    ldi wrk_low, OVERFLOW
-    rjmp 100
-    
-80:
-    ; NaN    
-    ldi wrk_low, NOT_A_NUMBER
-    rjmp 100
-
-90:
-    ; discards addr
-    pspull zpm_low, zpm_high
-
-    ; push value
-    pspush tos_low, tos_high
-
-    ; made true
-    ser wrk_low
-    ser wrk_high
-
-100:
-    ; push digits
-    movw tos_low, wrk_low
-    POON
-
-;----------------------------------------------------------------------
-;
 ;   not official ? (ud1 c-addr1 u1 -- ud2 c-addr2 u2)
 ;
 ;    ok (a -- a 0 | ud n)    
@@ -603,7 +346,7 @@ HEADER "(number)", "number"
 ;    uses all but X, Y
 ;    ips, wrk, tos, nds, _zero_, _work_, r0, r1
 ;
-HEADER "(onumber)", "onumber"
+HEADER "(number)", "number"
     NOOP
 
     ; pull address from
@@ -731,7 +474,10 @@ HEADER "(onumber)", "onumber"
 ;----------------------------------------------------------------------
 ;
 ; ok find a word in a vocabulary
-;   ( aw u -- xt f | aw 0 )
+;   ( a u -- xt f | a 0 )
+;   f is  1 if word is immediate
+;   f is -1 if word is normal
+;   f is  0 if word not found
 ;   names are 15 maximum
 ;
 ;   dictionary is in flash and word is in sram
@@ -874,14 +620,14 @@ HEADER "(find)", "find"
 ;
 ;----------------------------------------------------------------------
 ;
-; is \]  
+; is \] to compile 
 ;
 HEADER "]", "RBRAC",
     .word ONE, STATE, TO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
-; is \[ 
+; is \[ to interpret
 ;
 HEADER "[", "LBRAC", F_IMMEDIATE
     .word ZERO, STATE, TO, ENDS 
@@ -980,28 +726,67 @@ HEADER "FIND", "FIND",
 ;
 ; is  
 ;
-HEADER "EVAL", "EVAL",
+HEADER "ACCEPT", "ACCEPT",
     .word ZZZZ, ENDS
     
 ;----------------------------------------------------------------------
 ;
+; is  REFILL ( -- a n ), toin = 0
+;
+HEADER "REFILL", "REFILL",
+    .word SOURCE, refill, ZERO, TOIN, TO, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; is  WORD ( -- a n ), toin = 0
+;
+HEADER "WORD", "WORD",
+    .word word, ZDUP, ZBRANCH, 2f 
+    .word DUP, TOIN, AT, PLUS, TOIN, TO, ENDS
+2:  .word REFILL, BRANCH, WORD
+    
+ 
+;----------------------------------------------------------------------
+;
 ; is  
 ;
-HEADER "ACCEPT", "ACCEPT",
-    .word ZZZZ, ENDS
+HEADER "EVAL", "EVAL",
+    .word find, ZDUP, ZBRANCH, _not_found
+    .word ONEPLUS, ZBRANCH, _word_normal
+; word immediate
+    .word EXECUTE-IT, ENDS
+
+    .word COMPILE-IT, BRANCH
+_word_normal: 
+; word immediate
+_not_found:  ; word not found
+    ENDS
     
 ;----------------------------------------------------------------------
 ;
 ; is  
 ;
 HEADER "QUIT", "QUIT",
+    .word LBRAC 
 1:
-    .word LBRAC, RS0, RSTO, ACCEPT, EVAL
-    .word STATE, AT 
-    .word ZBRANCH, 2f
+    .word RS0, RSTO
+    .word REFILL   
+2:
+    .word INTERPRET
+    .word DUP, ZERO, EQUAL, ZBRANCH, 3f
+    .word STATE, AT, ZEROEQ, ZBRANCH, 22f
     .word LIT, prompt, LIT, 4, TYPE 
-2:    
-    .word BRANCH, 1b, ENDS 
+22:
+    .word CR, BRANCH, 2b
+3:
+    .word DUP, ONE, PLUS, ZEROEQ, ZBRANCH, 4f
+    .word LIT, abort, LIT, 8, TYPE, BRANCH, 22b
+4:    
+    .word DUP, TWO, PLUS, ZEROEQ, ZBRANCH, 5f
+    .word LIT, exception, LIT, 12, TYPE, BRANCH, 22b
+5:
+    .word BRANCH, 22b
+    .word ENDS
   
 ;----------------------------------------------------------------------
 ;

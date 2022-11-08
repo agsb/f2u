@@ -1,9 +1,3 @@
-doloop.S:HEADER "DO", "DO", F_IMMEDIATE,
-doloop.S:HEADER "DONT", "DONT", F_IMMEDIATE,
-doloop.S:HEADER "QDO", "QDO", F_IMMEDIATE,
-doloop.S:HEADER "LOOP", "LOOP", F_IMMEDIATE,
-doloop.S:HEADER "LEAVE", "LEAVE", F_IMMEDIATE,
-doubles.S:HEADER "4", "FOUR", F_LEAP
 doubles.S:HEADER "4+", "FOURPLUS",
 doubles.S:HEADER "4-", "FOURMINUS",
 doubles.S:HEADER "2>R", "TWOTOR",
@@ -67,6 +61,7 @@ forth-leafs.S:HEADER "C@", "CAT", F_LEAP
 forth-leafs.S:HEADER "0", "ZERO", F_LEAP
 forth-leafs.S:HEADER "1", "ONE", F_LEAP
 forth-leafs.S:HEADER "2", "TWO", F_LEAP
+forth-leafs.S:HEADER "4", "FOUR", F_LEAP
 forth-twigs.S:HEADER "ZZZZ", "ZZZZ",
 forth-twigs.S:HEADER "NIP", "NIP",
 forth-twigs.S:HEADER "SWIP", "SWIP",
@@ -143,6 +138,7 @@ inside.S:HEADER "(refill)", "refill"
 inside.S:HEADER "(parse)", "parse"
 inside.S:HEADER "(word)", "word"
 inside.S:HEADER "(number)", "number"
+inside.S:HEADER "(onumber)", "onumber"
 inside.S:HEADER "(find)", "find"
 inside.S:HEADER "]", "RBRAC",
 inside.S:HEADER "[", "LBRAC", F_IMMEDIATE
@@ -152,6 +148,7 @@ inside.S:HEADER ">CFA", "TOCFA",
 inside.S:HEADER "HIDDEN", "HIDDEN",
 inside.S:HEADER "IMMEDIATE", "IMMEDIATE", 
 inside.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY",
+inside.S:HEADER "SOURCE", "SOURCE",
 inside.S:HEADER ":", "COLON",
 inside.S:HEADER ";", "SEMMI",
 inside.S:HEADER "CREATE", "CREATE",
@@ -160,7 +157,33 @@ inside.S:HEADER "FIND", "FIND",
 inside.S:HEADER "EVAL", "EVAL",
 inside.S:HEADER "ACCEPT", "ACCEPT",
 inside.S:HEADER "QUIT", "QUIT",
-inside.S:;HEADER "INTERPRET", "INTERPRET",
+interpreter.S:HEADER "(skip)", "skip"
+interpreter.S:HEADER "(scan)", "scan"
+interpreter.S:HEADER "(copy)", "copy"
+interpreter.S:HEADER "(same)", "same"
+interpreter.S:HEADER "(refill)", "refill"
+interpreter.S:HEADER "(word)", "word"
+interpreter.S:HEADER "(number)", "number"
+interpreter.S:HEADER "(find)", "find"
+interpreter.S:HEADER "]", "RBRAC",
+interpreter.S:HEADER "[", "LBRAC", F_IMMEDIATE
+interpreter.S:HEADER "TOGGLE", "TOGGLE",
+interpreter.S:HEADER ">NFA", "TONFA",
+interpreter.S:HEADER ">CFA", "TOCFA", 
+interpreter.S:HEADER "HIDDEN", "HIDDEN",
+interpreter.S:HEADER "IMMEDIATE", "IMMEDIATE", 
+interpreter.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY",
+interpreter.S:HEADER "SOURCE", "SOURCE",
+interpreter.S:HEADER ":", "COLON",
+interpreter.S:HEADER ";", "SEMMI",
+interpreter.S:HEADER "CREATE", "CREATE",
+interpreter.S:HEADER "PARSE", "PARSE"
+interpreter.S:HEADER "FIND", "FIND",
+interpreter.S:HEADER "ACCEPT", "ACCEPT",
+interpreter.S:HEADER "REFILL", "REFILL",
+interpreter.S:HEADER "WORD", "WORD",
+interpreter.S:HEADER "EVAL", "EVAL",
+interpreter.S:HEADER "QUIT", "QUIT",
 macros.S:.macro HEADER name, label, flags=0x0
 math.S:HEADER "HASH", "HASH", F_LEAP
 math.S:HEADER "RANDOM", "RANDOM", F_LEAP
