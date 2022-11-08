@@ -30,8 +30,14 @@
  .ascii "Copyright © 2020, Alvaro Gomes Sobral Barcellos,\n"
  .ascii "Licence Creative Commons,f8f98284-589e-4290-867c-0ac3824721ac,\n"
  .ascii "Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)\n"
- prompt :
+ prompt : ; 4
  .ascii " OK\n"
- undef:
+ undef: ; 12
  .ascii " undefined?\n"
+ roullete: ; 37, Pascal
+ .word  0
+ .word 32, 15, 19,  4, 21,  2, 25, 17, 34 
+ .word  6, 27, 13, 36, 11, 30,  8, 23, 10
+ .word  5, 24, 16, 33,  1, 20, 14, 31,  9
+ .word 22, 18, 29,  7, 28, 12, 35,  3, 26
  

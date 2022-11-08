@@ -286,13 +286,13 @@ e_keep = eeprom + 14 ; next free eprom address for values, as stack
 ;
 ;   HIDDEN or SMUDGE is no used
 ;
-;   LEAP is for pure assembler routines, no calls inside.
+;   LEAP is to signal pure assembler routines, no calls inside.
 ;
 F_IMMEDIATE = 0x80
 F_COMPILE = 0x40
 F_HIDDEN = 0x20
-F_LEAP = 0x10
-F_COMMON = 0x00
+F_RESERVED = 0x10
+F_LEAP = 0x00
 
 F_TOMASK = 0xF0
 F_UNMASK = 0x0F

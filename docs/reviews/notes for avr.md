@@ -1,19 +1,18 @@
 << this file is stil a stub >>
 
 
-# from avr forths
+# Comparative use of registers, from avr forths
 
 ## f2u
 
   used in forth:
   
-    Z(R30, R31) : used to access flash and sram
+    Z(R30, R31) : avr exclusive access flash and sram
     Y(R28, R29) : parameter stack, 18 words deep
     X(R26, R27) : return stack, 18 words deep
     T(R24, R25) : TOS 
-    N(R22, R23) : used as NOS, when need
-    W(R20, R21) : used as work
-    I(R18, R19) : used as IP, hold next instruction, jump and link
+    N(R22, R23) : used as NOS, pulled when need
+    W(R20, R21) : used as WRK, scratch
   
   used in bios and interrupts:
   
@@ -41,10 +40,11 @@
 ## am-forth https://amforth.sourceforge.net/TG/AVR8.html#avr8-register-mappings
 
     Forth Register 	ATmega Register(s)
-    W: Working Register 	R22:R23
-    IP: Instruction Pointer 	XH:XL (R27:R26)
-    RSP: Return Stack Pointer 	SPH:SPL
-    PSP: Parameter Stack Pointer 	YH:YL (R29:R28)
-    UP: User Pointer 	R4:R5
-    TOS: Top Of Stack 	R24:R25
-    X: temporary register 	ZH:ZL (R31:R30)
+    R22:R23 W: Working Register 
+    R26:R27 IP: Instruction Pointer	XH:XL
+    SPH:SPL RSP: Return Stack Pointer SPH:SPL
+    R28:r29 PSP: Parameter Stack Pointer YH:YL 
+    R4:R5   UP: User Pointer
+    R24:R25 TOS: Top Of Stack 
+    R30:R32 X: temporary register ZH:ZL
+

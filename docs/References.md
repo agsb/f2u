@@ -191,7 +191,7 @@ This inner interpreters only works for program memory (flash), due specific addr
     NOOP
 
  ; pull ips from rsp
- _exit:     ;(4)
+ _unnest:     ;(4)
     ld  zpm_low, Y+
     ld  zpm_high, Y+
 
@@ -211,23 +211,19 @@ This inner interpreters only works for program memory (flash), due specific addr
     brbs BIT_ZERO, _branch
 
  ; else is a reference
- _enter:    ;(7)
+ _nest:    ;(7)
     st -Y, zpm_low
     st -Y, zpm_high
     movw zpm_low, wrk_low 
     rjmp _next
 
  ; then branch, for exec it
- _branch:   ;(5)
-    movw wrk_low, zpm_low   ; copy this reference
-    adiw wrk_low, 2         ; point to next reference
-    movw ipr_low, wrk_low   ; keep this reference
+ _branch:   ;(2)
     ijmp
 
  ; then link, for continue
  _link:     ;(3)
-    movw zpm_low, ipr_low ; points to next reference
-    rjmp _next
+    rjmp _unnest
     
 ```
 ## Why branch and link ? 

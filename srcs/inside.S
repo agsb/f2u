@@ -30,10 +30,9 @@
 ;
 ;----------------------------------------------------------------------
 ;
-; ok ( a1 c --- a2 | 0 ) 
+; ok ( a1 c --- a2 | 0 ) internal
 ;   skips chars in address while not equal to c or 0x0
-;   not standart, 0x0 ends buffer
-;   works only in sram
+;   not standart, 0x0 ends buffer, works only in sram
 ;
 HEADER "(skip)", "skip"
     NOOP
@@ -58,7 +57,7 @@ HEADER "(skip)", "skip"
 
 ;----------------------------------------------------------------------
 ;
-; ok ( a1 c --- a2 | 0 ) 
+; ok ( a1 c --- a2 | 0 ) internal 
 ;   scan chars in address while equal to c or 0x0
 ;   not standart, 0x0 ends buffer
 ;   works only in sram
@@ -86,7 +85,7 @@ HEADER "(scan)", "scan"
 
 ;----------------------------------------------------------------------
 ;
-; ok ( a1 a2 u --- ) 
+; ok ( a1 a2 u --- ) internal
 ;   copy u chars from a1 into a2, forward copy
 ;   not standart, max 255, no check for overlaps, works only in sram
 ;
@@ -113,7 +112,7 @@ HEADER "(copy)", "copy"
     
 ;----------------------------------------------------------------------
 ;
-; ok ( a1 a2 u --- ) 
+; ok ( a1 a2 u --- ) internal
 ;   compare u chars from a1 to a2, 
 ;   not standart, max 255, no check for overlaps, works only in sram
 ;
@@ -686,6 +685,10 @@ HEADER "(find)", "find"
     ; save results
     POON
 
+;**********************************************************************
+;
+; almost forth94
+;
 ;----------------------------------------------------------------------
 ;
 ; is \]  
@@ -743,6 +746,15 @@ HEADER "IMMEDIATE", "IMMEDIATE",
 HEADER "COMPILE_ONLY", "COMPILE_ONLY",
     .word LATEST, TONFA, F_COMPILE, TOGGLE, ENDS 
 
+;----------------------------------------------------------------------
+;
+; is SOURCE
+;   place terminal buffer address and length in stack
+;
+HEADER "SOURCE", "SOURCE",
+    ; .word LIT, ZERO, TOIN, TO 
+    .word LIT, TIB0, LIT, TIB_SIZE, ENDS
+ 
 ;----------------------------------------------------------------------
 ;
 ; is  
@@ -807,20 +819,8 @@ HEADER "QUIT", "QUIT",
     .word LIT, prompt, LIT, 4, TYPE 
 2:    
     .word BRANCH, 1b, ENDS 
-
-     
   
 ;----------------------------------------------------------------------
 ;
 ; is  
 ;
-;HEADER "INTERPRET", "INTERPRET",
-;    .word WORD, DUP2, FIND, DUP, QBRANCH, notfound
-;    .word LINK2XT, NIP, NIP, EXECUTE, BRANCH, INTERPRET
-;notfound:    
-;    .word DROP, DUP2, TONUMBER, QBRANCH, notnumber
-;    .word NIP, NIP, BRANCH, INTERPRET
-;notnumber:
-;    .word EUNDEFI, AT, EXECUTE, BRANCH, INTERPRET
-;    
-;  
