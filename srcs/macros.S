@@ -68,6 +68,8 @@
 ;
 ; forth model (like pdp-11)
 ;
+; must be 16bits (16 to 31) registers
+;
 ; Z generic pointer for access sram and flash memory, lpm, spm, index, etc
 #define zpm_low r30
 #define zpm_high r31
@@ -302,8 +304,9 @@ F_UNMASK = 0x0F
 ; minimal
 NO_ERROR = 0
 INVALID_MEMORY = -9
-OVERFLOW = -11
-WRITE_TO_READ_ONLY = -20
+OUT_OF_RANGE = -11
+INVALID_WORD = -13
+TO_READ_ONLY = -20
 NOT_A_NUMBER = -24
 
 ;---------------------------------------------------------------------

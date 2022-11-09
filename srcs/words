@@ -121,7 +121,7 @@ forth-twigs.S:HEADER "AFT", "AFT", F_IMMEDIATE,
 forth-twigs.S:HEADER "HOOK", "HOOK", F_IMMEDIATE,
 forth-twigs.S:HEADER "BACK", "BACK", F_IMMEDIATE,
 forth-twigs.S:HEADER "FOR", "FOR", F_IMMEDIATE
-forth-twigs.S:HEADER "TXEN", "TXEN", F_IMMEDIATE
+forth-twigs.S:HEADER "TXEN", "TXEN", 
 forth-twigs.S:HEADER "NEXT", "NEXT", F_IMMEDIATE
 forth-twigs.S:HEADER "CR", "CR",
 forth-twigs.S:HEADER "LF", "LF",
@@ -135,6 +135,7 @@ interpreter.S:HEADER "(scan)", "scan"
 interpreter.S:HEADER "(copy)", "copy"
 interpreter.S:HEADER "(same)", "same"
 interpreter.S:HEADER "(refill)", "refill"
+interpreter.S:HEADER "(parse)", "parse"
 interpreter.S:HEADER "(word)", "word"
 interpreter.S:HEADER "(number)", "number"
 interpreter.S:HEADER "(find)", "find"
@@ -149,15 +150,15 @@ interpreter.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY",
 interpreter.S:HEADER "HANDLER", "HANDLER",
 interpreter.S:HEADER "CATCH", "CATCH",
 interpreter.S:HEADER "THROW", "THROW",
-interpreter.S:HEADER "SOURCE", "SOURCE",
+interpreter.S:HEADER "ACCEPT", "ACCEPT",
 interpreter.S:HEADER ":", "COLON",
 interpreter.S:HEADER ";", "SEMMI",
-interpreter.S:HEADER "CREATE", "CREATE",
-interpreter.S:HEADER "PARSE", "PARSE"
-interpreter.S:HEADER "FIND", "FIND",
-interpreter.S:HEADER "ACCEPT", "ACCEPT",
+interpreter.S:HEADER "SOURCE", "SOURCE",
 interpreter.S:HEADER "REFILL", "REFILL",
+interpreter.S:HEADER "PARSE", "PARSE"
 interpreter.S:HEADER "WORD", "WORD",
+interpreter.S:HEADER "CREATE", "CREATE",
+interpreter.S:HEADER "FIND", "FIND",
 interpreter.S:HEADER "COMPILE_IT", "COMPILE_IT",
 interpreter.S:HEADER "EXECUTE_IT", "EXECUTE_IT",
 interpreter.S:HEADER "INTERPRET", "INTERPRET",

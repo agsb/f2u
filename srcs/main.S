@@ -79,8 +79,8 @@ RADX:	.word 0		; numeric radix for convertion
 TOIN:   .word 0     ; offset in TIB
 SPAN:   .word 0     ; offsets
 
-VUH:   .word 0      ; heap for user words, from tib
-VUS:   .word 0      ; stack for user variables, from stacks 
+VUH:   .word 0      ; heap for user words, from tib, UH0
+VUS:   .word 0      ; stack for user variables, from stacks, US0 
 
 TMP0:   .word 0     ; temporary
 TMP1:   .word 0     ; temporary

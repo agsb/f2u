@@ -207,7 +207,7 @@ HEADER "2-", "TWOMINUS",
 ; ok ( u w -- ) 
 ;
 HEADER "+!", "PLUSTO",
-    .word SWAP, OVER, AT, PLUS, SWAP, TO, ENDS 
+    .word DUP, TOR, AT, PLUS, RTO, TO, ENDS 
  
 ;********************************************************************** 
 ;
@@ -276,17 +276,17 @@ HEADER "US", "US",
 ;
 ;----------------------------------------------------------------------
 ;
-; is HERE 
+; ok HERE ( -- w ) 
 ;
 HEADER "HERE", "HERE",
     .word DP, AT, ENDS 
  
 ;----------------------------------------------------------------------
 ;
-; is ALLOT 
+; ok ALLOT ( u -- ) 
 ;
 HEADER "ALLOT", "ALLOT",
-    .word DP, PLUS, DP, TO, ENDS 
+    .word DP, AT, PLUS, DP, TO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -327,7 +327,7 @@ HEADER ",", "COMMA", F_IMMEDIATE
 ;
 ; ok this puts next cell into stack and compiles into HERE 
 ; used only in precompiled sources as forth-twigs
-;
+; ????
 HEADER "COMP", "COMP", F_IMMEDIATE
     .word LIT, COMMA, ENDS 
  
@@ -407,7 +407,7 @@ HEADER "UNTIL", "UNTIL", F_IMMEDIATE,
 ; ok UNLESS 
 ;
 HEADER "UNLESS", "UNLESS", F_IMMEDIATE, 
-    .word INVERT, UNTIL, ENDS 
+    .word ZEQU, UNTIL, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -492,20 +492,17 @@ HEADER "BACK", "BACK", F_IMMEDIATE,
 ; is FOR ( u -- ) R:( -- h u )
 ; count down, from +32767
 HEADER "FOR", "FOR", F_IMMEDIATE
-    .word COMP, TOR, HERE, ENDS 
+    .word COMP, TOR, BEGIN, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is TXEN ( -- ) R:( -- h u ) 
 ;
-HEADER "TXEN", "TXEN", F_IMMEDIATE
-    .word RTO, ONEMINUS, DUP
-    .word ZBRANCH, 1f 
-    .word TOR, DUP, EXEC 
-    .word BRANCH, 2f
+HEADER "TXEN", "TXEN", 
+    .word RTO, ONEMINUS
+    .word DUP, ZBRANCH, 1f  
+    .word DUP, TOR 
 1:
-    .word DROP, DROP
-2:
     .word ENDS
 
 ;----------------------------------------------------------------------
@@ -513,7 +510,7 @@ HEADER "TXEN", "TXEN", F_IMMEDIATE
 ; is NEXT ( -- ) R:( -- h u ) 
 ;
 HEADER "NEXT", "NEXT", F_IMMEDIATE
-    .word COMP, TXEN, COMMA, ENDS
+    .word COMP, TXEN, UNLESS, ENDS
 
 ;----------------------------------------------------------------------
 ;
