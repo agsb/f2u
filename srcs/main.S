@@ -77,7 +77,7 @@ STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile
 RADX:	.word 0		; numeric radix for convertion
 
 TOIN:   .word 0     ; offset in TIB
-LEAV:   .word 0     ; hold for leave
+SPAN:   .word 0     ; offsets
 
 VUH:   .word 0      ; heap for user words, from tib
 VUS:   .word 0      ; stack for user variables, from stacks 
@@ -130,7 +130,7 @@ US0 = RS0 - STACK_SIZE
 
 ;----------------------------------------------------------------------
 ;.p2align 1, 0x00
-#include "inside.S"
+#include "interpreter.S"
 
 ;----------------------------------------------------------------------
 .equ free_flash, .

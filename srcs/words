@@ -130,33 +130,6 @@ forth-twigs.S:HEADER "TYPE", "TYPE",
 forth-twigs.S:HEADER "COLD", "COLD", F_LEAP
 forth-twigs.S:HEADER "WARM", "WARM", F_LEAP
 forth-twigs.S:HEADER "BYE", "BYE", F_LEAP
-inside.S:HEADER "(skip)", "skip"
-inside.S:HEADER "(scan)", "scan"
-inside.S:HEADER "(copy)", "copy"
-inside.S:HEADER "(same)", "same"
-inside.S:HEADER "(refill)", "refill"
-inside.S:HEADER "(parse)", "parse"
-inside.S:HEADER "(word)", "word"
-inside.S:HEADER "(number)", "number"
-inside.S:HEADER "(onumber)", "onumber"
-inside.S:HEADER "(find)", "find"
-inside.S:HEADER "]", "RBRAC",
-inside.S:HEADER "[", "LBRAC", F_IMMEDIATE
-inside.S:HEADER "TOGGLE", "TOGGLE",
-inside.S:HEADER ">NFA", "TONFA",
-inside.S:HEADER ">CFA", "TOCFA", 
-inside.S:HEADER "HIDDEN", "HIDDEN",
-inside.S:HEADER "IMMEDIATE", "IMMEDIATE", 
-inside.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY",
-inside.S:HEADER "SOURCE", "SOURCE",
-inside.S:HEADER ":", "COLON",
-inside.S:HEADER ";", "SEMMI",
-inside.S:HEADER "CREATE", "CREATE",
-inside.S:HEADER "PARSE", "PARSE"
-inside.S:HEADER "FIND", "FIND",
-inside.S:HEADER "EVAL", "EVAL",
-inside.S:HEADER "ACCEPT", "ACCEPT",
-inside.S:HEADER "QUIT", "QUIT",
 interpreter.S:HEADER "(skip)", "skip"
 interpreter.S:HEADER "(scan)", "scan"
 interpreter.S:HEADER "(copy)", "copy"
@@ -173,6 +146,9 @@ interpreter.S:HEADER ">CFA", "TOCFA",
 interpreter.S:HEADER "HIDDEN", "HIDDEN",
 interpreter.S:HEADER "IMMEDIATE", "IMMEDIATE", 
 interpreter.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY",
+interpreter.S:HEADER "HANDLER", "HANDLER",
+interpreter.S:HEADER "CATCH", "CATCH",
+interpreter.S:HEADER "THROW", "THROW",
 interpreter.S:HEADER "SOURCE", "SOURCE",
 interpreter.S:HEADER ":", "COLON",
 interpreter.S:HEADER ";", "SEMMI",
@@ -182,6 +158,9 @@ interpreter.S:HEADER "FIND", "FIND",
 interpreter.S:HEADER "ACCEPT", "ACCEPT",
 interpreter.S:HEADER "REFILL", "REFILL",
 interpreter.S:HEADER "WORD", "WORD",
+interpreter.S:HEADER "COMPILE_IT", "COMPILE_IT",
+interpreter.S:HEADER "EXECUTE_IT", "EXECUTE_IT",
+interpreter.S:HEADER "INTERPRET", "INTERPRET",
 interpreter.S:HEADER "EVAL", "EVAL",
 interpreter.S:HEADER "QUIT", "QUIT",
 macros.S:.macro HEADER name, label, flags=0x0

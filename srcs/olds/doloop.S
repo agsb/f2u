@@ -4,6 +4,17 @@
 ; counting from 0 to 65535, as Forth-83
 ; ZZZZ
 ;
+
+
+;----------------------------------------------------------------------
+;
+; ok LEAVES (Forth-83)
+;
+HEADER "LEAVES", "LEAVES", 
+    .word LIT, LEAVES, ENDS
+ 
+LEAVES:    .word 0     ; hold for leaves
+
 ;----------------------------------------------------------------------
 ;
 ; ok DO (Forth-83)
