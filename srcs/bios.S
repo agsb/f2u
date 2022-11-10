@@ -29,14 +29,6 @@
 ; review for atmega328
 ;   10/2022 @agsb
 
-;----------------------------------------------------------------------
-;
-; code segment, flash
-;
-.section .text
-.org 0x000
-.global boot
-boot:
 
 ;---------------------------------------------------------------------
 ; from avr manual, do not change 
@@ -95,6 +87,17 @@ MCUCR = 0x35
 ; classic interrup vector table
 ;
 ;----------------------------------------------------------------------
+
+
+;----------------------------------------------------------------------
+;
+; code segment, flash
+;
+.section .text
+.org 0x000
+.global boot
+
+boot:
 
     rjmp RESET ; Reset Handler
     reti ; rjmp EXT_INT0 ; IRQ0 Handler
@@ -208,7 +211,8 @@ USART_SET:
 ; enable interrupts
 GOOD:
     sei
-    rjmp COLD 
+;    rjmp COLD 
+    rjmp HALT
 
 ;----------------------------------------------------------------------
 ;
@@ -264,3 +268,6 @@ HALT:
     out MCUCR, r16
     sleep           ; Put MCU in sleep mode
     rjmp RESET
+
+
+

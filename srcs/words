@@ -132,8 +132,8 @@ forth-twigs.S:HEADER "WARM", "WARM", F_LEAP
 forth-twigs.S:HEADER "BYE", "BYE", F_LEAP
 interpreter.S:HEADER "(skip)", "skip"
 interpreter.S:HEADER "(scan)", "scan"
-interpreter.S:HEADER "(copy)", "copy"
 interpreter.S:HEADER "(same)", "same"
+interpreter.S:HEADER "(copy)", "copy"
 interpreter.S:HEADER "(refill)", "refill"
 interpreter.S:HEADER "(parse)", "parse"
 interpreter.S:HEADER "(word)", "word"

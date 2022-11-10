@@ -33,14 +33,15 @@
 #
 
 # MCU name
-MCU = atmega8
 MCU = atmega328
+MCU = atmega8
 
 # Optimization level, can be [0, 1, 2, 3, s]. 
 # 0 = turn off optimization. s = optimize for size.
 # (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
 #OPT = 0
 OPT = 0
+OPT = s
 
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex
@@ -66,6 +67,8 @@ ASRC =
 # Native formats for AVR-GCC's -g are stabs [default], or dwarf-2.
 # AVR (extended) COFF requires stabs, plus an avr-objcopy run.
 DEBUG = stabs
+DEBUG = gdb
+DEBUG = gdb3
 
 # List any extra directories to look for include files here.
 #     Each directory must be seperated by a space.

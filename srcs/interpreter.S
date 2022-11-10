@@ -89,33 +89,6 @@ HEADER "(scan)", "scan"
 
 ;----------------------------------------------------------------------
 ;
-; ok ( a1 a2 u --- a3 ) internal
-;   copy u chars from a1 into a2, forward copy, a3 = a1+u+1
-;   not standart, max 255, no check for overlaps, works only in sram
-;
-HEADER "(copy)", "copy"
-    NOOP
-    clr tos_high
-    pspull nos_low, nos_high
-    pspull zpm_low, zpm_high
-
-    rspush psp_low, psp_high
-    movw psp_low, nos_low
-10:
-    cp tos_low, tos_low
-    brbs BIT_ZERO, 20f
-    
-    ld nos_low, Z+
-    st Y+, nos_low
-    dec tos_low
-    rjmp 10b
-20:
-    rspull psp_low, psp_high
-    movw tos_low, zpm_low
-    POON
-    
-;----------------------------------------------------------------------
-;
 ; ok ( a1 a2 u --- ) internal
 ;   compare u chars from a1 to a2, 
 ;   not standart, max 255, no check for overlaps, works only in sram
@@ -148,6 +121,33 @@ HEADER "(same)", "same"
 
 */
 
+;----------------------------------------------------------------------
+;
+; ok ( a1 a2 u --- a3 ) internal
+;   copy u chars from a1 into a2, forward copy, a3 = a1+u+1
+;   not standart, max 255, no check for overlaps, works only in sram
+;
+HEADER "(copy)", "copy"
+    NOOP
+    clr tos_high
+    pspull nos_low, nos_high
+    pspull zpm_low, zpm_high
+
+    rspush psp_low, psp_high
+    movw psp_low, nos_low
+10:
+    cp tos_low, tos_low
+    brbs BIT_ZERO, 20f
+    
+    ld nos_low, Z+
+    st Y+, nos_low
+    dec tos_low
+    rjmp 10b
+20:
+    rspull psp_low, psp_high
+    movw tos_low, zpm_low
+    POON
+    
 ;----------------------------------------------------------------------
 ;
 ; ok ( a u --- u ) 
