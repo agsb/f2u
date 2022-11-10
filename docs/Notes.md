@@ -4,6 +4,12 @@
 
 *still lots of english errors, please correct me*
 
+# 10/11/2022
+
+- all pre-compiled compound words use direct BRANCH and ZBRANCH for jumps
+
+- review of all code, reduce to only 4 calls in do_spm routine
+
 # 07/11/2022
 
 - future: review of byte for size and flags. Size still 1 to 15, usually good for almost 
@@ -11,6 +17,7 @@
     0x40 is IMMEDIATE, 0X20 is COMPILE_ONLY, 0x10 is HIDDEN. 
     why ? FOr easy translate BODY> and <BODY, NAME> 
 
+- review of all words, tricks about specifics ISA for atmega8 or atmega328
 
 # 05/11/2022
 

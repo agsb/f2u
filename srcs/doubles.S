@@ -31,14 +31,14 @@
 ; ok ( w -- w + 4 ) 
 ;
 HEADER "4+", "FOURPLUS",
-     .word FOUR, PLUS, ENDS 
+     .word LIT, 4, PLUS, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( w -- w - 4 ) 
 ;
 HEADER "4-", "FOURMINUS",
-     .word FOUR, MINUS, ENDS 
+     .word LIT, 4, MINUS, ENDS 
  
 ;----------------------------------------------------------------------
 ;

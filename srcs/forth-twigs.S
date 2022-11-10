@@ -136,7 +136,7 @@ HEADER "<>", "NOTEQUAL",
 ;----------------------------------------------------------------------
 ;
 ; ok ( w1 w2 -- 0 | -1 ) 
-;
+; w1 > w2
 HEADER ">", "GTHAN",
     .word SWAP, LTHAN, ENDS 
  
@@ -267,13 +267,35 @@ HEADER "UP", "UP",
 ;
 ; ok ( -- w) 
 ; stack for variables from end of stacks
-HEADER "US", "US",
+HEADER "UD", "UD",
     .word LIT, VUS, ENDS
  
 ;********************************************************************** 
 ; 
 ;   basic words
 ;
+;----------------------------------------------------------------------
+;   strange changes ?
+;   all compilation is done in sram, then need a trick
+;
+;   up is a pointer to next free cell in sram, from the end of TIB
+;   dp is a pointer to next free cell in flash
+;   fp is a pointer to last dp, used when write sram to flash 
+;   up0 is the end of TIB
+;
+;   here return where dp is, used for absolute branch and zbranch,
+;   uhere returns where up is, 
+;   comma writes in sram, and 
+;   allot updates up and dp pointers
+;   when done to write sram to flash, fp = up, up = up0
+;
+;----------------------------------------------------------------------
+;
+; ok HERE ( -- w ) 
+;
+HEADER "UHERE", "UHERE",
+    .word UP, AT, ENDS 
+ 
 ;----------------------------------------------------------------------
 ;
 ; ok HERE ( -- w ) 
@@ -284,16 +306,40 @@ HEADER "HERE", "HERE",
 ;----------------------------------------------------------------------
 ;
 ; ok ALLOT ( u -- ) 
+; not standart: updates DP and UP
 ;
 HEADER "ALLOT", "ALLOT",
-    .word DP, AT, PLUS, DP, TO, ENDS 
+    .word DUP
+    .word UP, AT, PLUS, UP, TO 
+    .word DP, AT, PLUS, DP, TO 
+    .word ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is ALIGN 
+; not standart: updates DP and UP
 ;
 HEADER "ALIGN", "ALIGN",
-    .word DP, AT, ALIGNED, DP, TO, ENDS 
+    .word UP, AT, ALIGNED, UP, TO
+    .word DP, AT, ALIGNED, DP, TO
+    .word ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; ok COMMMA ( w -- ) 
+; not standart: updates DP and UP
+;
+HEADER ",", "COMMA", F_IMMEDIATE
+    .word UHERE, TO, CELL, ALLOT, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; ok TOMMA ( a2 a1 -- ) 
+; not standart: do not update DP or UP, 
+;   just do TO (a2 a1-a2+UP -- )
+;
+HEADER "<,", "TOMMA", F_IMMEDIATE
+    .word OVER, MINUS, UHERE, PLUS, TO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -318,13 +364,6 @@ HEADER "DOTO", "DOTO",
  
 ;----------------------------------------------------------------------
 ;
-; ok COMMMA ( w -- ) 
-;
-HEADER ",", "COMMA", F_IMMEDIATE
-    .word HERE, TO, CELL, ALLOT, ENDS 
- 
-;----------------------------------------------------------------------
-;
 ; ok this puts next cell into stack and compiles into HERE 
 ; used only in precompiled sources as forth-twigs
 ; ????
@@ -342,7 +381,7 @@ HEADER "EXIT", "EXIT", F_IMMEDIATE
 ;
 ; ok execute xt from tos
 ;
-HEADER "EXEC", "EXEC", 
+HEADER "EXEC", "EXEC", F_IMMEDIATE
     .word TOR, ENDS
 
 ;----------------------------------------------------------------------
@@ -354,32 +393,28 @@ HEADER "TAIL", "TAIL",
 
 ;----------------------------------------------------------------------
 ;
-; ok unconditional compile next word 
-;
-HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE,
-    .word FIND, COMMA, ENDS 
-
-;----------------------------------------------------------------------
-;
 ; Control words review. there is no more offset BRANCH.
 ;
 ;----------------------------------------------------------------------
  
 ;----------------------------------------------------------------------
 ;
-; ok MARK 
-; places a address of next cell in tos
-; places a holder to self in next cell in dictionary
+; ok MARKTO 
+; places a address of cell
+; places to address to self in a holder, 
+; and left address of holder at stack
+;
 HEADER "MARKTO", "MARKTO", F_IMMEDIATE,
     .word HERE, DUP, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
-; ok MARK 
-; places a address of next cell in tos
-; places a holder to self in next cell in dictionary
+; ok TOMARK 
+; places a address of cell 
+; resolves a back reference to last holder 
+; and places a address to self at holder 
 HEADER "TOMARK", "TOMARK", F_IMMEDIATE,
-    .word HERE, SWAP, TO, ENDS 
+    .word HERE, SWAP, TOMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -471,7 +506,7 @@ HEADER "AHEAD", "AHEAD", F_IMMEDIATE,
 ; is AFT 
 ;
 HEADER "AFT", "AFT", F_IMMEDIATE,
-    .word DROP, AHEAD, HERE, SWAP, ENDS 
+    .word DROP, GO, HERE, SWAP, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -536,6 +571,13 @@ HEADER "BL", "BL",
 ;----------------------------------------------------------------------
 ;
 ; is  ( a u -- )
+;   
+HEADER "DOT", "DOT",
+    .word ZZZZ, EMIT, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( a u -- )
 ;
 HEADER "TYPE", "TYPE",
 1:
@@ -551,7 +593,7 @@ HEADER "COLD", "COLD", F_LEAP
     NOOP 
     .word LIT, PS0, PSTO
     .word LIT, RS0, RSTO
-    .word LIT, US0, US, TO
+    .word LIT, US0, UD, TO
     .word LIT, 0x00, STATE, TO
     .word LIT, 0x10, BASE, TO
     .word LIT, WARM, RTO

@@ -289,7 +289,7 @@ HEADER "(refill)", "refill"
 ;----------------------------------------------------------------------
 ;
 ; ok ( a c --- a u | 0 ) 
-;    find for c 
+;    find a for c 
 ;    returns address and u lenght or zero if no c or \0
 ;    max lenght is 255 bytes
 ;
@@ -602,7 +602,7 @@ _next_digit:
 ;----------------------------------------------------------------------
 ;
 ; ok find a word in a vocabulary
-;   ( ad aw u -- xt f | a 0 )
+;   ( aw u ad -- xt f | a 0 )
 ;    ad link to dictionary
 ;    aw address to word
 ;    u  length
@@ -616,11 +616,14 @@ _next_digit:
 HEADER "(find)", "find"
     NOOP
 
+    ; load address dictionary
+    movw zpm_low, tos_low
+
+    ; load counter
+    pspull tos_low, tos_high
+
     ; load address word
     pspull nos_low, nos_high
-
-    ; load address dictionary
-    pspull zpm_low, zpm_high
 
     ; save stack
     rspush psp_low, psp_high
@@ -753,6 +756,8 @@ HEADER "(find)", "find"
 ; almost forth94
 ;
 ;----------------------------------------------------------------------
+
+;----------------------------------------------------------------------
 ;
 ; is \] to compile 
 ;
@@ -839,6 +844,13 @@ HEADER "THROW", "THROW",
 
 ;----------------------------------------------------------------------
 ;
+; is THROW 
+;
+HEADER "ABORT", "ABORT"
+    .word LIT, -1, THROW, ENDS
+
+;----------------------------------------------------------------------
+;
 ; is ACCEPT is a refill with edit capabilities
 ;
 HEADER "ACCEPT", "ACCEPT",
@@ -848,7 +860,15 @@ HEADER "ACCEPT", "ACCEPT",
 ;
 ; is  
 ;
-HEADER ":", "COLON",
+HEADER "OVERT", "OVERT", 
+    ;.word LATEST, AT, CURRENT, AT, TO, ENDS 
+    .word ZZZZ, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; is  
+;
+HEADER ":", "COLON", F_IMMEDIATE
     .word CREATE, RBRAC, ENDS 
  
 ;----------------------------------------------------------------------
@@ -856,18 +876,27 @@ HEADER ":", "COLON",
 ; is  
 ;
 HEADER ";", "SEMMI",
-    .word EXIT, LBRAC, ENDS 
+    .word EXIT, LBRAC, OVERT, ENDS 
 
 ;----------------------------------------------------------------------
 ;
 ; is SOURCE
 ;   place terminal buffer address and length in stack
-;   no standart: also place a \0 at end :)
 ;
 HEADER "SOURCE", "SOURCE",
     .word LIT, TIB0, LIT, TIB_SIZE 
-    .word OVER, OVER, PLUS, LIT, ZERO, SWAP, TO, ONE, MINUS, ENDS
+;   no standart: also place a \0 at end :)
+    .word OVER, OVER, PLUS, LIT, ZERO, SWAP, TO, ONE, MINUS
+    .word ENDS
  
+;----------------------------------------------------------------------
+;
+; is SOURCE
+;   place terminal buffer address and length in stack
+;
+HEADER "SOURCE+", "SOURCEPLUS",
+    .word SOURCE, DROP, TOIN, PLUS, ENDS
+
 ;----------------------------------------------------------------------
 ;
 ; is  REFILL ( -- a n ), toin = 0
@@ -877,54 +906,85 @@ HEADER "REFILL", "REFILL",
  
 ;----------------------------------------------------------------------
 ;
-; is gets a <chars>cc from source
-;   ( a c -- a n )
+; is PARSE ( "<chars>ccc" c -- a n ) 
+;   no counted-string
 ;
 HEADER "PARSE", "PARSE"
+    .word SOURCEPLUS, SWAP
     .word parse, ZDUP, ZBRANCH, 2f
     .word DUP, TOIN, PLUSTO, ENDS
-    .word REFILL, BRANCH, PARSE ; perfect loop
+2:  .word REFILL, BRANCH, PARSE ; perfect loop
     
 ;----------------------------------------------------------------------
 ;
-; is  WORD ( a c -- a n ), toin = 0
+; is  PARSE-NAME ( "ccc<chars>ccc" c -- a n ), toin = 0
+;   no counted-string
 ;
-HEADER "WORD", "WORD",
+HEADER "PARSE-NAME", "PARSEN",
+    .word SOURCEPLUS, SWAP
     .word word, ZDUP, ZBRANCH, 2f 
     .word DUP, TOIN, PLUSTO, ENDS
-2:  .word REFILL, BRANCH, WORD  ; perfect loop
+2:  .word REFILL, BRANCH, PARSEN  ; perfect loop
     
- 
 ;----------------------------------------------------------------------
 ;
-; is CREATE ( a n -- xt ) 
-; compile a header 
+; is FIND-NAME ( a n -- a 0 | xt -1 | xt 1 ) 
+;   no counted-string
+;   no vocabularies
+;
+HEADER "FIND-NAME", "FINDN",
+    .word LATEST, AT, find, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  NONAME ( "" ), toin = 0
+;
+HEADER "NONAME", "NONAME",
+    .word ZZZZ, ENDS
+
+;----------------------------------------------------------------------
+;
+; is CREATE ( "ccc<str>ccc" -- xt ) 
+; parse next word and compile a header 
 ;
 HEADER "CREATE", "CREATE",
-    .word WORD, LIT, UH0+2, OVER, OVER, TO, SWAP, DUP
-    .word TOR, copy, RTO, ONE, AND, ZEQU, ZBRANCH, 2f
+    .word PARSEN, LIT, UH0 
+    .word DUP, LATEST, AT, SWAP, TO, CELLPLUS
+    .word OVER, OVER, TO, ONEPLUS, SWAP, DUP
+    .word TOR, copy, RTO 
+    .word DUP, ONE, AND, ZEQU, ZBRANCH, 2f
     .word DUP, BL, SWAP, TO, ONE, PLUS
 2:  .word ENDS
     
 ;----------------------------------------------------------------------
 ;
-; is FIND ( a n -- xt | 0 ) 
+; is TICK ( "ccc<caddr>ccc" -- xt | 0 ) 
 ;
-HEADER "FIND", "FIND",
-    .word find, ENDS
+HEADER "'", "TICK",
+    .word FINDN, DUP, ZEQU, ZBRANCH, 2f
+    .word SWAP
+2:  .word DROP, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok unconditional compile next word 
+;   no check if 0x0 zzzz
+;
+HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE,
+    .word TICK, COMMA, ENDS 
 
 ;----------------------------------------------------------------------
 ;
 ; is  
 ;
-HEADER "COMPILE_IT", "COMPILE_IT",
-    .word COMMA, ENDS
+HEADER "COMPXT", "COMPXT", F_IMMEDIATE
+    .word LIT, LIT, COMMA, COMMA, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; is  
 ;
-HEADER "EXECUTE_IT", "EXECUTE_IT",
+HEADER "EXECXT", "EXECXT", F_IMMEDIATE
     .word EXEC, ENDS
 
 ;----------------------------------------------------------------------
@@ -932,7 +992,18 @@ HEADER "EXECUTE_IT", "EXECUTE_IT",
 ; is  
 ;
 HEADER "INTERPRET", "INTERPRET",
-    .word ENDS
+    .word PARSEN, FINDN 
+    .word DUP, ZBRANCH, 2f
+    ; is a word -1 normal 1 immediate
+    .word ONEMINUS, ZBRANCH, 4f
+    .word STATE, AT, ZBRANCH, 4f
+    .word COMPXT, BRANCH, 8f
+4:  .word EXECXT, BRANCH, 8f
+    ; is a number ?
+2:  .word DROP, CONVERT, ZBRANCH, 10f
+    .word COMPXT, BRANCH, 8f
+    ; next word
+8:  .word BRANCH, INTERPRET
 
 ;----------------------------------------------------------------------
 ;
@@ -942,9 +1013,9 @@ HEADER "EVAL", "EVAL",
     .word find, ZDUP, ZBRANCH, _not_found
     .word ONEPLUS, ZBRANCH, _word_normal
 ; word immediate
-    .word EXECUTE_IT, ENDS
+    .word EXECXT, ENDS
 
-    .word COMPILE_IT, BRANCH
+    .word COMPXT, BRANCH
 _word_normal: 
 ; word immediate
 _not_found:  ; word not found
@@ -955,25 +1026,24 @@ _not_found:  ; word not found
 ; is  
 ;
 HEADER "QUIT", "QUIT",
-    .word LBRAC 
 1:
+    .word LBRAC 
     .word RS0, RSTO
     .word REFILL   
 2:
-    .word INTERPRET
-    .word DUP, ZERO, EQUAL, ZBRANCH, 3f
-    .word STATE, AT, ZEQU, ZBRANCH, 22f
-    .word LIT, prompt, LIT, 4, TYPE 
-22:
+    .word INTERPRET, CATCH
+    .word DUP, LIT, 0, EQUAL, ZBRANCH, 3f
+    .word STATE, AT, ZEQU, ZBRANCH, 5f
+    .word LIT, prompt, LIT, 4, TYPE, BRANCH, 5f 
     .word CR, BRANCH, 2b
 3:
-    .word DUP, ONE, PLUS, ZEQU, ZBRANCH, 4f
-    .word LIT, abort, LIT, 8, TYPE, BRANCH, 22b
+    .word DUP, LIT, -1, EQUAL, ZBRANCH, 4f
+    .word LIT, abort, LIT, 8, TYPE, BRANCH, 5f
 4:    
-    .word DUP, TWO, PLUS, ZEQU, ZBRANCH, 5f
-    .word LIT, exception, LIT, 12, TYPE, BRANCH, 22b
+    .word DUP, LIT, -2, EQUAL, ZBRANCH, 5f
+    .word LIT, exception, LIT, 12, TYPE, DOT, BRANCH, 5f
 5:
-    .word BRANCH, 22b
+    .word CR, BRANCH, 2b
     .word ENDS
   
 ;----------------------------------------------------------------------

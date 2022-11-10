@@ -323,6 +323,18 @@ HEADER "0=", "ZEQU", F_LEAP
  
 ;----------------------------------------------------------------------
 ;
+; ok 0< 
+;
+HEADER "0<", "ZLTH", F_LEAP
+    NOOP 
+    ; 0x80
+    andi tos_high, 0x80
+    brbc BIT_ZERO, _iftrue
+    brbs BIT_ZERO, _iffalse
+    POON
+
+;----------------------------------------------------------------------
+;
 ; ok ( u1 u2 -- f ) 
 ;   unsigned lessthan 
 ;   if u1 < u2, true, else, false
@@ -331,8 +343,8 @@ HEADER "U<", "UMLESS", F_LEAP
     NOOP 
     pspull nos_low, nos_high 
     clc 
-    cp  tos_low, nos_low 
-    cpc tos_high, nos_high 
+    cp  nos_low, tos_low 
+    cpc nos_high, tos_high 
 1:    
     brlt 2f 
     rjmp _iffalse
@@ -352,6 +364,7 @@ HEADER "UM+", "UMPLUS", F_LEAP
     add tos_low, nos_low 
     adc tos_high, nos_high 
     pspush tos_low, tos_high
+    ; preserve carry
 1:
     clr tos_high
     clr tos_low
@@ -547,15 +560,16 @@ HEADER "+", "PLUS", F_LEAP
  
 ;----------------------------------------------------------------------
 ;
-; ok ( w1 w2 -- w2 - w1 ) 
-;   signed minus
+; ok ( w1 w2 -- w1 - w2 ) 
+;   signed minus, 0 5 -- -5
 ;
 HEADER "-", "MINUS", F_LEAP
     NOOP 
     pspull nos_low, nos_high 
     clc 
-    sub tos_low, nos_low 
-    sbc tos_high, nos_high 
+    sub nos_low, tos_low 
+    sbc nos_high, tos_high 
+    movw tos_low, nos_low
     POON 
  
 ;----------------------------------------------------------------------
@@ -785,13 +799,4 @@ HEADER "2", "TWO", F_LEAP
     POON 
  
 ;----------------------------------------------------------------------
-;
-; ok ( -- 0 ) 
-;
-HEADER "4", "FOUR", F_LEAP
-    NOOP 
-    pspush tos_low, tos_high 
-    clr tos_high 
-    ldi tos_low, 4
-    POON 
  
