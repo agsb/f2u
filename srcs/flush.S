@@ -197,14 +197,23 @@ HEADER "(save_flash)", "SVFLASH"
 ; wrapper around optiboot code
 ;
  
-; for a atmega8 with optiboot 512b
-#define OPTI_DO_SPM_SHORT 0x1fca    ; in bytes
-
 ; call spm in NWWM
 _does_spm:
     cli
     in r2, __SREG__
+
+#ifdef atmega8
+; for a atmega8 with optiboot 512b
+#define OPTI_DO_SPM_SHORT 0x1fca    ; in bytes
     rcall OPTI_DO_SPM_SHORT
+#endif
+
+#ifdef atmega328
+; for a atmega328 with optiboot 512b
+#define OPTI_DO_SPM_SHORT 0x7fd2    ; in bytes
+    call OPTI_DO_SPM_SHORT
+#endif
+
     out __SREG__, r2
     sei
 ; wait for complete
