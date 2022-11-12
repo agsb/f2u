@@ -63,6 +63,21 @@ cos x = 1.0000 - 0.5000 * x^2 + 0.0416667 * x^4 - 0.00138875 * x^6
 
 ---
 
+> ## exact div by 10, http://homepage.cs.uiowa.edu/~jones/bcd/divide.html
+
+The final code given above also works in 32 bits with only one additional shift and add step:
+
+	unsigned long int A;
+	unsigned long int Q; /* the quotient */
+
+	Q = ((A >>  1) + A) >> 1; /* Q = A*0.11 */
+	Q = ((Q >>  4) + Q)     ; /* Q = A*0.110011 */
+	Q = ((Q >>  8) + Q)     ; /* Q = A*0.11001100110011 */
+	Q = ((Q >> 16) + Q) >> 3; /* Q = A*0.000110011001100110011001100110011 */
+    /* either Q = A/10 or Q+1 = A/10 for all 32-bit unsigned A */
+
+---
+
 > ## http://computer-programming-forum.com/22-forth/fc123450c480e39c.htm Ulrich Hoffmann,
 ```
 \ DEFER and IS -------------------------------------------------------
