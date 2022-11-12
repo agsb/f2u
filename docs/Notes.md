@@ -4,6 +4,21 @@
 
 *still lots of english errors, please correct me*
 
+# 12/11/2023
+
+- made for new flags, 0x80 is F_RESERVED, to identify the byte size+flags,
+    0x40 is IMMEDIATE, 0X20 is COMPILE_ONLY, 0x10 is HIDDEN. 
+
+- start of eeprom stuff, forth variables load/save and constants,
+    yet not complete
+
+- changed, again, the internal names and order of forth variables
+
+- eeprom and io/ports, C@E, C!E, C@P, C!P, @E, !E, @P, !P, 
+    using prefix C for byte, D for double, 
+    and sufix E for eeprom, P for IO ports
+    ( sram is default and no still no flash stuff)
+
 # 10/11/2022
 
 - all pre-compiled compound words use direct BRANCH and ZBRANCH for jumps
