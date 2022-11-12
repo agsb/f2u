@@ -58,14 +58,30 @@
 ;
 ;    (some adapted from old fig-forth listings) 
 ;
+;********************************************************************** 
 
 ;----------------------------------------------------------------------
 ;
-; is ZZZZ, hook for incompleteness 
+; ok ( w a -- ) 
+; just write a word
+HEADER "!E", "EETO", F_LEAP
+    .word OVER, OVER, CTOEE, ONE, PLUS, TOR, ENDIAN, RTO, CTOEE, ENDS   
+
+;----------------------------------------------------------------------
 ;
-HEADER "ZZZZ", "ZZZZ",
-    .word LIT, undefined, LIT, 12, TYPE, CR, ENDS 
- 
+; ok ( w -- u ) 
+;   w1 = b1b2 w2=b3b4 ~ u = b1b3 ????
+;   w1 0x00ff and, w2 0x00ff and, 
+;   w1 = b100, w2 = b300, w2 endian, w2 = 00b3
+;   w1 w2 or
+;
+HEADER "@E", "EEAT", F_LEAP
+    .word DUP, CATEE, SWAP, CATEE
+    .word LIT, 0x00FF, AND
+    .word ENDIAN, SWAP
+    .word LIT, 0x00FF, AND
+    .word OR, ENDS
+
 ;********************************************************************** 
 ;
 ;   stack words
@@ -260,15 +276,15 @@ HEADER "DP", "DP",
 ;
 ; ok ( -- w) 
 ;
-HEADER "UP", "UP",
-    .word LIT, VUH, ENDS
+HEADER "HP", "HP",
+    .word LIT, VHP, ENDS
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w) 
 ; stack for variables from end of stacks
-HEADER "UD", "UD",
-    .word LIT, VUS, ENDS
+HEADER "UP", "UP",
+    .word LIT, VUP, ENDS
  
 ;********************************************************************** 
 ; 
@@ -294,7 +310,7 @@ HEADER "UD", "UD",
 ; ok HERE ( -- w ) 
 ;
 HEADER "UHERE", "UHERE",
-    .word UP, AT, ENDS 
+    .word HP, AT, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -310,7 +326,7 @@ HEADER "HERE", "HERE",
 ;
 HEADER "ALLOT", "ALLOT",
     .word DUP
-    .word UP, AT, PLUS, UP, TO 
+    .word HP, AT, PLUS, HP, TO 
     .word DP, AT, PLUS, DP, TO 
     .word ENDS 
  
@@ -320,7 +336,7 @@ HEADER "ALLOT", "ALLOT",
 ; not standart: updates DP and UP
 ;
 HEADER "ALIGN", "ALIGN",
-    .word UP, AT, ALIGNED, UP, TO
+    .word HP, AT, ALIGNED, HP, TO
     .word DP, AT, ALIGNED, DP, TO
     .word ENDS 
  
@@ -589,20 +605,118 @@ HEADER "TYPE", "TYPE",
   
 ;----------------------------------------------------------------------
 ;
+; is  ( -- )
+;   no checks
+;
+HEADER "U-", "ULESS",
+    .word UP, AT, CELL, MINUS, DUP, UP, TO, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( -- )
+;   no checks
+;
+HEADER "U+", "UMORE",
+    .word UP, AT, CELL, PLUS, DUP, UP, TO, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( u -- )
+;
+HEADER "U@", "UAT",
+1:
+    .word UP, AT, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( u -- )
+;
+HEADER "U!", "UTO",
+1:
+    .word UP, TO, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( u -- )
+;
+HEADER ">U", "USV",
+1:
+    .word UP, AT, TO, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( -- u )
+;
+HEADER "U>", "ULD",
+1:
+    .word UP, AT, AT, ENDS
+
+;----------------------------------------------------------------------
+;
+HEADER "COLD0", "COLDZERO", F_LEAP
+    
+    .word LIT, ZZZZ, LIT, LAST, TO 
+    .word LIT, 0x02A8, LIT, SEED, TO 
+    .word LIT, 0x0000, LIT, TURN, TO 
+    .word LIT, 0x0000, LIT, REST, TO 
+    .word LIT, 0x0000, LIT, LIVE, TO 
+
+    .word LIT, free_flash, LIT, VDP, TO
+    .word LIT, EP0, LIT, VEP, TO
+    .word LIT, UH0, LIT, VHP, TO
+    .word LIT, US0, LIT, VUP, TO
+    .word ENDS
+
+;----------------------------------------------------------------------
+;
+HEADER "EELOAD", "EELOAD", F_LEAP
+    .word ZERO, DUP, EEAT, LIT, VOID, TO 
+    .word TWO, PLUS, DUP, EEAT, LIT, SEED, TO 
+    .word TWO, PLUS, DUP, EEAT, LIT, TURN, TO 
+    .word TWO, PLUS, DUP, EEAT, LIT, REST, TO 
+    .word TWO, PLUS, DUP, EEAT, LIT, LAST, TO 
+    .word TWO, PLUS, DUP, EEAT, LIT, LIVE, TO 
+
+    .word TWO, PLUS, DUP, EEAT, LIT, VDP, TO 
+    .word TWO, PLUS, DUP, EEAT, LIT, VEP, TO 
+    .word TWO, PLUS, DUP, EEAT, LIT, VUP, TO 
+    .word TWO, PLUS, DUP, EEAT, LIT, VHP, TO 
+    .word ENDS
+
+;----------------------------------------------------------------------
+;
+HEADER "EESAVE", "EESAVE", F_LEAP
+    .word ZERO, DUP, LIT, VOID, AT, SWAP, EETO 
+    .word TWO, PLUS, DUP, LIT, SEED, AT, SWAP, EETO 
+    .word TWO, PLUS, DUP, LIT, TURN, AT, SWAP, EETO 
+    .word TWO, PLUS, DUP, LIT, REST, AT, SWAP, EETO 
+    .word TWO, PLUS, DUP, LIT, LAST, AT, SWAP, EETO 
+    .word TWO, PLUS, DUP, LIT, LIVE, AT, SWAP, EETO 
+
+    .word TWO, PLUS, DUP, LIT, VDP, AT, SWAP, EETO 
+    .word TWO, PLUS, DUP, LIT, VEP, AT, SWAP, EETO 
+    .word TWO, PLUS, DUP, LIT, VUP, AT, SWAP, EETO 
+    .word TWO, PLUS, DUP, LIT, VHP, AT, SWAP, EETO 
+    .word ENDS
+
+;----------------------------------------------------------------------
+;
 HEADER "COLD", "COLD", F_LEAP
-    NOOP 
-    .word LIT, PS0, PSTO
+    .word EELOAD
+    .word LIT, LIVE, ZEQU, ZBRANCH, safe
+    .word COLDZERO, EESAVE  
+_safe:    
     .word LIT, RS0, RSTO
-    .word LIT, US0, UD, TO
+    .word LIT, PS0, PSTO
     .word LIT, 0x00, STATE, TO
     .word LIT, 0x10, BASE, TO
     .word LIT, WARM, RTO
+    .word LIT, LIVE, DUP, AT, ONE, PLUS, SWAP, TO 
     .word ENDS 
  
 ;----------------------------------------------------------------------
 ;
 HEADER "WARM", "WARM", F_LEAP
-    NOOP 
     ; verify error code 
     ; resets etc 
     .word TURN, AT, EXEC, QUIT, ENDS 
@@ -611,5 +725,6 @@ HEADER "WARM", "WARM", F_LEAP
 ; does reset 
 ;
 HEADER "BYE", "BYE", F_LEAP
+    .word EESAVE
     .word REST, AT, EXEC, RESET, ENDS 
 

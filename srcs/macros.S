@@ -148,12 +148,11 @@ is_\label:
 ;
 ;    A    Z (r31:r30) is used as generic address pointer, deed by avr ISA
 ;
-;    R    Y (r29:r28) used as return stack pointer    
-;    S    X (r27:r26) used as data/parameter stack pointer
-;    T    T (r25:r24) used as top in stack
-;    N    N (r22:r23) used as second in stack
-;    W    W (r20:r21) used as work            
-;    I    I (r18:r19) used as ip when link and jump    
+;    RSP  Y (r29:r28) used as return stack pointer    
+;    PSP  X (r27:r26) used as data/parameter stack pointer
+;    TOS  T (r25:r24) used as top in stack
+;    NOS  N (r22:r23) used as second in stack
+;    WRK  W (r20:r21) used as work            
 ;
 ;   all stacks grows downwards.
 ;
@@ -282,26 +281,36 @@ e_keep = eeprom + 14 ; next free eprom address for values, as stack
 ;
 ;   flags 
 ;
-;   IMMEDIATE, COMPILE, SMUDGE, LEAP
+;   tradicional:
 ;
-;   COMPILE is the compile only.
+;       IMMEDIATE, COMPILE, SMUDGE, LEAP
 ;
-;   HIDDEN or SMUDGE is no used
+;   IMMEDIATE is mandatory execute words.
 ;
-;   LEAP is to signal pure assembler routines, no calls inside.
+;   COMPILE is for compile only words.
 ;
-F_IMMEDIATE = 0x80
-F_COMPILE = 0x40
-F_HIDDEN = 0x20
-F_RESERVED = 0x10
+;   HIDDEN or SMUDGE is not used
+;
+;   LEAP is to mark as pure assembler routines, no calls inside.
+;
+;   RESERVED as 0x80, marks the byte as size+flag byte and allow
+;   backtrace to name from execute address, names are ASCII < 0x80
+;
+;   if need 32 chars ANSI names, forget HIDDEN
+;
+F_RESERVED = 0x80
+F_IMMEDIATE = 0x40
+F_COMPILE = 0x20
+F_HIDDEN = 0x10
 F_LEAP = 0x00
 
 F_TOMASK = 0xF0
 F_UNMASK = 0x0F
 
 ;---------------------------------------------------------------------
-; status register from error codes forth 2012
-; minimal
+;
+; minimal error codes from forth 2012
+;
 NO_ERROR = 0
 INVALID_MEMORY = -9
 OUT_OF_RANGE = -11
@@ -316,20 +325,15 @@ NOT_A_NUMBER = -24
 ; assumes that all line edit is done at remote!
 ; no backspace, no delete, no moving cursor, just a static line.
 ; works as a screen or block, just receives a line till a CR or CR LF
-; uses BS, ESC, CAN, XON, XOFF, for control 
+; uses BS, for edit last char
 ;
-XON_   =   0x11    ; ascii DC1 ^Q
-
-XOFF_  =   0x13    ; ascii DC3 ^S
-
-NAK_   =   0x15    ; ascii NAK ^U
+;XON_   =   0x11    ; ascii DC1 ^Q
+;XOFF_  =   0x13    ; ascii DC3 ^S
+;NAK_   =   0x15    ; ascii NAK ^U
 
 CR_    =   0x0d    ; ascci carriage return ^M
-
 LF_    =   0x0a    ; ascii line feed ^J
-
 BS_    =   0x08    ; ascii backspace ^H
-
 BL_    =   0x20    ; ascii space 
 
 ;----------------------------------------------------------------------
@@ -360,6 +364,8 @@ FLASH_NRWW = 0x1E00    ; using optiboot in 512 bytes !!!!
 
 FLASH_END = 0x1FFF 
 
+E2P_END = 0x1FF
+
 #endif
 
 #ifdef atmega328
@@ -378,6 +384,8 @@ FLASH_NRWW = 0x3E00    ; using optiboot in 512 bytes !!!!
 
 FLASH_END = 0x3FFF 
 
+E2P_END = 0x3FF
+
 #endif
 
 /* for eeprom use */
@@ -386,13 +394,7 @@ E2P_PAGESIZE = 4
 
 E2P_START = 0x000
 
-E2P_END = 0x1FF
-
-/* for flash flush */
-
-; buffer for flush flash
-
-/* where start forth */
+/* temporary where start forth */
 
 FORTH_INI = SRAM_END + 1
 

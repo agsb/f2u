@@ -150,7 +150,7 @@ HEADER "KEY", "KEY", F_LEAP
  
 ;----------------------------------------------------------------------
 ;
-; ok ( -- 0 | w) 
+; ok ( -- FALSE | TRUE ) 
 ; test if can receive a char, or return FALSE 
 ;
 HEADER "KEY?", "QKEY", F_LEAP
@@ -158,7 +158,7 @@ HEADER "KEY?", "QKEY", F_LEAP
 3: 
     sbis 0x0b, 7 
     rjmp _iffalse 
-    rjmp 2b 
+    rjmp _iftrue 
  
 ;----------------------------------------------------------------------
 ;
@@ -177,7 +177,7 @@ HEADER "EMIT", "EMIT", F_LEAP
  
 ;----------------------------------------------------------------------
 ;
-; ok ( w -- w 0) 
+; ok ( -- FALSE | TRUE ) 
 ; test if can send a char, or return FALSE 
 ;
 HEADER "EMIT?", "QEMIT", F_LEAP
@@ -185,35 +185,38 @@ HEADER "EMIT?", "QEMIT", F_LEAP
 3: 
     sbis 0x0b, 5 
     rjmp _iffalse 
-    rjmp 2b 
+    rjmp _iftrue 
  
 ;----------------------------------------------------------------------
 ;
-; ok ( u u e -- ) 
-;   write to eprom (2 cells)
+; ok ( c e -- ) 
+;   write a byte to eprom 
 ;
-HEADER ">EEPROM", "TOEEPROM", F_LEAP
+HEADER "C!E", "CTOEE", F_LEAP
     NOOP 
     pspull nos_low, nos_high
 
-EEPROM_write:
+_ee_write:
 ; Wait for completion of previous write
     sbic EECR, EEWE
-    rjmp EEPROM_write
+    rjmp _ee_write
 
 ; Set up address  in address register
     out EEARH, tos_high
     out EEARL, tos_low
+
 ; Write data to Data Register
     out EEDR, nos_low
 
 ; prepare    
     cli
     in r2, __SREG__
+
 ; Write logical one to EEMPE
     sbi EECR, EEMWE
 ; Start eeprom write by setting EEWE
     sbi EECR, EEWE
+
 ; restore
     out __SREG__, r2
     sei
@@ -224,17 +227,19 @@ EEPROM_write:
 ; ok ( e -- u ) 
 ;   read eeprom
 ;
-HEADER "EEPROM>", "EEPROMTO", F_LEAP
+HEADER "C@E", "CATEE", F_LEAP
     NOOP 
     pspull nos_low, nos_high
 
-EEPROM_read:
+_ee_read:
 ; Wait for completion of previous write
     sbic EECR, EEWE
-    rjmp EEPROM_read
+    rjmp _ee_read
+
 ; Set up address in address register
     out EEARH, tos_high
     out EEARL, tos_low
+
 ; Start eeprom read by writing EERE
     sbi EECR, EERE
 ; Read data from Data Register
@@ -248,8 +253,9 @@ EEPROM_read:
 ; also io@
 ; only sram
 ;
-HEADER "PEEK", "PEEK", F_LEAP
+HEADER "C@P", "CATIO", F_LEAP
     NOOP 
+_peek:
     movw zpm_low, tos_low  
     ld tos_low, Z
     clr tos_high
@@ -261,8 +267,9 @@ HEADER "PEEK", "PEEK", F_LEAP
 ; also io!
 ; only sram
 ;
-HEADER "POKE", "POKE", F_LEAP
-    NOOP 
+HEADER "C!P", "CTOIO", F_LEAP
+    NOOP
+_poke:
     movw zpm_low, tos_low  
     st Z, tos_low
     pspull tos_low, tos_high

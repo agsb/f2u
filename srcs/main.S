@@ -50,8 +50,9 @@ e_turn:	.word 0 ; routine after boot
 e_rest:	.word 0 ; routine before reset
 e_last:	.word 0 ; link to last word in dictionary
 e_dp:	.word 0 ; next free flash address for dictionary
-e_up:	.word 0 ; next free sram address for variables, as stack
-e_ep:	.word 0 ; next free eprom address for values, as heap 
+e_up:	.word 0 ; next free sram address for variables, backwards
+e_hp:	.word 0 ; next free sram address for variables, 
+e_ep:	.word 0 ; next free eprom address for values, 
 
 ;----------------------------------------------------------------------
 .section data
@@ -66,10 +67,14 @@ TURN:	.word 0		; routine to run after boot
 REST:	.word 0		; routine to run before reset
 
 LAST:	.word 0		; reference to latest word in dictionary
-VDP:	.word 0		; next free cell in flash dictionary
+LIVE:   .word 0     ; count boots
 
-VUP:    .word 0     ; next free cell in static ram (from end)
+VDP:	.word 0		; next free cell in flash dictionary
 VEP: 	.word 0		; next free cell in eeprom
+
+VUP:    .word 0     ; next free cell in static ram, backwards
+VHP:    .word 0     ; next free cell in static ram, forward
+
 
 ;----------------------------------------------------------------------
 ; those are volatile, dont care
@@ -78,9 +83,6 @@ RADX:	.word 0		; numeric radix for convertion
 
 TOIN:   .word 0     ; offset in TIB
 SPAN:   .word 0     ; offsets
-
-VUH:   .word 0      ; heap for user words, from tib, UH0
-VUS:   .word 0      ; stack for user variables, from stacks, US0 
 
 TMP0:   .word 0     ; temporary
 TMP1:   .word 0     ; temporary
@@ -135,12 +137,24 @@ US0 = RS0 - STACK_SIZE
 ;#include "math.S"
 
 ;----------------------------------------------------------------------
-;.p2align 1, 0x00
+.p2align 1, 0x00
 #include "interpreter.S"
 
 ;----------------------------------------------------------------------
+.p2align 1, 0x00
 .equ free_flash, .
 
+;----------------------------------------------------------------------
+;
+; is ZZZZ, hook for incompleteness 
+;
+HEADER "ZZZZ", "ZZZZ",
+    .word LIT, undefined, LIT, 12, TYPE, CR, ENDS 
+ 
+;********************************************************************** 
+
+;----------------------------------------------------------------------
+;
 ;FULL: .word  _list_
 
 ;----------------------------------------------------------------------
