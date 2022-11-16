@@ -747,6 +747,31 @@ HEADER "(find)", "find"
 ; 
 ;---------------------------------------------------------------------- 
  
+ 
+;---------------------------------------------------------------------- 
+; 
+; ok MOVE (a1 a2 u -- ) 
+; 
+HEADER "MOVE", "MOVE", 
+1:  .word ZDUP, ZBRANCH, 2f
+    .word ONEMINUS, TOR
+    .word OVER, AT, OVER, TO
+    .word ONEPLUS, SWAP, ONEPLUS, SWAP
+    .word BRANCH, 1b
+2:  .word DROP, DROP, ENDS 
+ 
+;---------------------------------------------------------------------- 
+; 
+; ok FILL (a u c -- ) 
+; 
+HEADER "FILL", "FILL", 
+    .word SWAP, TOR, SWAP
+1:  .word RTO, ZDUP, ZBRANCH, 2f
+    .word ONEMINUS, TOR
+    .word OVER, OVER, TO, ONEPLUS 
+    .word BRANCH, 1b 
+2:  .word DROP, DROP, ENDS 
+ 
 ;---------------------------------------------------------------------- 
 ; 
 ; is \] to compile 
@@ -834,6 +859,22 @@ HEADER "THROW", "THROW",
  
 ;---------------------------------------------------------------------- 
 ; 
+; is SPACE ( -- )
+; 
+HEADER "SPACE", "SPACE" 
+    .word BL, ENDS 
+ 
+;---------------------------------------------------------------------- 
+; 
+; is SPACES ( n -- )
+; 
+HEADER "SPACES", "SPACES" 
+1:  .word ZDUP, ZBRANCH, 2f
+    .word SPACE, ONEMINUS, BRANCH, 1b
+2:  .word ENDS 
+ 
+;---------------------------------------------------------------------- 
+; 
 ; is THROW 
 ; 
 HEADER "ABORT", "ABORT" 
@@ -907,6 +948,38 @@ HEADER "PARSE", "PARSE"
  
 ;---------------------------------------------------------------------- 
 ; 
+; is PAREN ( "<chars>ccc" c -- ) also comments
+; 
+HEADER "(", "PAREN" 
+    .word LIT, ')', PARSE, DROP, DROP, ENDS ; F_IMMEDIATE 
+
+;---------------------------------------------------------------------- 
+; 
+; is DOTPAREN .( "<chars>ccc" c -- a n ) also types
+;   not standart, no multi-task support
+;
+HEADER ".(", "DOTPAREN" 
+    .word LIT, ')', PARSE, ENDS ;
+
+;---------------------------------------------------------------------- 
+; 
+; is SQUOTE S\" ( "<chars>ccc" c -- a n )
+;   not standart, no multi-task support
+;
+HEADER "S\"", "SQUOTE" 
+    .word LIT, '\"', PARSE, ENDS ;
+
+;---------------------------------------------------------------------- 
+; 
+; is DOTQUOTE .\" ( "<chars>ccc" c -- a n )
+;   not standart, no multi-task support
+;
+HEADER ".\"", "DOTQUOTE" 
+    .word SQUOTE, TYPE, ENDS ;
+
+;---------------------------------------------------------------------- 
+;---------------------------------------------------------------------- 
+; 
 ; is  PARSE-NAME ( "ccc<chars>ccc" c -- a n ), toin = 0 
 ;   no counted-string 
 ; 
@@ -947,15 +1020,30 @@ HEADER "CREATE", "CREATE",
 2:  .word ENDS 
  
 ;---------------------------------------------------------------------- 
+; zzzz
+;
+; is DOES ( xt -- ) 
+; 
+HEADER "DOES", "DOES", 
+    .word LIT, BRANCH, COMMA, HERE, COMMA, ENDS 
+
+;---------------------------------------------------------------------- 
+; 
+; is DOES> ( xt -- ) 
+; 
+HEADER "DOES>", "DOESTO", F_IMMEDIATE 
+    .word LIT, BRANCH, COMMA, HERE, COMMA, ENDS 
+
+;---------------------------------------------------------------------- 
 ; 
 ; is CONSTANT ( "ccc<caddr>ccc" w -- ) 
 ; constants go to eeprom
 ; EP points next word free
 ; 
  HEADER "CONSTANT", "CONSTANT", 
-    .word CREATE, EP, AT
-    .word DUP, TOR, TOE, RTO
-    .word DUP, CELL, PLUS, EP, TO
+    .word CREATE, EPP, AT
+    .word DUP, TOR, TOEE, RTO
+    .word DUP, CELL, PLUS, EPP, TO
     .word COMMA, DOESTO, ENDS 
     
 ;---------------------------------------------------------------------- 
@@ -964,9 +1052,9 @@ HEADER "CREATE", "CREATE",
 ; variables go to high adress sram
 ; UP maps next word free
 HEADER "VARIABLE", "VARIABLE", 
-    .word CREATE, UP, AT
-    .word DUP, TOR, TOU, RTO
-    .word DUP, CELL, MINUS, UP, TO
+    .word CREATE, UPP, AT
+    .word DUP, TOR, TO, RTO
+    .word DUP, CELL, MINUS, UPP, TO
     .word COMMA, DOESTO, ENDS 
     
 ;---------------------------------------------------------------------- 

@@ -118,7 +118,9 @@ _seed:
 ;   ok ( w -- u) 
 ;
 HEADER "ABS", "ABS", F_LEAP 
-    .word NEGATE, ENDS
+    .word DUP, LIT, 0x8000, AND, ZBRANCH, 2f
+    .word NEGATE
+2:  .word ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -139,11 +141,12 @@ HEADER "MIN", "MIN", F_LEAP
 ;   is ( w1 w2 w3 -- f ) 
 ;
 HEADER "WITHIN", "WITHIN", F_LEAP
-    .word ENDS
+    .word OVER, MINUS, TOR, MINUS, RTO, UMLESS, ENDS
 
 ;----------------------------------------------------------------------
 ; a 64 bit half number, 7FFF FFFF FFFF FFFF is 9.223.372.036.854.775.807
 ;----------------------------------------------------------------------
+
 
 
 ;----------------------------------------------------------------------
@@ -260,20 +263,20 @@ mpy16s:
     sub wrk_high, wrk_high  ;clear high result High byte and carry
 
 m16s_1: 
-    brcc m16s_2                ;if carry (previous bit) set
+    brcc m16s_2             ;if carry (previous bit) set
     add  wrk_low, tos_low   ;    add multiplicand Low to result byte 2
     adc  wrk_high, tos_high ;    add multiplicand High to result byte 3
 m16s_2: 
-    sbrc nos_low, 0          ;if current bit set
+    sbrc nos_low, 0         ;if current bit set
     sub  wrk_low, tos_low   ;    sub multiplicand Low from result byte 2
-    sbrc nos_low, 0            ;if current bit set
+    sbrc nos_low, 0         ;if current bit set
     sbc  wrk_high, tos_high ;    sub multiplicand High from result byte 3
     asr  wrk_high           ;shift right result and multiplier
     ror  wrk_low
     ror  nos_high
     ror  nos_low
-    dec  _work_                ;decrement counter
-    brne m16s_1                ;if not done, loop more
+    dec  _work_             ;decrement counter
+    brne m16s_1             ;if not done, loop more
 
 m16sres:
     rjmp m16result
@@ -344,24 +347,25 @@ d16sres:
     rjmp m16result
 
 d16s_5: 
-    rol    wrk_low    ;shift dividend into remainder
+    rol    wrk_low              ;shift dividend into remainder
     rol    wrk_high
-    sub    wrk_low, tos_low ;remainder = remainder - divisor
-    sbc    wrk_high, tos_high ;
-    brcc    d16s_6    ;if result negative
+    sub    wrk_low, tos_low     ;remainder = remainder - divisor
+    sbc    wrk_high, tos_high   ;
+    brcc    d16s_6              ;if result negative
 
-    add    wrk_low, tos_low ;    restore remainder
+    add    wrk_low, tos_low     ;    restore remainder
     adc    wrk_high, tos_high
-    clc     ;    clear carry to be shifted into result
+    clc                         ;    clear carry to be shifted into result
     rjmp    d16s_3    ;else
 d16s_6: 
-    sec     ;    set carry to be shifted into result
+    sec                         ;    set carry to be shifted into result
     rjmp    d16s_3
 
 ;----------------------------------------------------------------------
 ; 
 ;   by Peter Dannegger 
 ;     https://www.avrfreaks.net/forum/smallest-and-fastest-binary-bcd-conversion?page=all
+;     to base 10
 ;
 ; input 16 bit value 0 ... 65535
 ; output  5 digits (ASCII)

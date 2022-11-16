@@ -40,6 +40,20 @@ HEADER "4+", "FOURPLUS",
 HEADER "4-", "FOURMINUS",
      .word LIT, 4, MINUS, ENDS 
  
+
+;---------------------------------------------------------------------- 
+; 
+; ok 2@ ( a1 a2 -- w1 w2 ) 
+; 
+HEADER "2!", "TWOTO", 
+    .word SWAP, OVER, TO, CELLPLUS, TO, ENDS 
+;---------------------------------------------------------------------- 
+; 
+; ok 2@ ( a1 a2 -- w1 w2 ) 
+; 
+HEADER "2@", "TWOAT", 
+    .word DUP, CELLPLUS, AT, SWAP, AT, ENDS 
+ 
 ;----------------------------------------------------------------------
 ;
 ; ok ( w1 w2 -- ) 
@@ -94,6 +108,6 @@ HEADER "D+", "DPLUS",
 ; ok ( w1 w2 w3 w4 -- w3 w4 - w1 w2 ) 
 ;
 HEADER "D-", "DMINUS",
-     .word ENDS 
+     .word TOR, SWAP, TOR, UMMINUS, RTO, RTO, UMMINUS, UMMINUS, ENDS 
      
  

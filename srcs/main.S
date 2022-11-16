@@ -53,6 +53,7 @@ e_dp:	.word 0 ; next free flash address for dictionary
 e_up:	.word 0 ; next free sram address for variables, backwards
 e_hp:	.word 0 ; next free sram address for variables, 
 e_ep:	.word 0 ; next free eprom address for values, 
+EP0 = .
 
 ;----------------------------------------------------------------------
 .section data

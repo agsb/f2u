@@ -1,5 +1,7 @@
 doubles.S:HEADER "4+", "FOURPLUS",
 doubles.S:HEADER "4-", "FOURMINUS",
+doubles.S:HEADER "2!", "TWOTO", 
+doubles.S:HEADER "2@", "TWOAT", 
 doubles.S:HEADER "2>R", "TWOTOR",
 doubles.S:HEADER "2R>", "TWORTO",
 doubles.S:HEADER "2R@", "TWORAT",
@@ -62,8 +64,8 @@ forth-leafs.S:HEADER "C@", "CAT", F_LEAP
 forth-leafs.S:HEADER "0", "ZERO", F_LEAP
 forth-leafs.S:HEADER "1", "ONE", F_LEAP
 forth-leafs.S:HEADER "2", "TWO", F_LEAP
-forth-twigs.S:HEADER "!E", "EETO", F_LEAP
-forth-twigs.S:HEADER "@E", "EEAT", F_LEAP
+forth-twigs.S:HEADER "!E", "TOEE", F_LEAP
+forth-twigs.S:HEADER "@E", "ATEE", F_LEAP
 forth-twigs.S:HEADER "NIP", "NIP",
 forth-twigs.S:HEADER "SWIP", "SWIP",
 forth-twigs.S:;HEADER "OVER", "OVER",
@@ -89,18 +91,24 @@ forth-twigs.S:HEADER "LATEST", "LATEST",
 forth-twigs.S:HEADER "STATE", "STATE",
 forth-twigs.S:HEADER "BASE", "BASE",
 forth-twigs.S:HEADER "EP", "EPP",
-forth-twigs.S:HEADER "DP", "DP",
-forth-twigs.S:HEADER "HP", "HP",
-forth-twigs.S:HEADER "UP", "UP",
+forth-twigs.S:HEADER "DP", "DPP",
+forth-twigs.S:HEADER "HP", "HPP",
+forth-twigs.S:HEADER "UP", "UPP",
+forth-twigs.S:HEADER "RS$", "RSIS",
+forth-twigs.S:HEADER "PS$", "PSIS",
+forth-twigs.S:HEADER "DEPTH", "DEPTH",
+forth-twigs.S:HEADER "RDEPTH", "RDEPTH",
 forth-twigs.S:HEADER "UHERE", "UHERE",
 forth-twigs.S:HEADER "HERE", "HERE",
 forth-twigs.S:HEADER "ALLOT", "ALLOT",
 forth-twigs.S:HEADER "ALIGN", "ALIGN",
+forth-twigs.S:HEADER "C,", "CCOMMA", F_IMMEDIATE
 forth-twigs.S:HEADER ",", "COMMA", F_IMMEDIATE
 forth-twigs.S:HEADER "<,", "TOMMA", F_IMMEDIATE
 forth-twigs.S:HEADER "DOVAR", "DOVAR",
 forth-twigs.S:HEADER "DOCON", "DOCON",
 forth-twigs.S:HEADER "DOTO", "DOTO",
+forth-twigs.S:HEADER "LITERAL", "LITERAL",
 forth-twigs.S:HEADER "COMP", "COMP", F_IMMEDIATE
 forth-twigs.S:HEADER "EXIT", "EXIT", F_IMMEDIATE
 forth-twigs.S:HEADER "EXEC", "EXEC", F_IMMEDIATE
@@ -130,6 +138,7 @@ forth-twigs.S:HEADER "LF", "LF",
 forth-twigs.S:HEADER "BL", "BL",
 forth-twigs.S:HEADER "DOT", "DOT",
 forth-twigs.S:HEADER "TYPE", "TYPE",
+forth-twigs.S:HEADER "UM-", "UMMINUS",
 forth-twigs.S:HEADER "U-", "ULESS",
 forth-twigs.S:HEADER "U+", "UMORE",
 forth-twigs.S:HEADER "U@", "UAT",
@@ -151,6 +160,8 @@ interpreter.S:HEADER "(parse)", "parse"
 interpreter.S:HEADER "(word)", "word" 
 interpreter.S:HEADER "(number)", "number" 
 interpreter.S:HEADER "(find)", "find" 
+interpreter.S:HEADER "MOVE", "MOVE", 
+interpreter.S:HEADER "FILL", "FILL", 
 interpreter.S:HEADER "]", "RBRAC", 
 interpreter.S:HEADER "[", "LBRAC", F_IMMEDIATE 
 interpreter.S:HEADER "TOGGLE", "TOGGLE", 
@@ -162,6 +173,8 @@ interpreter.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY",
 interpreter.S:HEADER "HANDLER", "HANDLER", 
 interpreter.S:HEADER "CATCH", "CATCH", 
 interpreter.S:HEADER "THROW", "THROW", 
+interpreter.S:HEADER "SPACE", "SPACE" 
+interpreter.S:HEADER "SPACES", "SPACES" 
 interpreter.S:HEADER "ABORT", "ABORT" 
 interpreter.S:HEADER "ACCEPT", "ACCEPT", 
 interpreter.S:HEADER "OVERT", "OVERT", 
@@ -171,10 +184,16 @@ interpreter.S:HEADER "SOURCE", "SOURCE",
 interpreter.S:HEADER "SOURCE+", "SOURCEPLUS", 
 interpreter.S:HEADER "REFILL", "REFILL", 
 interpreter.S:HEADER "PARSE", "PARSE" 
+interpreter.S:HEADER "(", "PAREN" 
+interpreter.S:HEADER ".(", "DOTPAREN" 
+interpreter.S:HEADER "S\"", "SQUOTE" 
+interpreter.S:HEADER ".\"", "DOTQUOTE" 
 interpreter.S:HEADER "PARSE-NAME", "PARSEN", 
 interpreter.S:HEADER "FIND-NAME", "FINDN", 
 interpreter.S:HEADER "NONAME", "NONAME", 
 interpreter.S:HEADER "CREATE", "CREATE", 
+interpreter.S:HEADER "DOES", "DOES", 
+interpreter.S:HEADER "DOES>", "DOESTO", F_IMMEDIATE 
 interpreter.S: HEADER "CONSTANT", "CONSTANT", 
 interpreter.S:HEADER "VARIABLE", "VARIABLE", 
 interpreter.S:HEADER "'", "TICK", 

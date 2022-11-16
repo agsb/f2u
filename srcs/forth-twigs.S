@@ -64,7 +64,7 @@
 ;
 ; ok ( w a -- ) 
 ; just write a word
-HEADER "!E", "EETO", F_LEAP
+HEADER "!E", "TOEE", F_LEAP
     .word OVER, OVER, CTOEE, ONE, PLUS, TOR, ENDIAN, RTO, CTOEE, ENDS   
 
 ;----------------------------------------------------------------------
@@ -75,7 +75,7 @@ HEADER "!E", "EETO", F_LEAP
 ;   w1 = b100, w2 = b300, w2 endian, w2 = 00b3
 ;   w1 w2 or
 ;
-HEADER "@E", "EEAT", F_LEAP
+HEADER "@E", "ATEE", F_LEAP
     .word DUP, CATEE, SWAP, CATEE
     .word LIT, 0x00FF, AND
     .word ENDIAN, SWAP
@@ -269,23 +269,58 @@ HEADER "EP", "EPP",
 ;
 ; ok ( -- w) 
 ;
-HEADER "DP", "DP",
+HEADER "DP", "DPP",
     .word LIT, VDP, ENDS
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w) 
 ;
-HEADER "HP", "HP",
+HEADER "HP", "HPP",
     .word LIT, VHP, ENDS
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w) 
 ; stack for variables from end of stacks
-HEADER "UP", "UP",
+;
+HEADER "UP", "UPP",
     .word LIT, VUP, ENDS
  
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "RS$", "RSIS",
+    .word LIT, RS0, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "PS$", "PSIS",
+    .word LIT, PS0, ENDS
+ 
+
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "DEPTH", "DEPTH",
+    .word PSAT, LIT, PS0, MINUS, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "RDEPTH", "RDEPTH",
+    .word RSAT, LIT, RS0, MINUS, ENDS
+ 
+
+;********************************************************************** 
+; 
+;   basic words
+;
 ;********************************************************************** 
 ; 
 ;   basic words
@@ -310,24 +345,24 @@ HEADER "UP", "UP",
 ; ok HERE ( -- w ) 
 ;
 HEADER "UHERE", "UHERE",
-    .word HP, AT, ENDS 
+    .word HPP, AT, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok HERE ( -- w ) 
 ;
 HEADER "HERE", "HERE",
-    .word DP, AT, ENDS 
+    .word DPP, AT, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ALLOT ( u -- ) 
 ; not standart: updates DP and UP
-;
+ 
 HEADER "ALLOT", "ALLOT",
     .word DUP
-    .word HP, AT, PLUS, HP, TO 
-    .word DP, AT, PLUS, DP, TO 
+    .word HPP, AT, PLUS, HPP, TO 
+    .word DPP, AT, PLUS, DPP, TO 
     .word ENDS 
  
 ;----------------------------------------------------------------------
@@ -336,14 +371,20 @@ HEADER "ALLOT", "ALLOT",
 ; not standart: updates DP and UP
 ;
 HEADER "ALIGN", "ALIGN",
-    .word HP, AT, ALIGNED, HP, TO
-    .word DP, AT, ALIGNED, DP, TO
+    .word HPP, AT, ALIGNED, HPP, TO
+    .word DPP, AT, ALIGNED, DPP, TO
     .word ENDS 
  
 ;----------------------------------------------------------------------
 ;
+; ok CCOMMA ( w -- ) 
+;
+HEADER "C,", "CCOMMA", F_IMMEDIATE
+    .word LIT, 0x00FF, AND, UHERE, TO, ONE, ALLOT, ENDS 
+ 
+;----------------------------------------------------------------------
+;
 ; ok COMMMA ( w -- ) 
-; not standart: updates DP and UP
 ;
 HEADER ",", "COMMA", F_IMMEDIATE
     .word UHERE, TO, CELL, ALLOT, ENDS 
@@ -351,7 +392,7 @@ HEADER ",", "COMMA", F_IMMEDIATE
 ;----------------------------------------------------------------------
 ;
 ; ok TOMMA ( a2 a1 -- ) 
-; not standart: do not update DP or UP, 
+; not standart, no updates DP or UP, 
 ;   just do TO (a2 a1-a2+UP -- )
 ;
 HEADER "<,", "TOMMA", F_IMMEDIATE
@@ -377,6 +418,13 @@ HEADER "DOCON", "DOCON",
 ;
 HEADER "DOTO", "DOTO",
     .word LIT, TO, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is LITERAL ( w -- ) 
+;
+HEADER "LITERAL", "LITERAL",
+    .word LIT, LIT, COMMA, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -604,12 +652,28 @@ HEADER "TYPE", "TYPE",
     .word DROP, DROP, ENDS 
   
 ;----------------------------------------------------------------------
+/*;
+: <# PAD HLD ! ; 
+: HOLD HLD @ CHAR- DUP HLD ! C! ; 
+: # 0 BASE @ UM/MOD >R BASE @ UM/MOD SWAP DIGIT HOLD R> ; 
+: #S BEGIN # 2DUP OR 0= UNTIL ; 
+: SIGN 0< IF [CHAR] - HOLD THEN ; 
+: #> 2DROP HLD @ PAD OVER - ;
+*/
+;----------------------------------------------------------------------
+;
+; is  ( u1 u2 -- u3 )
+;
+HEADER "UM-", "UMMINUS",
+1:
+    .word NEGATE, UMPLUS, ENDS
+;----------------------------------------------------------------------
 ;
 ; is  ( -- )
 ;   no checks
 ;
 HEADER "U-", "ULESS",
-    .word UP, AT, CELL, MINUS, DUP, UP, TO, ENDS
+    .word UPP, AT, CELL, MINUS, DUP, UPP, TO, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -617,7 +681,7 @@ HEADER "U-", "ULESS",
 ;   no checks
 ;
 HEADER "U+", "UMORE",
-    .word UP, AT, CELL, PLUS, DUP, UP, TO, ENDS
+    .word UPP, AT, CELL, PLUS, DUP, UPP, TO, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -625,7 +689,7 @@ HEADER "U+", "UMORE",
 ;
 HEADER "U@", "UAT",
 1:
-    .word UP, AT, ENDS
+    .word UPP, AT, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -633,7 +697,7 @@ HEADER "U@", "UAT",
 ;
 HEADER "U!", "UTO",
 1:
-    .word UP, TO, ENDS
+    .word UPP, TO, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -641,7 +705,7 @@ HEADER "U!", "UTO",
 ;
 HEADER ">U", "USV",
 1:
-    .word UP, AT, TO, ENDS
+    .word UPP, AT, TO, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -649,7 +713,7 @@ HEADER ">U", "USV",
 ;
 HEADER "U>", "ULD",
 1:
-    .word UP, AT, AT, ENDS
+    .word UPP, AT, AT, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -670,40 +734,40 @@ HEADER "COLD0", "COLDZERO", F_LEAP
 ;----------------------------------------------------------------------
 ;
 HEADER "EELOAD", "EELOAD", F_LEAP
-    .word ZERO, DUP, EEAT, LIT, VOID, TO 
-    .word TWO, PLUS, DUP, EEAT, LIT, SEED, TO 
-    .word TWO, PLUS, DUP, EEAT, LIT, TURN, TO 
-    .word TWO, PLUS, DUP, EEAT, LIT, REST, TO 
-    .word TWO, PLUS, DUP, EEAT, LIT, LAST, TO 
-    .word TWO, PLUS, DUP, EEAT, LIT, LIVE, TO 
+    .word ZERO, DUP, ATEE, LIT, VOID, TO 
+    .word TWO, PLUS, DUP, ATEE, LIT, SEED, TO 
+    .word TWO, PLUS, DUP, ATEE, LIT, TURN, TO 
+    .word TWO, PLUS, DUP, ATEE, LIT, REST, TO 
+    .word TWO, PLUS, DUP, ATEE, LIT, LAST, TO 
+    .word TWO, PLUS, DUP, ATEE, LIT, LIVE, TO 
 
-    .word TWO, PLUS, DUP, EEAT, LIT, VDP, TO 
-    .word TWO, PLUS, DUP, EEAT, LIT, VEP, TO 
-    .word TWO, PLUS, DUP, EEAT, LIT, VUP, TO 
-    .word TWO, PLUS, DUP, EEAT, LIT, VHP, TO 
+    .word TWO, PLUS, DUP, ATEE, LIT, VDP, TO 
+    .word TWO, PLUS, DUP, ATEE, LIT, VEP, TO 
+    .word TWO, PLUS, DUP, ATEE, LIT, VUP, TO 
+    .word TWO, PLUS, DUP, ATEE, LIT, VHP, TO 
     .word ENDS
 
 ;----------------------------------------------------------------------
 ;
 HEADER "EESAVE", "EESAVE", F_LEAP
-    .word ZERO, DUP, LIT, VOID, AT, SWAP, EETO 
-    .word TWO, PLUS, DUP, LIT, SEED, AT, SWAP, EETO 
-    .word TWO, PLUS, DUP, LIT, TURN, AT, SWAP, EETO 
-    .word TWO, PLUS, DUP, LIT, REST, AT, SWAP, EETO 
-    .word TWO, PLUS, DUP, LIT, LAST, AT, SWAP, EETO 
-    .word TWO, PLUS, DUP, LIT, LIVE, AT, SWAP, EETO 
+    .word ZERO, DUP, LIT, VOID, AT, SWAP, TOEE 
+    .word TWO, PLUS, DUP, LIT, SEED, AT, SWAP, TOEE 
+    .word TWO, PLUS, DUP, LIT, TURN, AT, SWAP, TOEE 
+    .word TWO, PLUS, DUP, LIT, REST, AT, SWAP, TOEE 
+    .word TWO, PLUS, DUP, LIT, LAST, AT, SWAP, TOEE 
+    .word TWO, PLUS, DUP, LIT, LIVE, AT, SWAP, TOEE 
 
-    .word TWO, PLUS, DUP, LIT, VDP, AT, SWAP, EETO 
-    .word TWO, PLUS, DUP, LIT, VEP, AT, SWAP, EETO 
-    .word TWO, PLUS, DUP, LIT, VUP, AT, SWAP, EETO 
-    .word TWO, PLUS, DUP, LIT, VHP, AT, SWAP, EETO 
+    .word TWO, PLUS, DUP, LIT, VDP, AT, SWAP, TOEE 
+    .word TWO, PLUS, DUP, LIT, VEP, AT, SWAP, TOEE 
+    .word TWO, PLUS, DUP, LIT, VUP, AT, SWAP, TOEE 
+    .word TWO, PLUS, DUP, LIT, VHP, AT, SWAP, TOEE 
     .word ENDS
 
 ;----------------------------------------------------------------------
 ;
 HEADER "COLD", "COLD", F_LEAP
     .word EELOAD
-    .word LIT, LIVE, ZEQU, ZBRANCH, safe
+    .word LIT, LIVE, ZEQU, ZBRANCH, _safe
     .word COLDZERO, EESAVE  
 _safe:    
     .word LIT, RS0, RSTO
