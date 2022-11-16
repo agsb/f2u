@@ -14,12 +14,12 @@
 This is a evolution from what I learning with u2forth, ATMEGA8, gcc assembler and forth implementations as 328eforth, eforth, amforth, avr-forth, gforth, flashforth, punyforth, etc 
 
 Some special insights from 
-  jonasforth (https://rwmj.wordpress.com/2010/08/07/jonesforth-git-repository/ https://github.com/nornagon/jonesforth),
-  sectorforth (https://github.com/cesarblum/sectorforth), 
-  lbforth (https://github.com/larsbrinkhoff/lbForth/),
-  polyForth (https://www.greenarraychips.com/home/documents/greg/DB005-120825-PF-REF.pdf),
-  muForth (https://muforth.nimblemachines.com/)
-  and ...
+    jonasforth (https://rwmj.wordpress.com/2010/08/07/jonesforth-git-repository/ https://github.com/nornagon/jonesforth),
+    sectorforth (https://github.com/cesarblum/sectorforth), 
+    lbforth (https://github.com/larsbrinkhoff/lbForth/),
+    polyForth (https://www.greenarraychips.com/home/documents/greg/DB005-120825-PF-REF.pdf),
+    muForth (https://muforth.nimblemachines.com/)
+    and ...
 
 (I need to learn how to use and format with .md)
 
@@ -39,9 +39,12 @@ The dictionary is a linked list of words, each with name and code. It have two t
 
 I want a forth with:
 
+- use the minimal indirect thread code model, [MITC](https://github.com/agsb/f2u/blob/main/small%20MITC%20Forth%20en.pdf)
+
 - a minimal inner interpreter and primitives words (clock, uart, interrupts, stacks, math, moves) dependent of a MCU family;
 
 - all compound words independent of any specific MCU family, without any assembler specifc code inline, like a imutable list with rellocable references.
+
 
 The dictionary then will a unique linked list composed by  a) a link for previous word's link, b) a byte with size of name plus flags, c) a sequence of characters of name and d) a sequence of, or references or assembler code.
 
