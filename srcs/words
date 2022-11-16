@@ -94,8 +94,8 @@ forth-twigs.S:HEADER "EP", "EPP",
 forth-twigs.S:HEADER "DP", "DPP",
 forth-twigs.S:HEADER "HP", "HPP",
 forth-twigs.S:HEADER "UP", "UPP",
-forth-twigs.S:HEADER "RS$", "RSIS",
-forth-twigs.S:HEADER "PS$", "PSIS",
+forth-twigs.S:;HEADER "RS$", "RSIS",
+forth-twigs.S:;HEADER "PS$", "PSIS",
 forth-twigs.S:HEADER "DEPTH", "DEPTH",
 forth-twigs.S:HEADER "RDEPTH", "RDEPTH",
 forth-twigs.S:HEADER "UHERE", "UHERE",
@@ -107,12 +107,17 @@ forth-twigs.S:HEADER ",", "COMMA", F_IMMEDIATE
 forth-twigs.S:HEADER "<,", "TOMMA", F_IMMEDIATE
 forth-twigs.S:HEADER "DOVAR", "DOVAR",
 forth-twigs.S:HEADER "DOCON", "DOCON",
+forth-twigs.S:HEADER "DOAT", "DOAT",
 forth-twigs.S:HEADER "DOTO", "DOTO",
 forth-twigs.S:HEADER "LITERAL", "LITERAL",
 forth-twigs.S:HEADER "COMP", "COMP", F_IMMEDIATE
 forth-twigs.S:HEADER "EXIT", "EXIT", F_IMMEDIATE
 forth-twigs.S:HEADER "EXEC", "EXEC", F_IMMEDIATE
 forth-twigs.S:HEADER "TAIL", "TAIL", 
+forth-twigs.S:HEADER "VALUE", "VALUE", 
+forth-twigs.S:HEADER "TO", "TOVALUE", 
+forth-twigs.S:HEADER "DEFER", "DEFER", 
+forth-twigs.S:HEADER "IS", "ISDEFER", 
 forth-twigs.S:HEADER "MARKTO", "MARKTO", F_IMMEDIATE,
 forth-twigs.S:HEADER "TOMARK", "TOMARK", F_IMMEDIATE,
 forth-twigs.S:HEADER "BEGIN", "BEGIN", F_IMMEDIATE,
@@ -133,6 +138,10 @@ forth-twigs.S:HEADER "BACK", "BACK", F_IMMEDIATE,
 forth-twigs.S:HEADER "FOR", "FOR", F_IMMEDIATE
 forth-twigs.S:HEADER "TXEN", "TXEN", 
 forth-twigs.S:HEADER "NEXT", "NEXT", F_IMMEDIATE
+forth-twigs.S:HEADER "CASE", "CASE", F_IMMEDIATE
+forth-twigs.S:HEADER "OF", "OF", F_IMMEDIATE
+forth-twigs.S:HEADER "ENDOF", "ENDOF", F_IMMEDIATE
+forth-twigs.S:HEADER "ENDCASE", "ENDCASE", F_IMMEDIATE
 forth-twigs.S:HEADER "CR", "CR",
 forth-twigs.S:HEADER "LF", "LF",
 forth-twigs.S:HEADER "BL", "BL",

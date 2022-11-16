@@ -323,7 +323,7 @@ _iffalse:
 ;
 HEADER "0=", "ZEQU", F_LEAP
     NOOP 
-    adiw tos_low, 0
+    or tos_low, tos_high
     brbs BIT_ZERO, _iftrue
     brbc BIT_ZERO, _iffalse
     POON
@@ -331,7 +331,7 @@ HEADER "0=", "ZEQU", F_LEAP
 ;----------------------------------------------------------------------
 ;
 ; ok 0< 
-;
+;   using 2's complement, negative always have 0x8000
 HEADER "0<", "ZLTH", F_LEAP
     NOOP 
     ; 0x80
@@ -440,7 +440,7 @@ HEADER "R@", "RAT", F_LEAP
  
 ;----------------------------------------------------------------------
 ;
-; ok ( rsp -- ) 
+; ok ( rsp -- w )  
 ;
 HEADER "RS!", "RSTO", F_LEAP
     NOOP 
@@ -450,7 +450,7 @@ HEADER "RS!", "RSTO", F_LEAP
  
 ;----------------------------------------------------------------------
 ;
-; ok ( psp -- ) 
+; ok ( psp -- w ) 
 ;
 HEADER "PS!", "PSTO", F_LEAP
     NOOP 
@@ -703,8 +703,8 @@ HEADER "0BRANCH", "ZBRANCH", F_LEAP
     NOOP 
     movw nos_low, tos_low
     pspull tos_low, tos_high
-    cp nos_low, nos_high
-    brbs BIT_ZERO, _branch 
+    or nos_low, nos_high
+    breq _branch 
     ; skips
     rspull zpm_low, zpm_high 
     adiw zpm_low, 2 

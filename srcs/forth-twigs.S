@@ -103,7 +103,7 @@ HEADER "SWIP", "SWIP",
 ;----------------------------------------------------------------------
 ;
 ; ok ( w2 w1 -- w2 w1 w2 ) 
-;
+; moved to primitives
 ;HEADER "OVER", "OVER",
 ;    .word TOR, DUP, RTO, SWAP, ENDS 
  
@@ -291,15 +291,15 @@ HEADER "UP", "UPP",
 ;
 ; ok ( -- w) 
 ;
-HEADER "RS$", "RSIS",
-    .word LIT, RS0, ENDS
+;HEADER "RS$", "RSIS",
+;    .word LIT, RS0, ENDS
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w) 
 ;
-HEADER "PS$", "PSIS",
-    .word LIT, PS0, ENDS
+;HEADER "PS$", "PSIS",
+;    .word LIT, PS0, ENDS
  
 
 ;----------------------------------------------------------------------
@@ -398,26 +398,35 @@ HEADER ",", "COMMA", F_IMMEDIATE
 HEADER "<,", "TOMMA", F_IMMEDIATE
     .word OVER, MINUS, UHERE, PLUS, TO, ENDS 
  
-;----------------------------------------------------------------------
+;-------------------------------------'---------------------------------
 ;
-; is DOVAR ( -- a )
+; is DOVAR ( -- a ), place the address of next cell into stack, 
+;   R> DUP 2+ >R
 ;
 HEADER "DOVAR", "DOVAR",
-    .word LIT, ENDS 
+    .word RTO, DUP, TWOPLUS, TOR, ENDS 
  
-;----------------------------------------------------------------------
+;-------------------------------------'---------------------------------
 ;
-; is DOCON ( -- w ) 
-;       
+; is DOCON ( -- a ), place the contents of next cell into stack, 
+;   R> DUP 2+ >R @
+;
 HEADER "DOCON", "DOCON",
-    .word LIT, AT, ENDS 
+    .word DOVAR, AT, ENDS 
+
+;----------------------------------------------------------------------
+;
+; is DOAT ( -- w ) indirect at, R> DUP 2+ >R @ @  
+;       
+HEADER "DOAT", "DOAT",
+    .word DOCON, AT, ENDS 
  
 ;----------------------------------------------------------------------
 ;
-; is DOTO ( w -- ) 
+; is DOTO ( w -- ) indirect to, R> DUP 2+ >R @ ! 
 ;
 HEADER "DOTO", "DOTO",
-    .word LIT, TO, ENDS 
+    .word DOCON, TO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -454,6 +463,34 @@ HEADER "EXEC", "EXEC", F_IMMEDIATE
 ;
 HEADER "TAIL", "TAIL", 
     .word RAT, CELL, MINUS, RTO, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok make a value 
+;
+HEADER "VALUE", "VALUE", 
+    .word CREATE, COMMA, DOESTO, AT, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok make a to value 
+;
+HEADER "TO", "TOVALUE", 
+    .word FIND, TO, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok make a value 
+;
+HEADER "DEFER", "DEFER", 
+    .word CREATE, ABORT, DOESTO, AT, EXEC, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok make a to value 
+;
+HEADER "IS", "ISDEFER", 
+    .word FIND, TO, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -610,6 +647,50 @@ HEADER "TXEN", "TXEN",
 ;
 HEADER "NEXT", "NEXT", F_IMMEDIATE
     .word COMP, TXEN, UNLESS, ENDS
+
+;----------------------------------------------------------------------
+; rever zzzz
+/*
+\ CASE's implementation imported from Gforth.
+\
+\ Usage
+\ ( n )
+\ CASE
+\    1 OF .... ENDOF
+\    2 OF .... ENDOF
+\    OTHERWISE
+\ END-CASE
+\
+\ Remember not to consume the element in the OTHERWISE case.
+*/
+;----------------------------------------------------------------------
+;
+; is CASE ( a -- )
+;
+HEADER "CASE", "CASE", F_IMMEDIATE
+    .word LIT, 0x00, ENDS
+
+;----------------------------------------------------------------------
+;
+; is OF ( -- )
+;
+HEADER "OF", "OF", F_IMMEDIATE
+    .word ONEPLUS, TOR, POSTPONE, OVER, POSTPONE, EQUAL, POSTPONE, IF, POSTPONE, DROP, RTO, ENDS
+
+;----------------------------------------------------------------------
+;
+; is ENDOF ( -- )
+;
+HEADER "ENDOF", "ENDOF", F_IMMEDIATE
+    .word TOR, POSTPONE, ELSE, RTO, ENDS
+
+;----------------------------------------------------------------------
+;
+; is ENDCASE ( a -- ) 
+;
+HEADER "ENDCASE", "ENDCASE", F_IMMEDIATE
+    .word POSTPONE, DROP 
+    .word FOR, POSTPONE, THEN, NEXT, ENDS
 
 ;----------------------------------------------------------------------
 ;
