@@ -14,12 +14,12 @@
 This is a evolution from what I learning with u2forth, ATMEGA8, gcc assembler and forth implementations as 328eforth, eforth, amforth, avr-forth, gforth, flashforth, punyforth, etc 
 
 Some special insights from 
-    jonasforth (https://rwmj.wordpress.com/2010/08/07/jonesforth-git-repository/ https://github.com/nornagon/jonesforth),
-    sectorforth (https://github.com/cesarblum/sectorforth), 
-    lbforth (https://github.com/larsbrinkhoff/lbForth/),
-    polyForth (https://www.greenarraychips.com/home/documents/greg/DB005-120825-PF-REF.pdf),
-    muForth (https://muforth.nimblemachines.com/)
-    and ...
+        jonasforth (https://rwmj.wordpress.com/2010/08/07/jonesforth-git-repository/ https://github.com/nornagon/jonesforth),
+        sectorforth (https://github.com/cesarblum/sectorforth), 
+        lbforth (https://github.com/larsbrinkhoff/lbForth/),
+        polyForth (https://www.greenarraychips.com/home/documents/greg/DB005-120825-PF-REF.pdf),
+        muForth (https://muforth.nimblemachines.com/)
+        and ...
 
 (I need to learn how to use and format with .md)
 
@@ -60,7 +60,7 @@ A MCU 32 bits, as ARM Cortex-M4 STM32L4+ with 2048k bytes flash and 640k bytes s
 
 But my choice for design is a small AVR Atmega8, a complete RISC MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, with 32 (R0 to R31) 8 bits registers, with some that could be used as eight (R16 to R31) 16 bits registers. 
 
-UPDATE: will change from ATMEGA8 to ATMEGA328 if need of more flash for instructions (4k words to 16k words) and SRAM memory, not yet
+UPDATE: changed from ATMEGA8 to ATMEGA328, for more flash for instructions and SRAM memory.
 
 ## A challenge.
 
