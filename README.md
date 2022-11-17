@@ -13,14 +13,6 @@
 
 This is a evolution from what I learning with u2forth, ATMEGA8, gcc assembler and forth implementations as 328eforth, eforth, amforth, avr-forth, gforth, flashforth, punyforth, etc 
 
-Some special insights from 
-        jonasforth (https://rwmj.wordpress.com/2010/08/07/jonesforth-git-repository/ https://github.com/nornagon/jonesforth),
-        sectorforth (https://github.com/cesarblum/sectorforth), 
-        lbforth (https://github.com/larsbrinkhoff/lbForth/),
-        polyForth (https://www.greenarraychips.com/home/documents/greg/DB005-120825-PF-REF.pdf),
-        muForth (https://muforth.nimblemachines.com/)
-        and ...
-
 (I need to learn how to use and format with .md)
 
 https://github.com/matiassingers/awesome-readme
@@ -44,7 +36,6 @@ I want a forth with:
 - a minimal inner interpreter and primitives words (clock, uart, interrupts, stacks, math, moves) dependent of a MCU family;
 
 - all compound words independent of any specific MCU family, without any assembler specifc code inline, like a imutable list with rellocable references.
-
 
 The dictionary then will a unique linked list composed by  a) a link for previous word's link, b) a byte with size of name plus flags, c) a sequence of characters of name and d) a sequence of, or references or assembler code.
 
@@ -80,15 +71,27 @@ There are also Forth implementations for many AVR RISCs, mostly for the larger o
 
 ## ForthS
 
-amForth: Matthias Trute - http://amforth.sourceforge.net/
+Some special insights from 
 
-FlashForth: Mikael Nordman - http://flashforth.sourceforge.net/
+[jonasforth, Richard WM Jones](https://rwmj.wordpress.com/2010/08/07/jonesforth-git-repository/)
+ 
+[sectorforth, Cesar Blum](https://github.com/cesarblum/sectorforth)
 
-CamelForth: Brad Rodriguez - http://www.camelforth.com
+[lbforth, Lars Brinhhoff](https://github.com/larsbrinkhoff/lbForth/)
 
-avrforth: Daniel Kruszyna - http://krue.net/avrforth/
+[polyForth, GreenArrays](https://www.greenarraychips.com/home/documents/greg/DB005-120825-PF-REF.pdf)
 
-Fig-Forth: John S. James - http://www.forth.org/fig-forth/fig-forth_PDP-11.pdf
+[muForth, David Frech](https://muforth.nimblemachines.com/)
+
+[amForth, Matthias Trute](http://amforth.sourceforge.net/)
+
+[flashforth, Mikael Nordman](http://flashforth.sourceforge.net/)
+
+[camelforth, Brad Rodriguez](http://www.camelforth.com)
+
+[avrforth, Daniel Kruszyna](http://krue.net/avrforth/)
+
+[fig-forth, John S. James](http://www.forth.org/fig-forth/fig-forth_PDP-11.pdf)
 
 ## More Docs ?
 
