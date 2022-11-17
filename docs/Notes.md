@@ -4,7 +4,21 @@
 
 *still lots of english errors, please correct me*
 
-# 12/11/2023
+# 16/11/2022
+
+- Atmega8 flash almost full ~ 3604 words ~ and still not a complete usefull set of word, then time to change all setup to atmega328
+
+- most of core words done as pre-compiled assembler references.
+
+- review of memory model (again!), to easy compile in sram using address of flash, two pointers DP in flash and HP in sram, keep offset constant.
+  
+          SRAM   |0x0 registers |0x20 ioports |0x100=HP0 --- free sram --- | <-- UP0=| <-- VARS -- |=TIB0 -->  | <-- PS0=| <-- RS0=| <-- SP0=|
+          FLASH  |0x0 bios | Forth dictionary |=DP --> RWM --> | NRWM optiboot |
+          EEPROM |0x0 keep variables | --> |
+
+- concept of indirect data reference, as Harvard architeture, variables and values are stored in sram, the dictionary keeps a reference for where the value is, not the value as is.
+
+# 12/11/2022
 
 - made for new flags, 0x80 is F_RESERVED, to identify the byte size+flags,
     0x40 is IMMEDIATE, 0X20 is COMPILE_ONLY, 0x10 is HIDDEN. 
