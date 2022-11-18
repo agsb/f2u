@@ -25,7 +25,7 @@ defcode:  ; one macro NEXT to all primitives
 OBS: classic format
 ```
 
-in this:
+in f2U:
 ---
 ```
 defword:  ; no docol, minus one reference per compound word
@@ -172,7 +172,7 @@ DO_EXIT:  ; 6
 ---
 # 4. In this F2U implementation for ATMEGA328, ATMEGA8 
   
-All primitive words use a branch and link model, with next reference explicity keeped into a reserved register to later return.
+All primitive words use a jump and link model, ever finish with 'jmp _unnest'.
 
 All compound words use a call and return model, with next reference pushed into and pulled from the return stack.
 
@@ -185,7 +185,7 @@ This inner interpreters only works for program memory (flash), due specific addr
  ; inner interpreter,
  ; it is also a primitive word
  ; (mcu cycles)
- ; also called semis
+ ; also called unnest, semis
  HEADER "ENDS", "ENDS"
  ; does nothing and mark as primitive
     NOOP
@@ -208,7 +208,7 @@ This inner interpreters only works for program memory (flash), due specific addr
  _void:     ;(3)
     mov _work_, wrk_low
     or _work_, wrk_high
-    brbs BIT_ZERO, _branch
+    brbs BIT_ZERO, _jump
 
  ; else is a reference
  _nest:    ;(7)
@@ -218,7 +218,7 @@ This inner interpreters only works for program memory (flash), due specific addr
     rjmp _next
 
  ; then branch, for exec it
- _branch:   ;(2)
+ _jump:   ;(2)
     ijmp
 
  ; then link, for continue
