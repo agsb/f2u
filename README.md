@@ -25,7 +25,7 @@ https://silentlad.com/how-to-write-beautiful-and-meaningful-readme.md
 
 Forth is language based in thread code, with a dictionary of words as named routines and two stacks for arguments in a forever read–eval–print-loop.
 
-The dictionary is a linked list of words, each with name and code. It have two types of words, those called primitives, ad leaves, which are coded in specific CPU or MCU instructions, and those called compounds, ad twigs, which are sequences with references to words.
+The dictionary is a linked list of words, each with name and code. It have two types of words, those called primitives, aka leafs (leaves), which are coded in specific CPU or MCU instructions, and those called compounds, aka twigs, which are sequences with references to words.
  
 *"A most important aspect of FORTH is its ability to define new words. New definitions and code are devised continously. Likewise, new constants or variables are created.", Rather, Moore, Hollis, https://library.nrao.edu/public/memos/comp/CDIR_17.pdf*
 
@@ -33,11 +33,11 @@ I want a forth with:
 
 - use the minimal indirect thread code model, [MITC](https://github.com/agsb/f2u/blob/main/small%20MITC%20Forth%20en.pdf)
 
-- a minimal inner interpreter and primitives words (clock, uart, interrupts, stacks, math, moves) dependent of a MCU family;
+- the minimal inner interpreter and primitives words (clock, uart, interrupts, stacks, math, moves) dependent of a MCU family;
 
 - all compound words independent of any specific MCU family, without any assembler specifc code inline, like a imutable list with rellocable references.
 
-The dictionary then will a unique linked list composed by  a) a link for previous word's link, b) a byte with size of name plus flags, c) a sequence of characters of name and d) a sequence of, or references or assembler code.
+The dictionary is a unique linked list composed by:  a) a link for previous word's link, b) a byte with size of name plus flags, c) a sequence of characters of name and d) a sequence of, or references or assembler code.
 
 The word names, until 15 characters, are full preserved, not hashed, not lowered, for trace back compound words, word by word.
 
