@@ -41,6 +41,8 @@ The dictionary is a unique linked list composed by:  a) a link for previous word
 
 The word names, until 15 characters, are full preserved, not hashed, not lowered, for trace back compound words, word by word.
 
+I like use the terms leaf for primitives words and twig for compound words, as in https://muforth.nimblemachines.com/threaded-code/.
+
 # Size or Speed
 
 *"Keep it Simple"*
