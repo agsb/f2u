@@ -211,7 +211,7 @@ _does_spm:
 #ifdef atmega328
 ; for a atmega328 with optiboot 512b
 #define OPTI_DO_SPM_SHORT 0x7fd2    ; in bytes
-    call OPTI_DO_SPM_SHORT
+    rcall OPTI_DO_SPM_SHORT
 #endif
 
     out __SREG__, r2

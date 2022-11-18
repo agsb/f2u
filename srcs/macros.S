@@ -37,7 +37,7 @@
 ; all defines, equs, macros are defined in this file
 ;
 
-#define atmega8
+#define atmega328
 
 ;----------------------------------------------------------------------
 ;
@@ -259,19 +259,6 @@ WORD_SIZE = 15
 ; default base
 ;
 BASE_DEFAULT = 16
-
-;----------------------------------------------------------------------
-;   reserved eeprom used  
-;
-eeprom = 0x00
-e_void = eeprom + 0  ; always zero
-e_seed = eeprom + 2  ; seed for random
-e_turn = eeprom + 4  ; routine after boot
-e_rest = eeprom + 6  ; routine before reset
-e_list = eeprom + 8  ; link to last word in dictionary 
-e_last = eeprom + 10 ; next free flash address for dictionary
-e_heap = eeprom + 12 ; next free sram address for variables, as stack
-e_keep = eeprom + 14 ; next free eprom address for values, as stack
 
 ;----------------------------------------------------------------------
 ;   words can be 1 to 15 chars lenght, 

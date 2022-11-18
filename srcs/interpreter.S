@@ -1000,6 +1000,15 @@ HEADER "FIND-NAME", "FINDN",
  
 ;---------------------------------------------------------------------- 
 ; 
+; is FIND ( "ccc<chars>ccc" -- a 0 | xt -1 | xt 1 ) 
+; 
+HEADER "FIND", "FIND", 
+    .word PARSEN, FINDN
+    .word ZBRANCH, ABORT 
+    .word DROP, ENDS 
+ 
+;---------------------------------------------------------------------- 
+; 
 ; is  NONAME ( "" ), toin = 0 
 ; 
 HEADER "NONAME", "NONAME", 

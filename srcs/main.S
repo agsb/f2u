@@ -45,13 +45,12 @@
 .org 0x0
 
 e_void:	.word 0 ; always zero
-e_seed:	.word 0 ; seed for random
+e_live:	.word 0 ; seed for random
 e_turn:	.word 0 ; routine after boot
 e_rest:	.word 0 ; routine before reset
 e_last:	.word 0 ; link to last word in dictionary
 e_dp:	.word 0 ; next free flash address for dictionary
 e_up:	.word 0 ; next free sram address for variables, backwards
-e_hp:	.word 0 ; next free sram address for variables, 
 e_ep:	.word 0 ; next free eprom address for values, 
 EP0 = .
 
@@ -60,30 +59,45 @@ EP0 = .
 .org SRAM_START
 
 ;----------------------------------------------------------------------
-; those are non volatile, must be saved in eeprom
+; Terminal input buffer
+TIB0:	.space TIB_SIZE, 0x0
+
+;----------------------------------------------------------------------
+; Stacks
+SPZ:    .space STACK_SIZE, 0x0
+SP0 = .
+PSZ:    .space STACK_SIZE, 0x0
+PS0 = .
+RSZ:    .space STACK_SIZE, 0x0
+RS0 = .
+
+;----------------------------------------------------------------------
+; non volatile, must be saved in eeprom
 VOID:	.word 0		; always 0x0000
-SEED:	.word 0		; seed for pseudo random
+LIVE:   .word 0     ; count boots
 
 TURN:	.word 0		; routine to run after boot
 REST:	.word 0		; routine to run before reset
 
 LAST:	.word 0		; reference to latest word in dictionary
-LIVE:   .word 0     ; count boots
-
 VDP:	.word 0		; next free cell in flash dictionary
-VEP: 	.word 0		; next free cell in eeprom
 
 VUP:    .word 0     ; next free cell in static ram, backwards
-VHP:    .word 0     ; next free cell in static ram, forward
-
+VEP: 	.word 0		; next free cell in eeprom
 
 ;----------------------------------------------------------------------
 ; those are volatile, dont care
+VHP:    .word 0     ; next free cell in static ram, forward
+SEED:   .word 0     ; random seed
+
 STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile
 RADX:	.word 0		; numeric radix for convertion
 
 TOIN:   .word 0     ; offset in TIB
 SPAN:   .word 0     ; offsets
+
+HLD:    .word 0     ; picture number buffer
+HLDS:   .word 0     ; picture number cursor
 
 TMP0:   .word 0     ; temporary
 TMP1:   .word 0     ; temporary
@@ -91,17 +105,11 @@ TMP2:   .word 0     ; temporary
 TMP3:   .word 0     ; temporary
 
 ;----------------------------------------------------------------------
-TIB0:	.space TIB_SIZE, 0x0
 UH0 = .
 
-;----------------------------------------------------------------------
-; stacks at end of sram
-SP0 = SRAM_END
-PS0 = SP0 - STACK_SIZE
-RS0 = PS0 - STACK_SIZE
-US0 = RS0 - STACK_SIZE
+US0 = SRAM_END
 
-;.equ free_sram, US0 - UH0
+;.equ is_free_sram,  US0 - UH0
 
 ;----------------------------------------------------------------------
 ;
@@ -134,8 +142,8 @@ US0 = RS0 - STACK_SIZE
 #include "doubles.S"
 
 ;----------------------------------------------------------------------
-;.p2align 1, 0x00
-;#include "math.S"
+.p2align 1, 0x00
+#include "math.S"
 
 ;----------------------------------------------------------------------
 .p2align 1, 0x00
