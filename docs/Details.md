@@ -18,38 +18,39 @@ Details.md
 ## For Forth,
 
 - all dictionary in flash;
-- all constants in flash;
+- all forth constants in flash;
 - all values and variables in sram;
-- eeprom preserves constants;
+- eeprom preserves some variables and constants;
 - a cell is 16 bits;
 - little endian, low byte at low address;
 - a char is ASCII 7 bits, one byte at SRAM, one cell at stacks.
-- maximum word lenght is 15;
-- four bits flags (IMMEDIATE, COMPILE_ONLY, HIDDEN/SMUDGE, LEAP) per word;
-
-- word names are padded with space (0x20)
+- _maximum word lenght is 15_;
+- four bits flags (SPECIAL, IMMEDIATE, COMPILE_ONLY, HIDDEN/SMUDGE) per word;
+- _word names are padded with space (0x20)_
 - numbers are signed two-complement;
 - all stacks are 18 words (cells);
-- TIB, terminal input buffer is 72 bytes
-- flash page buffer is 64 bytes, buffer for
-- PAD, offset is 18 bytes;
-- all buffers ends in \0;
+- _TIB, terminal input buffer is 72 bytes_;
+- flash page buffer syncronous in sram;
+- PAD, offset is 36 bytes (2*16+4);
+- _all buffers ends in \0;
 - one interrupt is timer0;
 - still interrupts can't be nested, SREG breaks;
   
 ## Forth non conforming,
 
 - SMUGDE or HIDDEN bit not used, dictionary only have complete words.
+- SPECIAL marks a byte as size and flags;
 - LEAP marks a pure assembler chain routine with no calls or jumps.
 - primitive (Leaf) routine does not do any calls. 
 - compound (Twig) routines could do any calls.
-- index routines FOR NEXT counts downwards until 0, easy ever, exact as C: for (n=NNNN; n != 0 ; n--) { ~~~ }
+- FOR NEXT counts downwards until 0, easy ever;
 - no bounds check, none.
 - compare bytes: COMPARE return FALSE or TRUE, only;
-- move bytes : move bytes, forward until counter is zero
+- copy bytes : copy bytes, forward until counter is zero
 - skip bytes : compare bytes, if equal then increments else return
 - scan bytes : compare bytes, if not equal then increments else return
 - word names lenght can be 1 to 15, padded with space (0x20);
+
 
 ## Details on Atmega*8
     
@@ -69,7 +70,6 @@ Details.md
 - reserved r2, as generic _SREG_ 
 - reserved r3, as timer0 offset delay
 - registers r4:r5 reserved for keep 1ms clock ticks counter
-
 - reserved r6 as always _zero_, keep by timer0 interrupt ;)
 - register r7 as always _work_, scratch
 
