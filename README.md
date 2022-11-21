@@ -39,7 +39,7 @@ I want a forth with:
 
 The dictionary is a unique linked list composed by:  a) a link for previous word's link, b) a byte with size of name plus flags, c) a sequence of characters of name and d) a sequence of, or references or assembler code.
 
-The word names, until 15 characters, are full preserved, not hashed, not lowered, for trace back compound words, word by word.
+The word names, until 15 characters, are full preserved, not hashed, not lowered, for trace back compound words, word by word. As well, 15 letters are enought to almost 86% of [common words](https://digitalcommons.butler.edu/cgi/viewcontent.cgi?article=1116&context=wordways) in [many languages](https://arxiv.org/ftp/arxiv/papers/1207/1207.2334.pdf)
 
 I like use the terms leaf for primitives words and twig for compound words, as in https://muforth.nimblemachines.com/threaded-code/.
 
