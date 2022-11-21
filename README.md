@@ -21,13 +21,13 @@ https://silentlad.com/how-to-write-beautiful-and-meaningful-readme.md
 
 # Introduction
 
-*In the chat session Chuck was asked, "How did you come to the conclusion that Forth was too complex, and that sourceless programming was your next move?" His reply was, "Maybe by reading the Forth Standard." [Moore, 2002] <http://www.ultratechnology.com/levels.htm>*
+*In the chat session Chuck was asked, "How did you come to the conclusion that Forth was too complex, and that sourceless programming was your next move?" His reply was, "Maybe by reading the Forth Standard." [Moore, 2002](http://www.ultratechnology.com/levels.htm)*
 
 Forth is language based in thread code, with a dictionary of words as named routines and two stacks for arguments in a forever read–eval–print-loop.
 
 The dictionary is a linked list of words, each with name and code. It have two types of words, those called primitives, aka leafs (leaves), which are coded in specific CPU or MCU instructions, and those called compounds, aka twigs, which are sequences with references to words.
  
-*"A most important aspect of FORTH is its ability to define new words. New definitions and code are devised continously. Likewise, new constants or variables are created.", Rather, Moore, Hollis, https://library.nrao.edu/public/memos/comp/CDIR_17.pdf*
+*"A most important aspect of FORTH is its ability to define new words. New definitions and code are devised continously. Likewise, new constants or variables are created.", [Rather, Moore, Hollis, 1974](https://library.nrao.edu/public/memos/comp/CDIR_17.pdf)*
 
 I want a forth with:
 
