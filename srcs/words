@@ -17,8 +17,8 @@ forth-leafs.S:HEADER "KEY", "KEY", F_LEAP
 forth-leafs.S:HEADER "KEY?", "QKEY", F_LEAP
 forth-leafs.S:HEADER "EMIT", "EMIT", F_LEAP
 forth-leafs.S:HEADER "EMIT?", "QEMIT", F_LEAP
-forth-leafs.S:HEADER "C!E", "CTOEE", F_LEAP
-forth-leafs.S:HEADER "C@E", "CATEE", F_LEAP
+forth-leafs.S:HEADER "C!E", "CTOE", F_LEAP
+forth-leafs.S:HEADER "C@E", "CATE", F_LEAP
 forth-leafs.S:HEADER "C@P", "CATIO", F_LEAP
 forth-leafs.S:HEADER "C!P", "CTOIO", F_LEAP
 forth-leafs.S:HEADER "MILLIS", "MILLIS", F_LEAP
@@ -30,9 +30,9 @@ forth-leafs.S:HEADER "U<", "UMLESS", F_LEAP
 forth-leafs.S:HEADER "UM+", "UMPLUS", F_LEAP
 forth-leafs.S:HEADER "!", "TO", F_LEAP
 forth-leafs.S:HEADER "@", "AT", F_LEAP
-forth-leafs.S:HEADER ">R", "TOR", F_LEAP
-forth-leafs.S:HEADER "R>", "RTO", F_LEAP
-forth-leafs.S:HEADER "R@", "RAT", F_LEAP
+forth-leafs.S:HEADER ">R", "TOR", F_COMPILE | F_LEAP
+forth-leafs.S:HEADER "R>", "RTO", F_COMPILE | F_LEAP
+forth-leafs.S:HEADER "R@", "RAT", F_COMPILE | F_LEAP
 forth-leafs.S:HEADER "RS!", "RSTO", F_LEAP
 forth-leafs.S:HEADER "PS!", "PSTO", F_LEAP
 forth-leafs.S:HEADER "RS@", "RSAT", F_LEAP
@@ -107,34 +107,32 @@ forth-twigs.S:HEADER ",", "COMMA", F_IMMEDIATE
 forth-twigs.S:HEADER "<,", "TOMMA", F_IMMEDIATE
 forth-twigs.S:HEADER "DOVAR", "DOVAR",
 forth-twigs.S:HEADER "DOCON", "DOCON",
-forth-twigs.S:HEADER "DOAT", "DOAT",
-forth-twigs.S:HEADER "DOTO", "DOTO",
 forth-twigs.S:HEADER "LITERAL", "LITERAL",
 forth-twigs.S:HEADER "COMP", "COMP", F_IMMEDIATE
 forth-twigs.S:HEADER "EXIT", "EXIT", F_IMMEDIATE
 forth-twigs.S:HEADER "EXEC", "EXEC", F_IMMEDIATE
 forth-twigs.S:HEADER "TAIL", "TAIL", 
 forth-twigs.S:HEADER "VALUE", "VALUE", 
-forth-twigs.S:HEADER "TO", "TOVALUE", 
+forth-twigs.S:HEADER "TO", "TOVALUE", F_IMMEDIATE
 forth-twigs.S:HEADER "DEFER", "DEFER", 
-forth-twigs.S:HEADER "IS", "ISDEFER", 
-forth-twigs.S:HEADER "MARKTO", "MARKTO", F_IMMEDIATE,
-forth-twigs.S:HEADER "TOMARK", "TOMARK", F_IMMEDIATE,
-forth-twigs.S:HEADER "BEGIN", "BEGIN", F_IMMEDIATE,
-forth-twigs.S:HEADER "AGAIN", "AGAIN", F_IMMEDIATE,
-forth-twigs.S:HEADER "UNTIL", "UNTIL", F_IMMEDIATE,
-forth-twigs.S:HEADER "UNLESS", "UNLESS", F_IMMEDIATE, 
-forth-twigs.S:HEADER "IF", "IF", F_IMMEDIATE,
-forth-twigs.S:HEADER "GO", "GO", F_IMMEDIATE,
-forth-twigs.S:HEADER "THEN", "THEN", F_IMMEDIATE,
-forth-twigs.S:HEADER "ENDIF", "ENDIF", F_IMMEDIATE,
-forth-twigs.S:HEADER "ELSE", "ELSE", F_IMMEDIATE,
-forth-twigs.S:HEADER "WHILE", "WHILE", F_IMMEDIATE,
-forth-twigs.S:HEADER "REPEAT", "REPEAT", F_IMMEDIATE,
-forth-twigs.S:HEADER "AHEAD", "AHEAD", F_IMMEDIATE,
-forth-twigs.S:HEADER "AFT", "AFT", F_IMMEDIATE,
-forth-twigs.S:HEADER "HOOK", "HOOK", F_IMMEDIATE,
-forth-twigs.S:HEADER "BACK", "BACK", F_IMMEDIATE,
+forth-twigs.S:HEADER "IS", "ISDEFER", F_IMMEDIATE
+forth-twigs.S:HEADER "MARKTO", "MARKTO", F_IMMEDIATE | F_COMPILE,
+forth-twigs.S:HEADER "TOMARK", "TOMARK", F_IMMEDIATE | F_COMPILE,
+forth-twigs.S:HEADER "BEGIN", "BEGIN", F_IMMEDIATE | F_COMPILE,
+forth-twigs.S:HEADER "AGAIN", "AGAIN", F_IMMEDIATE | F_COMPILE,
+forth-twigs.S:HEADER "UNTIL", "UNTIL", F_IMMEDIATE | F_COMPILE,
+forth-twigs.S:HEADER "UNLESS", "UNLESS", F_IMMEDIATE | F_COMPILE, 
+forth-twigs.S:HEADER "IF", "IF", F_IMMEDIATE | F_COMPILE,
+forth-twigs.S:HEADER "GO", "GO", F_IMMEDIATE | F_COMPILE,
+forth-twigs.S:HEADER "THEN", "THEN", F_IMMEDIATE | F_COMPILE,
+forth-twigs.S:HEADER "ENDIF", "ENDIF", F_IMMEDIATE | F_COMPILE,
+forth-twigs.S:HEADER "ELSE", "ELSE", F_IMMEDIATE | F_COMPILE,
+forth-twigs.S:HEADER "WHILE", "WHILE", F_IMMEDIATE | F_COMPILE,
+forth-twigs.S:HEADER "REPEAT", "REPEAT", F_IMMEDIATE | F_COMPILE,
+forth-twigs.S:HEADER "AHEAD", "AHEAD", F_IMMEDIATE | F_COMPILE,
+forth-twigs.S:HEADER "AFT", "AFT", F_IMMEDIATE | F_COMPILE,
+forth-twigs.S:HEADER "HOOK", "HOOK", F_IMMEDIATE | F_COMPILE,
+forth-twigs.S:HEADER "BACK", "BACK", F_IMMEDIATE | F_COMPILE,
 forth-twigs.S:HEADER "FOR", "FOR", F_IMMEDIATE
 forth-twigs.S:HEADER "TXEN", "TXEN", 
 forth-twigs.S:HEADER "NEXT", "NEXT", F_IMMEDIATE
@@ -199,7 +197,7 @@ interpreter.S:HEADER "SOURCE", "SOURCE",
 interpreter.S:HEADER "SOURCE+", "SOURCEPLUS", 
 interpreter.S:HEADER "REFILL", "REFILL", 
 interpreter.S:HEADER "PARSE", "PARSE" 
-interpreter.S:HEADER "(", "PAREN" 
+interpreter.S:HEADER "(", "PAREN", F_IMMEDIATE 
 interpreter.S:HEADER ".(", "DOTPAREN" 
 interpreter.S:HEADER "S\"", "SQUOTE" 
 interpreter.S:HEADER ".\"", "DOTQUOTE" 

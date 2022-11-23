@@ -111,9 +111,10 @@ _next:
  
 ; if zero (NULL) is a primitive word 
 _void:
-    or wrk_low, wrk_high 
+    mov _work_, wrk_low 
+    or _work_, wrk_high 
     brbs BIT_ZERO, _jump
- 
+
 ; else is a reference ( 2 extra cycles )
 _nest: 
     rspush zpm_low, zpm_high ; push next reference 
@@ -192,7 +193,7 @@ HEADER "EMIT?", "QEMIT", F_LEAP
 ; ok ( c e -- ) 
 ;   write a byte to eprom 
 ;
-HEADER "C!E", "CTOEE", F_LEAP
+HEADER "C!E", "CTOE", F_LEAP
     NOOP 
     pspull nos_low, nos_high
 
@@ -227,7 +228,7 @@ _ee_write:
 ; ok ( e -- u ) 
 ;   read eeprom
 ;
-HEADER "C@E", "CATEE", F_LEAP
+HEADER "C@E", "CATE", F_LEAP
     NOOP 
     pspull nos_low, nos_high
 
@@ -408,12 +409,24 @@ HEADER "@", "AT", F_LEAP
     POON
  
 ;----------------------------------------------------------------------
+; 
+; Note on return stack operations:
+;
+;   the values in ( >R R@ R> ) are onto/from second place in return stack.
+;
+;   this preserves the next return reference
+;
+;   that's a side effect of MITC, there is no IP keeped.
+;
+;----------------------------------------------------------------------
 ;
 ; ok ( w -- ) ( -- W) 
 ;
-HEADER ">R", "TOR", F_LEAP
+HEADER ">R", "TOR", F_COMPILE | F_LEAP
     NOOP 
+    rspull nos_low, nos_high
     rspush tos_low, tos_high 
+    rspush nos_low, nos_high
     pspull tos_low, tos_high 
     POON 
  
@@ -421,21 +434,25 @@ HEADER ">R", "TOR", F_LEAP
 ;
 ; ok ( -- w ) ( w -- ) 
 ;
-HEADER "R>", "RTO", F_LEAP
+HEADER "R>", "RTO", F_COMPILE | F_LEAP
     NOOP 
     pspush tos_low, tos_high 
+    rspull nos_low, nos_high
     rspull tos_low, tos_high 
+    rspush nos_low, nos_high
     POON 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w ) ( w -- w ) 
 ;
-HEADER "R@", "RAT", F_LEAP
+HEADER "R@", "RAT", F_COMPILE | F_LEAP
     NOOP 
     pspush tos_low, tos_high 
+    rspull nos_low, nos_high
     rspull tos_low, tos_high 
     rspush tos_low, tos_high 
+    rspush nos_low, nos_high
     POON 
  
 ;----------------------------------------------------------------------

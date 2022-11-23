@@ -65,7 +65,7 @@
 ; ok ( w a -- ) 
 ; just write a word
 HEADER "!E", "TOEE", F_LEAP
-    .word OVER, OVER, CTOEE, ONE, PLUS, TOR, ENDIAN, RTO, CTOEE, ENDS   
+    .word OVER, OVER, CTOE, ONE, PLUS, TOR, ENDIAN, RTO, CTOE, ENDS   
 
 ;----------------------------------------------------------------------
 ;
@@ -76,7 +76,7 @@ HEADER "!E", "TOEE", F_LEAP
 ;   w1 w2 or
 ;
 HEADER "@E", "ATEE", F_LEAP
-    .word DUP, CATEE, SWAP, CATEE
+    .word DUP, CATE, SWAP, CATE
     .word LIT, 0x00FF, AND
     .word ENDIAN, SWAP
     .word LIT, 0x00FF, AND
@@ -331,14 +331,12 @@ HEADER "RDEPTH", "RDEPTH",
 ;
 ;   up is a pointer to next free cell in sram, from the end of TIB
 ;   dp is a pointer to next free cell in flash
-;   fp is a pointer to last dp, used when write sram to flash 
-;   up0 is the end of TIB
+;   hp is a pointer to next free cell in sram, syncronous with dp 
 ;
 ;   here return where dp is, used for absolute branch and zbranch,
-;   uhere returns where up is, 
-;   comma writes in sram, and 
-;   allot updates up and dp pointers
-;   when done to write sram to flash, fp = up, up = up0
+;   uhere returns where hp is, used for place in sram,
+;   comma writes in sram, and allot updates up and dp pointers
+;   when done to write sram to flash
 ;
 ;----------------------------------------------------------------------
 ;
@@ -380,7 +378,7 @@ HEADER "ALIGN", "ALIGN",
 ; ok CCOMMA ( w -- ) 
 ;
 HEADER "C,", "CCOMMA", F_IMMEDIATE
-    .word LIT, 0x00FF, AND, UHERE, TO, ONE, ALLOT, ENDS 
+    .word UHERE, CTO, ONE, ALLOT, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -416,20 +414,6 @@ HEADER "DOCON", "DOCON",
 
 ;----------------------------------------------------------------------
 ;
-; is DOAT ( -- w ) indirect at, R> DUP 2+ >R @ @  
-;       
-HEADER "DOAT", "DOAT",
-    .word DOCON, AT, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; is DOTO ( w -- ) indirect to, R> DUP 2+ >R @ ! 
-;
-HEADER "DOTO", "DOTO",
-    .word DOCON, TO, ENDS 
- 
-;----------------------------------------------------------------------
-;
 ; is LITERAL ( w -- ) 
 ;
 HEADER "LITERAL", "LITERAL",
@@ -439,9 +423,9 @@ HEADER "LITERAL", "LITERAL",
 ;
 ; ok this puts next cell into stack and compiles into HERE 
 ; used only in precompiled sources as forth-twigs
-; ????
+; zzzz
 HEADER "COMP", "COMP", F_IMMEDIATE
-    .word LIT, COMMA, ENDS 
+    .word RTO, DUP, CELLPLUS, TOR, AT, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -460,6 +444,7 @@ HEADER "EXEC", "EXEC", F_IMMEDIATE
 ;----------------------------------------------------------------------
 ;
 ; ok make a word recursive 
+; recursive return to last 
 ;
 HEADER "TAIL", "TAIL", 
     .word RAT, CELL, MINUS, RTO, ENDS
@@ -467,29 +452,30 @@ HEADER "TAIL", "TAIL",
 ;----------------------------------------------------------------------
 ;
 ; ok make a value ( w -- )
-;
+; header|lit|value|ends
+; zzzz
 HEADER "VALUE", "VALUE", 
-    .word CREATE, DROP, LIT, LIT, COMMA, COMMA, ENDS
+    .word CREATE, DROP, LITERAL, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok make a to value 
-;
-HEADER "TO", "TOVALUE", 
+; change value 
+HEADER "TO", "TOVALUE", F_IMMEDIATE
     .word FIND, ONEPLUS, TO, ENDS
 
 ;----------------------------------------------------------------------
 ;
-; ok make a value 
-;
+; ok make a defer
+; zzzz no checks for 
 HEADER "DEFER", "DEFER", 
-    .word CREATE, LIT, BRANCH, COMMA, COMMA, ENDS
+    .word CREATE, LIT, ZZZZ, LIT, BRANCH, COMMA, COMMA, ENDS
 
 ;----------------------------------------------------------------------
 ;
-; ok make a to value zzzz
+; ok make a is 
 ;
-HEADER "IS", "ISDEFER", 
+HEADER "IS", "ISDEFER", F_IMMEDIATE
     .word FIND, ONEPLUS, SWAP, TO, ENDS
 
 ;----------------------------------------------------------------------
@@ -505,7 +491,7 @@ HEADER "IS", "ISDEFER",
 ; places to address to self in a holder, 
 ; and left address of holder at stack
 ;
-HEADER "MARKTO", "MARKTO", F_IMMEDIATE,
+HEADER "MARKTO", "MARKTO", F_IMMEDIATE | F_COMPILE,
     .word HERE, DUP, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
@@ -514,84 +500,84 @@ HEADER "MARKTO", "MARKTO", F_IMMEDIATE,
 ; places a address of cell 
 ; resolves a back reference to last holder 
 ; and places a address to self at holder 
-HEADER "TOMARK", "TOMARK", F_IMMEDIATE,
+HEADER "TOMARK", "TOMARK", F_IMMEDIATE | F_COMPILE,
     .word HERE, SWAP, TOMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok BEGIN 
 ;
-HEADER "BEGIN", "BEGIN", F_IMMEDIATE,
+HEADER "BEGIN", "BEGIN", F_IMMEDIATE | F_COMPILE,
     .word HERE, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok AGAIN resolves a unconditional branch 
 ;
-HEADER "AGAIN", "AGAIN", F_IMMEDIATE,
+HEADER "AGAIN", "AGAIN", F_IMMEDIATE | F_COMPILE,
     .word COMP, BRANCH, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok UNTIL resolves a conditional branch, as C do { ... } while (0) 
 ;
-HEADER "UNTIL", "UNTIL", F_IMMEDIATE,
+HEADER "UNTIL", "UNTIL", F_IMMEDIATE | F_COMPILE,
     .word COMP, ZBRANCH, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok UNLESS 
 ;
-HEADER "UNLESS", "UNLESS", F_IMMEDIATE, 
+HEADER "UNLESS", "UNLESS", F_IMMEDIATE | F_COMPILE, 
     .word ZEQU, UNTIL, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok IF (executed if tos is not zero)
 ;
-HEADER "IF", "IF", F_IMMEDIATE,
+HEADER "IF", "IF", F_IMMEDIATE | F_COMPILE,
     .word COMP, ZBRANCH, MARKTO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok GO (executed ever)
 ;
-HEADER "GO", "GO", F_IMMEDIATE,
+HEADER "GO", "GO", F_IMMEDIATE | F_COMPILE,
     .word COMP, BRANCH, MARKTO, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok THEN 
 ;
-HEADER "THEN", "THEN", F_IMMEDIATE,
+HEADER "THEN", "THEN", F_IMMEDIATE | F_COMPILE,
     .word ENDIF, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ENDIF resolves a forward branch 
 ;
-HEADER "ENDIF", "ENDIF", F_IMMEDIATE,
+HEADER "ENDIF", "ENDIF", F_IMMEDIATE | F_COMPILE,
     .word TOMARK, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok ELSE (executed if tos is zero)
 ;
-HEADER "ELSE", "ELSE", F_IMMEDIATE,
+HEADER "ELSE", "ELSE", F_IMMEDIATE | F_COMPILE,
     .word GO, SWAP, TOMARK, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok WHILE 
 ;
-HEADER "WHILE", "WHILE", F_IMMEDIATE,
+HEADER "WHILE", "WHILE", F_IMMEDIATE | F_COMPILE,
     .word IF, SWAP, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok REPEAT 
 ;
-HEADER "REPEAT", "REPEAT", F_IMMEDIATE,
+HEADER "REPEAT", "REPEAT", F_IMMEDIATE | F_COMPILE,
     .word AGAIN, TOMARK, ENDS 
  
  
@@ -599,28 +585,28 @@ HEADER "REPEAT", "REPEAT", F_IMMEDIATE,
 ; @eforth
 ; is AHEAD (a forward goto)
 ;
-HEADER "AHEAD", "AHEAD", F_IMMEDIATE,
+HEADER "AHEAD", "AHEAD", F_IMMEDIATE | F_COMPILE,
     .word GO, ENDS 
  
 ;----------------------------------------------------------------------
 ; @eforth
 ; is AFT 
 ;
-HEADER "AFT", "AFT", F_IMMEDIATE,
+HEADER "AFT", "AFT", F_IMMEDIATE | F_COMPILE,
     .word DROP, GO, HERE, SWAP, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is HOOK 
 ;
-HEADER "HOOK", "HOOK", F_IMMEDIATE,
+HEADER "HOOK", "HOOK", F_IMMEDIATE | F_COMPILE,
     .word BEGIN, TOR, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; is BACK 
 ;
-HEADER "BACK", "BACK", F_IMMEDIATE,
+HEADER "BACK", "BACK", F_IMMEDIATE | F_COMPILE,
     .word RTO, AGAIN, ENDS 
  
 ;----------------------------------------------------------------------
@@ -675,22 +661,22 @@ HEADER "CASE", "CASE", F_IMMEDIATE
 ; is OF ( -- )
 ;
 HEADER "OF", "OF", F_IMMEDIATE
-    .word ONEPLUS, TOR, POSTPONE, OVER, POSTPONE, EQUAL, POSTPONE, IF, POSTPONE, DROP, RTO, ENDS
+    .word ONEPLUS, TOR, COMP, OVER, COMP, EQUAL, COMP, IF, COMP, DROP, RTO, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; is ENDOF ( -- )
 ;
 HEADER "ENDOF", "ENDOF", F_IMMEDIATE
-    .word TOR, POSTPONE, ELSE, RTO, ENDS
+    .word TOR, COMP, ELSE, RTO, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; is ENDCASE ( a -- ) 
 ;
 HEADER "ENDCASE", "ENDCASE", F_IMMEDIATE
-    .word POSTPONE, DROP 
-    .word FOR, POSTPONE, THEN, NEXT, ENDS
+    .word COMP, DROP 
+    .word FOR, COMP, THEN, NEXT, ENDS
 
 ;----------------------------------------------------------------------
 ;

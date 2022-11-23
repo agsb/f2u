@@ -950,7 +950,7 @@ HEADER "PARSE", "PARSE"
 ; 
 ; is PAREN ( "<chars>ccc" c -- ) also comments
 ; 
-HEADER "(", "PAREN" 
+HEADER "(", "PAREN", F_IMMEDIATE 
     .word LIT, ')', PARSE, DROP, DROP, ENDS ; F_IMMEDIATE 
 
 ;---------------------------------------------------------------------- 
@@ -1049,6 +1049,8 @@ HEADER "DOES>", "DOESTO", F_IMMEDIATE
 ; constants go to eeprom
 ; EP points next word free
 ; 
+; std: : variable create 0 , ;
+; zzzz
  HEADER "CONSTANT", "CONSTANT", 
     .word CREATE, EPP, AT
     .word DUP, TOR, TOEE, RTO
@@ -1060,6 +1062,9 @@ HEADER "DOES>", "DOESTO", F_IMMEDIATE
 ; is VARIABLE ( "ccc<caddr>ccc"  -- ) 
 ; variables go to high adress sram
 ; UP maps next word free
+;
+; std: : constant create , does> @ ;
+; zzzz
 HEADER "VARIABLE", "VARIABLE", 
     .word CREATE, UPP, AT
     .word DUP, TOR, TO, RTO

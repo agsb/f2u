@@ -4,6 +4,18 @@
 
 *still lots of english errors, please correct me*
 
+# 23/11/2022
+
+- Using MITC there is no IP. To preserve the reference to the next sequential return,
+      when executing >R R@ R> the values are into/from the second cell of returning
+      stack and the reference in the first cell is used as the next one to be executed. 
+      The effect is transparent to the user.
+
+- Review of compile, execute, literal. 
+
+- Most of code is precompiled, using references (labels), literals (valies), why ? To have a full assembled forth nucleous. 
+
+
 # 16/11/2022
 
 - Atmega8 flash almost full ~ 3604 words ~ and still not a complete usefull set of word, then time to change all setup to atmega328

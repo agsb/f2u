@@ -1,0 +1,14 @@
+main.o: In function `LTSNUM':
+(.text+0x12d8): undefined reference to `PAD'
+main.o: In function `SNUMGT':
+(.text+0x12ee): undefined reference to `PAD'
+main.o: In function `SNUM':
+(.text+0x130c): undefined reference to `DIGIT'
+main.o: In function `HOLD':
+(.text+0x1332): undefined reference to `CHARMINUS'
+main.o: In function `SIGN':
+(.text+0x1346): undefined reference to `ZEROLESS'
+main.o: In function `SIGN':
+(.text+0x134c): undefined reference to `CHAR'
+collect2: error: ld returned 1 exit status
+make: *** [Makefile:376: main.elf] Error 1
