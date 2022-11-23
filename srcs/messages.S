@@ -31,18 +31,23 @@
  .ascii "Licence Creative Commons,f8f98284-589e-4290-867c-0ac3824721ac,\n"
  .ascii "Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)\n"
  
+ .byte 4
  prompt : ; 4
  .asciz " Ok"
  
+ .byte 4
  notoky : ; 4
  .asciz " ??"
  
+ .byte 12
  undefined: ; 12
  .asciz " undefined?"
  
+ .byte 12
  exception: ; 12
  .asciz " exception!"
  
+ .byte 10
  abort: ; 10
  .asciz " aborted."
  
