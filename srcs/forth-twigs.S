@@ -225,6 +225,28 @@ HEADER "2-", "TWOMINUS",
 HEADER "+!", "PLUSTO",
     .word DUP, TOR, AT, PLUS, RTO, TO, ENDS 
  
+;----------------------------------------------------------------------
+;
+; ok ( w -- w + 1 ) 
+;
+HEADER "CHAR+", "CHARPLUS",
+    .word ONEPLUS, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; ok ( w -- w - 1 ) 
+;
+HEADER "CHAR-", "CHARMINUS",
+    .word ONEMINUS, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; ok ( w -- w ) 
+;   char is 1, then does nothing
+;
+HEADER "CHARS", "CHARS",
+    .word ENDS 
+ 
 ;********************************************************************** 
 ;
 ;    load variables 
@@ -290,6 +312,22 @@ HEADER "UP", "UPP",
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w) 
+; buffer for user, att not updates UP
+;
+HEADER "BUFF", "BUFF",
+    .word UPP, SWAP, MINUS, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+; buffer for user, shares variables
+;
+HEADER "PAD", "PAD",
+    .word LIT, PAD_SIZE, BUFF, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
 ;
 ;HEADER "RS$", "RSIS",
 ;    .word LIT, RS0, ENDS
@@ -317,10 +355,6 @@ HEADER "RDEPTH", "RDEPTH",
     .word RSAT, LIT, RS0, MINUS, ENDS
  
 
-;********************************************************************** 
-; 
-;   basic words
-;
 ;********************************************************************** 
 ; 
 ;   basic words
@@ -480,7 +514,7 @@ HEADER "IS", "ISDEFER", F_IMMEDIATE
 
 ;----------------------------------------------------------------------
 ;
-; Control words review. there is no more offset BRANCH.
+; Control words review. BRANCH and ZBRANCH are absolute references.
 ;
 ;----------------------------------------------------------------------
  
@@ -654,25 +688,32 @@ HEADER "NEXT", "NEXT", F_IMMEDIATE
 ; is CASE ( a -- )
 ;
 HEADER "CASE", "CASE", F_IMMEDIATE
-    .word LIT, 0x00, ENDS
+    .word ZERO, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; is OF ( -- )
 ;
 HEADER "OF", "OF", F_IMMEDIATE
-    .word ONEPLUS, TOR, COMP, OVER, COMP, EQUAL, COMP, IF, COMP, DROP, RTO, ENDS
+    .word ONEPLUS, COMP, OVER, COMP, EQUAL, COMP, IF, COMP, DROP, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; is ENDOF ( -- )
 ;
 HEADER "ENDOF", "ENDOF", F_IMMEDIATE
-    .word TOR, COMP, ELSE, RTO, ENDS
+    .word COMP, ELSE, ENDS
 
 ;----------------------------------------------------------------------
 ;
-; is ENDCASE ( a -- ) 
+; is DEFAULT ( -- )
+;
+HEADER "DEFAULT", "DEFAULT", F_IMMEDIATE
+    .word COMP, FTRUE, COMP, IF, COMP, DROP, ENDS
+
+;----------------------------------------------------------------------
+;
+; is ENDCASE ( n -- ) 
 ;
 HEADER "ENDCASE", "ENDCASE", F_IMMEDIATE
     .word COMP, DROP 
@@ -702,13 +743,6 @@ HEADER "BL", "BL",
 ;----------------------------------------------------------------------
 ;
 ; is  ( a u -- )
-;   
-HEADER "DOT", "DOT",
-    .word ZZZZ, EMIT, ENDS
-
-;----------------------------------------------------------------------
-;
-; is  ( a u -- )
 ;
 HEADER "TYPE", "TYPE",
 1:
@@ -718,6 +752,33 @@ HEADER "TYPE", "TYPE",
 2:
     .word DROP, DROP, ENDS 
   
+;**********************************************************************
+;
+;   picture number routines adapted
+;   from eForth, 1003_InsideF83, Dr. Ting
+;   
+;----------------------------------------------------------------------
+;
+; those are intented to use together, with no word creation inside.
+;
+;   <# # #S DIGIT HOLD SIGN #>
+;
+;----------------------------------------------------------------------
+;   is DIGIT ( c -- true | false )
+;   eg. 0-9~A-F in base 16, true
+;   ok for bases 2 to 36
+;   no sign or period inside
+;
+HEADER "DIGIT", "DIGIT",
+    .word LIT, '0', MINUS
+    .word DUP, ZERO, LTHAN, ZBRANCH, 5f
+    .word DUP, LIT, 9, LTHAN, ZBRANCH, 6f
+    .word DUP, LIT, 17, LTHAN, ZBRANCH, 5f
+    .word LIT, 7, MINUS
+    .word DUP, BASE, MINUS, LTHAN, ZBRANCH, 6f 
+5:  .word DROP, FFALSE, ENDS
+6:  .word DROP, FTRUE, ENDS
+
 ;----------------------------------------------------------------------
 ;   is <#
 ;
@@ -741,9 +802,10 @@ HEADER "#", "SNUM",
 ;----------------------------------------------------------------------
 ;   is #S
 ;   : #S BEGIN # 2DUP OR 0= UNTIL ; 
+;   do { ... } while
 ;
 HEADER "#S", "SNUMS",
-    .word SNUM, TWODUP, OR, ZEQU, ZBRANCH, SNUMS
+    .word SNUM, TWODUP, OR, ZEQU, ZBRANCH, SNUMS, ENDS
 
 ;----------------------------------------------------------------------
 ;   is HOLD
@@ -757,16 +819,110 @@ HEADER "HOLD", "HOLD",
 ;   : SIGN 0< IF [CHAR] - HOLD THEN ; 
 ;
 HEADER "SIGN", "SIGN",
-    .word ZEROLESS, ZBRANCH, 2f
+    .word ZEROLT, ZBRANCH, 2f
     .word [CHAR], MINUS, HOLD
 2:  .word ENDS
+
+;----------------------------------------------------------------------
+
 
 ;----------------------------------------------------------------------
 ;
 ; is  ( u1 u2 -- u3 )
 ;
+HEADER "(U.)", "UDOTP",
+    .word ZERO, LTSNUM, SNUMS, SNUMGT, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( u1 u2 -- u3 )
+;
+HEADER "U.", "UDOT",
+    .word UDOTP, TYPE, SPACE, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( u1 u2 -- u3 )
+;
+HEADER "U.R", "UDOTR",
+    .word TOR, UDOTP, RTO, OVER, MINUS, SPACES, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( u1 u2 -- u3 )
+;
+HEADER "(.)", "DOTP",
+    .word DUP, ABS, 0, LTSNUM, SNUMS, ROTU, SIGN, SNUMGT, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( u1 u2 -- u3 )
+;
+HEADER ".", "DOT",
+    .word DOTP, TYPE, SPACE, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( u1 u2 -- u3 )
+;
+HEADER "?", "QUESTION",
+    .word AT, DOT, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( u1 u2 -- u3 )
+;
+HEADER ".R", "DOTR",
+    .word TOR, DOTP, RTO, OVER, MINUS, SPACES, TYPE, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( u1 u2 -- u3 )
+;
+HEADER "(UD.)", "UDDOTP",
+    .word LTSNUM, SNUMS, SNUMGT, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( u1 u2 -- u3 )
+;
+HEADER "UD.", "UDDOT",
+    .word UDDOTP, TYPE, SPACE, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( u1 u2 -- u3 )
+;
+HEADER "UD.R", "UDDOTR",
+    .word TOR, UDDOTP, RTO, OVER, MINUS, SPACES, TYPE, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( u1 u2 -- u3 )
+;
+HEADER "(D.)", "DDOTP",
+    .word TUCK, DABS, LTSNUM, SNUMS, ROTU, SIGN, SNUMGT, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( u1 u2 -- u3 )
+;
+HEADER "D.", "DDOT",
+    .word DDOTP, TYPE, SPACE, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( u1 u2 -- u3 )
+;
+HEADER "D.R", "DDOTR",
+    .word TOR, DDOTP, ROTU, OVER, SPACES, TYPE, ENDS
+
+;**********************************************************************
+;----------------------------------------------------------------------
+;
+; is  ( u1 u2 -- u3 )
+;
 HEADER "UM-", "UMMINUS",
-1:
     .word NEGATE, UMPLUS, ENDS
 ;----------------------------------------------------------------------
 ;

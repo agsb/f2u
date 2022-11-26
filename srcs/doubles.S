@@ -30,6 +30,13 @@
 ;
 ; ok ( w -- w + 4 ) 
 ;
+HEADER "4", "FOUR",
+     .word LIT, 4, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; ok ( w -- w + 4 ) 
+;
 HEADER "4+", "FOURPLUS",
      .word LIT, 4, PLUS, ENDS 
  
@@ -101,7 +108,7 @@ HEADER "2SWAP", "TWOSWAP",
 ; ok ( w1 w2 w3 w4 -- w3 w4 + w1 w2 ) 
 ;
 HEADER "D+", "DPLUS",
-     .word TOR, SWAP, TOR, UMPLUS, RTO, RTO, UMPLUS, UMPLUS, ENDS 
+     .word TOR, SWAP, TOR, UMPLUS, RTO, RTO, PLUS, PLUS, ENDS 
      
 ;----------------------------------------------------------------------
 ;
@@ -109,5 +116,12 @@ HEADER "D+", "DPLUS",
 ;
 HEADER "D-", "DMINUS",
      .word TOR, SWAP, TOR, UMMINUS, RTO, RTO, UMMINUS, UMMINUS, ENDS 
+     
+;----------------------------------------------------------------------
+;
+; ok ( w1 w2 w3 w4 -- w3 w4 - w1 w2 ) 
+;
+HEADER "DNEGATE", "DNEG",
+     .word INVERT, TOR, INVERT, ONE, UMPLUS, RTO, PLUS, ENDS 
      
  

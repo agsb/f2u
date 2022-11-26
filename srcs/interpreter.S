@@ -361,6 +361,45 @@ _wsat:
     POON 
  
 ;---------------------------------------------------------------------- 
+;   
+;   verify if a value is a valid char in actual BASE
+;   return FALSE or TRUE
+;   eg. base 16, 0-9~A-F
+;
+HEADER "(digit)", "digit" 
+    NOOP 
+    ; convert from ASCII
+    subi tos_low, '0'
+    ; check for < 0
+    cpi tos_low, 0
+    brlt 2f
+    ; check for < 9
+    cpi tos_low, 9
+    brlt 1f
+    ; check for < A
+    cpi tos_low, 17
+    brlt 2f
+    ; convert 'A'
+    subi tos_low, 7
+    ; get actual base 
+    lds tos_high, BASE+0 
+    ; check for < BASE
+    cp tos_high, tos_low
+    brge 2f
+    ; return true
+1:  rjmp _iftrue
+2:  rjmp _iffalse
+
+;
+;1:  ser tos_high
+;    ser tos_low
+;    ; return false
+;    rjmp 3f
+;2:  eor tos_high
+;    eor tos_low
+;3:  POON
+
+;---------------------------------------------------------------------- 
 ; 
 ;   not official ! (ud1 c-addr1 u1 -- ud2 c-addr2 u2) 
 ; 
@@ -831,9 +870,17 @@ HEADER "COMPILE_ONLY", "COMPILE_ONLY",
 ; is HANDLER 
 ; 
 HEADER "HANDLER", "HANDLER", 
-    .word LIT, HANDLERS, ENDS 
+    .word LIT, HAND, ENDS 
  
-HANDLERS:   .word 0     ; hold for catch//throw 
+;---------------------------------------------------------------------- 
+; 
+; is NULLS 
+; Dr Ting 'coyote'
+;
+HEADER "NULL", "NULL", 
+    .word 0x0
+    .asciz "coyote"
+    .word ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 
@@ -841,7 +888,7 @@ HANDLERS:   .word 0     ; hold for catch//throw
 ; 
 HEADER "CATCH", "CATCH", 
     .word PSAT, TOR, HANDLER, AT, TOR, RSAT, HANDLER, TO 
-    .word EXEC, RTO, HANDLER, TO, RTO, DROP, LIT, 0 
+    .word EXEC, RTO, HANDLER, TO, RTO, DROP, ZERO
     .word ENDS 
  
 ;---------------------------------------------------------------------- 
@@ -859,7 +906,7 @@ HEADER "THROW", "THROW",
 ; is SPACE ( -- )
 ; 
 HEADER "SPACE", "SPACE" 
-    .word BL, ENDS 
+    .word BL, EMIT, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 
@@ -872,7 +919,7 @@ HEADER "SPACES", "SPACES"
  
 ;---------------------------------------------------------------------- 
 ; 
-; is THROW 
+; is ABORT 
 ; 
 HEADER "ABORT", "ABORT" 
     .word LIT, -1, THROW, ENDS 
@@ -894,16 +941,16 @@ HEADER "OVERT", "OVERT",
  
 ;---------------------------------------------------------------------- 
 ; 
-; is 
+; is COLON 
 ; 
 HEADER ":", "COLON", F_IMMEDIATE 
     .word CREATE, RBRAC, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 
-; is 
+; is SEMIS
 ; 
-HEADER ";", "SEMMI", 
+HEADER ";", "SEMIS", 
     .word EXIT, LBRAC, OVERT, ENDS 
  
 ;---------------------------------------------------------------------- 
@@ -919,8 +966,7 @@ HEADER "SOURCE", "SOURCE",
  
 ;---------------------------------------------------------------------- 
 ; 
-; is SOURCE 
-;   place terminal buffer address and length in stack 
+; is SOURCE+ 
 ; 
 HEADER "SOURCE+", "SOURCEPLUS", 
     .word SOURCE, DROP, TOIN, PLUS, ENDS 
@@ -945,10 +991,17 @@ HEADER "PARSE", "PARSE"
  
 ;---------------------------------------------------------------------- 
 ; 
+; is \ also comments
+; 
+HEADER "\\", "BACKSLASH", F_IMMEDIATE 
+    .word LIT, TIB_SIZE, TOIN, TO, ENDS 
+
+;---------------------------------------------------------------------- 
+; 
 ; is PAREN ( "<chars>ccc" c -- ) also comments
 ; 
 HEADER "(", "PAREN", F_IMMEDIATE 
-    .word LIT, ')', PARSE, DROP, DROP, ENDS ; F_IMMEDIATE 
+    .word LIT, ')', PARSE, DROP, DROP, ENDS 
 
 ;---------------------------------------------------------------------- 
 ; 
@@ -974,7 +1027,6 @@ HEADER "S\"", "SQUOTE"
 HEADER ".\"", "DOTQUOTE" 
     .word SQUOTE, TYPE, ENDS ;
 
-;---------------------------------------------------------------------- 
 ;---------------------------------------------------------------------- 
 ; 
 ; is  PARSE-NAME ( "ccc<chars>ccc" c -- a n ), toin = 0 
@@ -1006,6 +1058,13 @@ HEADER "FIND", "FIND",
  
 ;---------------------------------------------------------------------- 
 ; 
+; is  CHAR ( "ccc<chars>ccc" -- n)  
+; 
+HEADER "CHAR", "CHAR", 
+    .word PARSEN, DROP, AT, ENDS 
+ 
+;---------------------------------------------------------------------- 
+; 
 ; is  NONAME ( "" ), toin = 0 
 ; 
 HEADER "NONAME", "NONAME", 
@@ -1026,7 +1085,6 @@ HEADER "CREATE", "CREATE",
 2:  .word ENDS 
  
 ;---------------------------------------------------------------------- 
-; zzzz
 ;
 ; is DOES ( xt -- ) 
 ; 
@@ -1097,8 +1155,7 @@ HEADER "COMPXT", "COMPXT", F_IMMEDIATE
 ; is  NUMBN ( a n -- w true | a n false ) 
 ; 
 HEADER "NUMBN", "NUMBN", 
-    .word OVER, OVER, number 
-    .word ZBRANCH, 2f 
+    .word OVER, OVER, number, ZBRANCH, 2f 
     .word TOR, DROP, DROP, RTO, FTRUE, BRANCH, 4f 
 2:  .word FFALSE 
 4:  .word ENDS 
@@ -1164,5 +1221,4 @@ HEADER "QUIT", "QUIT",
  
 ;---------------------------------------------------------------------- 
 ; 
-; is 
 ; 

@@ -1,3 +1,4 @@
+doubles.S:HEADER "4", "FOUR",
 doubles.S:HEADER "4+", "FOURPLUS",
 doubles.S:HEADER "4-", "FOURMINUS",
 doubles.S:HEADER "2!", "TWOTO", 
@@ -10,6 +11,7 @@ doubles.S:HEADER "2DUP", "TWODUP",
 doubles.S:HEADER "2SWAP", "TWOSWAP",
 doubles.S:HEADER "D+", "DPLUS",
 doubles.S:HEADER "D-", "DMINUS",
+doubles.S:HEADER "DNEGATE", "DNEG",
 flush.S:HEADER "(load_flash)", "LDFLASH"
 flush.S:HEADER "(save_flash)", "SVFLASH"
 forth-leafs.S:HEADER "ENDS", "ENDS", F_LEAP
@@ -86,6 +88,9 @@ forth-twigs.S:HEADER "1-", "ONEMINUS",
 forth-twigs.S:HEADER "2+", "TWOPLUS",
 forth-twigs.S:HEADER "2-", "TWOMINUS",
 forth-twigs.S:HEADER "+!", "PLUSTO",
+forth-twigs.S:HEADER "CHAR+", "CHARPLUS",
+forth-twigs.S:HEADER "CHAR-", "CHARMINUS",
+forth-twigs.S:HEADER "CHARS", "CHARS",
 forth-twigs.S:HEADER "TIB", "TIB",
 forth-twigs.S:HEADER "LATEST", "LATEST",
 forth-twigs.S:HEADER "STATE", "STATE",
@@ -94,6 +99,8 @@ forth-twigs.S:HEADER "EP", "EPP",
 forth-twigs.S:HEADER "DP", "DPP",
 forth-twigs.S:HEADER "HP", "HPP",
 forth-twigs.S:HEADER "UP", "UPP",
+forth-twigs.S:HEADER "BUFF", "BUFF",
+forth-twigs.S:HEADER "PAD", "PAD",
 forth-twigs.S:;HEADER "RS$", "RSIS",
 forth-twigs.S:;HEADER "PS$", "PSIS",
 forth-twigs.S:HEADER "DEPTH", "DEPTH",
@@ -139,18 +146,32 @@ forth-twigs.S:HEADER "NEXT", "NEXT", F_IMMEDIATE
 forth-twigs.S:HEADER "CASE", "CASE", F_IMMEDIATE
 forth-twigs.S:HEADER "OF", "OF", F_IMMEDIATE
 forth-twigs.S:HEADER "ENDOF", "ENDOF", F_IMMEDIATE
+forth-twigs.S:HEADER "DEFAULT", "DEFAULT", F_IMMEDIATE
 forth-twigs.S:HEADER "ENDCASE", "ENDCASE", F_IMMEDIATE
 forth-twigs.S:HEADER "CR", "CR",
 forth-twigs.S:HEADER "LF", "LF",
 forth-twigs.S:HEADER "BL", "BL",
-forth-twigs.S:HEADER "DOT", "DOT",
 forth-twigs.S:HEADER "TYPE", "TYPE",
+forth-twigs.S:HEADER "DIGIT", "DIGIT",
 forth-twigs.S:HEADER "<#", "LTSNUM",
 forth-twigs.S:HEADER "#>", "SNUMGT",
 forth-twigs.S:HEADER "#", "SNUM",
 forth-twigs.S:HEADER "#S", "SNUMS",
 forth-twigs.S:HEADER "HOLD", "HOLD",
 forth-twigs.S:HEADER "SIGN", "SIGN",
+forth-twigs.S:HEADER "(U.)", "UDOTP",
+forth-twigs.S:HEADER "U.", "UDOT",
+forth-twigs.S:HEADER "U.R", "UDOTR",
+forth-twigs.S:HEADER "(.)", "DOTP",
+forth-twigs.S:HEADER ".", "DOT",
+forth-twigs.S:HEADER "?", "QUESTION",
+forth-twigs.S:HEADER ".R", "DOTR",
+forth-twigs.S:HEADER "(UD.)", "UDDOTP",
+forth-twigs.S:HEADER "UD.", "UDDOT",
+forth-twigs.S:HEADER "UD.R", "UDDOTR",
+forth-twigs.S:HEADER "(D.)", "DDOTP",
+forth-twigs.S:HEADER "D.", "DDOT",
+forth-twigs.S:HEADER "D.R", "DDOTR",
 forth-twigs.S:HEADER "UM-", "UMMINUS",
 forth-twigs.S:HEADER "U-", "ULESS",
 forth-twigs.S:HEADER "U+", "UMORE",
@@ -171,6 +192,7 @@ interpreter.S:HEADER "(copy)", "copy"
 interpreter.S:HEADER "(refill)", "refill" 
 interpreter.S:HEADER "(parse)", "parse" 
 interpreter.S:HEADER "(word)", "word" 
+interpreter.S:HEADER "(digit)", "digit" 
 interpreter.S:HEADER "(number)", "number" 
 interpreter.S:HEADER "(find)", "find" 
 interpreter.S:HEADER "MOVE", "MOVE", 
@@ -184,6 +206,7 @@ interpreter.S:HEADER "HIDDEN", "HIDDEN",
 interpreter.S:HEADER "IMMEDIATE", "IMMEDIATE", 
 interpreter.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY", 
 interpreter.S:HEADER "HANDLER", "HANDLER", 
+interpreter.S:HEADER "NULL", "NULL", 
 interpreter.S:HEADER "CATCH", "CATCH", 
 interpreter.S:HEADER "THROW", "THROW", 
 interpreter.S:HEADER "SPACE", "SPACE" 
@@ -192,11 +215,12 @@ interpreter.S:HEADER "ABORT", "ABORT"
 interpreter.S:HEADER "ACCEPT", "ACCEPT", 
 interpreter.S:HEADER "OVERT", "OVERT", 
 interpreter.S:HEADER ":", "COLON", F_IMMEDIATE 
-interpreter.S:HEADER ";", "SEMMI", 
+interpreter.S:HEADER ";", "SEMIS", 
 interpreter.S:HEADER "SOURCE", "SOURCE", 
 interpreter.S:HEADER "SOURCE+", "SOURCEPLUS", 
 interpreter.S:HEADER "REFILL", "REFILL", 
 interpreter.S:HEADER "PARSE", "PARSE" 
+interpreter.S:HEADER "\\", "BACKSLASH", F_IMMEDIATE 
 interpreter.S:HEADER "(", "PAREN", F_IMMEDIATE 
 interpreter.S:HEADER ".(", "DOTPAREN" 
 interpreter.S:HEADER "S\"", "SQUOTE" 
@@ -204,6 +228,7 @@ interpreter.S:HEADER ".\"", "DOTQUOTE"
 interpreter.S:HEADER "PARSE-NAME", "PARSEN", 
 interpreter.S:HEADER "FIND-NAME", "FINDN", 
 interpreter.S:HEADER "FIND", "FIND", 
+interpreter.S:HEADER "CHAR", "CHAR", 
 interpreter.S:HEADER "NONAME", "NONAME", 
 interpreter.S:HEADER "CREATE", "CREATE", 
 interpreter.S:HEADER "DOES", "DOES", 

@@ -412,15 +412,18 @@ HEADER "@", "AT", F_LEAP
 ; 
 ; Note on return stack operations:
 ;
-;   the values in ( >R R@ R> ) are onto/from second place in return stack.
+;   the values in ( >R R@ R> ) are placed onto/from second cell of return stack.
 ;
-;   this preserves the next return reference
+;   this keeps the adjacent reference for inner interpreter, "where it comes" 
 ;
 ;   that's a side effect of MITC, there is no IP keeped.
 ;
+;   that's transparent for user.
+
 ;----------------------------------------------------------------------
 ;
-; ok ( w -- ) ( -- W) 
+; ok ( w -- ) ( -- w) 
+;   vide note above
 ;
 HEADER ">R", "TOR", F_COMPILE | F_LEAP
     NOOP 
@@ -433,6 +436,7 @@ HEADER ">R", "TOR", F_COMPILE | F_LEAP
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w ) ( w -- ) 
+;   vide note above
 ;
 HEADER "R>", "RTO", F_COMPILE | F_LEAP
     NOOP 
@@ -445,6 +449,7 @@ HEADER "R>", "RTO", F_COMPILE | F_LEAP
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w ) ( w -- w ) 
+;   vide note above
 ;
 HEADER "R@", "RAT", F_COMPILE | F_LEAP
     NOOP 

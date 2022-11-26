@@ -118,7 +118,7 @@ _seed:
 ;   ok ( w -- u) 
 ;
 HEADER "ABS", "ABS", F_LEAP 
-    .word DUP, LIT, 0x8000, AND, ZBRANCH, 2f
+    .word DUP, ZEROLT, ZBRANCH, 2f
     .word NEGATE
 2:  .word ENDS
 

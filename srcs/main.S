@@ -52,6 +52,7 @@ e_last:	.word 0 ; link to last word in dictionary
 e_dp:	.word 0 ; next free flash address for dictionary
 e_up:	.word 0 ; next free sram address for variables, backwards
 e_ep:	.word 0 ; next free eprom address for values, 
+
 EP0 = .
 
 ;----------------------------------------------------------------------
@@ -94,7 +95,13 @@ STAT:	.word 0		; state of interpreter, 0 interprete, 1 compile
 RADX:	.word 0		; numeric radix for convertion
 
 TOIN:   .word 0     ; offset in TIB
-SPAN:   .word 0     ; offsets
+SPAN:   .word 0     ; offset in user buffer
+
+SCRS:   .word 0     ; screen number
+BLKS:   .word 0     ; block number
+
+HAND:   .word 0     ; handler for catch and throw
+CURS:   .word 0     ; cursor
 
 HLD:    .word 0     ; picture number buffer
 HLDS:   .word 0     ; picture number cursor

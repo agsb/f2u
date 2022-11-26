@@ -244,6 +244,14 @@ is_\label:
 ;
 TIB_SIZE = 72
 
+; PAD minimum size
+;
+PAD_SIZE = TIB_SIZE
+
+; HDS minimum size, 16bits (16*2+2) +2 
+;
+HDS_SIZE = 36
+
 ; stacks 18 words deep. WISE as M00re said.
 ;
 STACK_SIZE = 36
