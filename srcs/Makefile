@@ -33,8 +33,9 @@
 #
 
 # MCU name
+#MCU = atmega8
+# avr5
 MCU = atmega328
-MCU = atmega8
 
 # Optimization level, can be [0, 1, 2, 3, s]. 
 # 0 = turn off optimization. s = optimize for size.
@@ -82,7 +83,9 @@ EXTRAINCDIRS =
 CSTANDARD = -std=gnu99
 
 # Place -D or -U options here
-CDEFS = -DF_CPU=8000000
+#CDEFS = -DF_CPU=8000000
+# external crystal
+CDEFS = -DF_CPU=7680000
 
 # Place -I options here
 CINCS =

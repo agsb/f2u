@@ -124,4 +124,13 @@ HEADER "D-", "DMINUS",
 HEADER "DNEGATE", "DNEG",
      .word INVERT, TOR, INVERT, ONE, UMPLUS, RTO, PLUS, ENDS 
      
- 
+;----------------------------------------------------------------------
+;
+; ok ( w1 w2 w3 w4 -- w3 w4 - w1 w2 ) 
+;
+HEADER "DABS", "DABS",
+     .word DUP, ZEROLT, ZBRANCH, 2f
+     .word DNEG
+2:   .word ENDS 
+     
+;----------------------------------------------------------------------

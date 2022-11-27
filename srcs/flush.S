@@ -33,18 +33,20 @@ routines for flush flash memory
 
 ;---------------------------------------------------------------------
 ;
-;	for easy using spm from optiboot 
+;    for easy using spm from optiboot 
 ;
-;	spm instruction uses r31:r30 for address and r1:r0 for data
+;    spm instruction uses r31:r30 for address and r1:r0 for data
 ;
-;	when erase or write, r0:r1 is ignored, 
+;    when erase or write, r0:r1 is ignored, 
 ;
 ;   ATmega8L datasheet, pg 209
 ;
 ;   command passed in r24
 ;
 ;   in optiboot.c version 8.3 :
-;
+;   
+;	byte address !!!
+; 
 ;    __boot_rww_enable_short();
 ;    7fd2:       87 bf           out     0x37, r24       ; 55
 ;    7fd4:       e8 95           spm
@@ -55,12 +57,12 @@ routines for flush flash memory
 ;   and the sequence: bf 87 95 e8 95 08
 ;
 ;   commands are: 
-;	0x01 fill buffer, 
-;	0x03 erase page, 
-;	0x05 write page
+;    0x01 fill buffer, 
+;    0x03 erase page, 
+;    0x05 write page
 ;   set SPMCR and do a SPM whithin 4 cycles
 ;
-;	about 3.5 to 4.5 ms to complete write !
+;    about 3.5 to 4.5 ms to complete write !
 ;
 ;---------------------------------------------------------------------
 
@@ -123,7 +125,7 @@ HEADER "(save_flash)", "SVFLASH"
 
     ; destin
 
-	movw zpm_low, tos_low ; tos is HERE
+    movw zpm_low, tos_low ; tos is HERE
 
     ; origin
 
@@ -133,7 +135,7 @@ HEADER "(save_flash)", "SVFLASH"
 
     rspush psp_low, psp_high ; is X index
 
-	; load for index
+    ; load for index
 
     movw psp_low, nos_low
 
@@ -150,9 +152,9 @@ HEADER "(save_flash)", "SVFLASH"
 ;-----------------------------------------------------------------
 
     ; start buffer page address
-	
+    
     clr zpm_low
-	clr zpm_high
+    clr zpm_high
 
     ; how many bytes, less than 256!
     ldi r23, SPM_SIZE
@@ -172,7 +174,7 @@ HEADER "(save_flash)", "SVFLASH"
 
 ;-----------------------------------------------------------------
 
-	; load flash page address
+    ; load flash page address
 
     rspull zpm_low, zpm_high
 
@@ -189,7 +191,7 @@ HEADER "(save_flash)", "SVFLASH"
 
     ; clean house
     rspull psp_low, psp_high
-	pspull tos_low, tos_high
+    pspull tos_low, tos_high
     POON
 
 ;----------------------------------------------------------------------
@@ -210,8 +212,9 @@ _does_spm:
 
 #ifdef atmega328
 ; for a atmega328 with optiboot 512b
-#define OPTI_DO_SPM_SHORT 0x7fd2    ; in bytes
-    rcall OPTI_DO_SPM_SHORT
+;#define OPTI_DO_SPM_SHORT 0x7fd2    ; in bytes
+#define OPTI_DO_SPM_SHORT 0x3FE9    ; in words
+    call OPTI_DO_SPM_SHORT
 #endif
 
     out __SREG__, r2

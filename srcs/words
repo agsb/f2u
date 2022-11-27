@@ -12,6 +12,7 @@ doubles.S:HEADER "2SWAP", "TWOSWAP",
 doubles.S:HEADER "D+", "DPLUS",
 doubles.S:HEADER "D-", "DMINUS",
 doubles.S:HEADER "DNEGATE", "DNEG",
+doubles.S:HEADER "DABS", "DABS",
 flush.S:HEADER "(load_flash)", "LDFLASH"
 flush.S:HEADER "(save_flash)", "SVFLASH"
 forth-leafs.S:HEADER "ENDS", "ENDS", F_LEAP
@@ -24,6 +25,9 @@ forth-leafs.S:HEADER "C@E", "CATE", F_LEAP
 forth-leafs.S:HEADER "C@P", "CATIO", F_LEAP
 forth-leafs.S:HEADER "C!P", "CTOIO", F_LEAP
 forth-leafs.S:HEADER "MILLIS", "MILLIS", F_LEAP
+forth-leafs.S:HEADER "WDCLR", "WDCLR", F_LEAP
+forth-leafs.S:HEADER "WDON", "WDON", F_LEAP
+forth-leafs.S:HEADER "WDOFF", "WDOFF", F_LEAP
 forth-leafs.S:HEADER "TRUE", "FTRUE", F_LEAP
 forth-leafs.S:HEADER "FALSE", "FFALSE", F_LEAP
 forth-leafs.S:HEADER "0=", "ZEQU", F_LEAP
@@ -154,11 +158,11 @@ forth-twigs.S:HEADER "BL", "BL",
 forth-twigs.S:HEADER "TYPE", "TYPE",
 forth-twigs.S:HEADER "DIGIT", "DIGIT",
 forth-twigs.S:HEADER "<#", "LTSNUM",
-forth-twigs.S:HEADER "#>", "SNUMGT",
+forth-twigs.S:HEADER "HOLD", "HOLD",
 forth-twigs.S:HEADER "#", "SNUM",
 forth-twigs.S:HEADER "#S", "SNUMS",
-forth-twigs.S:HEADER "HOLD", "HOLD",
 forth-twigs.S:HEADER "SIGN", "SIGN",
+forth-twigs.S:HEADER "#>", "SNUMGT",
 forth-twigs.S:HEADER "(U.)", "UDOTP",
 forth-twigs.S:HEADER "U.", "UDOT",
 forth-twigs.S:HEADER "U.R", "UDOTR",

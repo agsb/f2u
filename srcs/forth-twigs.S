@@ -786,10 +786,11 @@ HEADER "<#", "LTSNUM",
     .word PAD, LIT, HLD, TO, ENDS
 
 ;----------------------------------------------------------------------
-;   is #>
+;   is HOLD
+;   : HOLD HLD @ CHAR- DUP HLD ! C! ; 
 ;
-HEADER "#>", "SNUMGT",
-    .word TWODROP, HLD, AT, PAD, OVER, MINUS, ENDS
+HEADER "HOLD", "HOLD",
+    .word HLD, AT, CHARMINUS, DUP, HLD, TO, CTO, ENDS
 
 ;----------------------------------------------------------------------
 ;   is #
@@ -808,13 +809,6 @@ HEADER "#S", "SNUMS",
     .word SNUM, TWODUP, OR, ZEQU, ZBRANCH, SNUMS, ENDS
 
 ;----------------------------------------------------------------------
-;   is HOLD
-;   : HOLD HLD @ CHAR- DUP HLD ! C! ; 
-;
-HEADER "HOLD", "HOLD",
-    .word HLD, AT, CHARMINUS, DUP, HLD, TO, CTO, ENDS
-
-;----------------------------------------------------------------------
 ;   is SIGN
 ;   : SIGN 0< IF [CHAR] - HOLD THEN ; 
 ;
@@ -822,6 +816,12 @@ HEADER "SIGN", "SIGN",
     .word ZEROLT, ZBRANCH, 2f
     .word [CHAR], MINUS, HOLD
 2:  .word ENDS
+
+;----------------------------------------------------------------------
+;   is #>
+;
+HEADER "#>", "SNUMGT",
+    .word TWODROP, HLD, AT, PAD, OVER, MINUS, ENDS
 
 ;----------------------------------------------------------------------
 

@@ -288,6 +288,35 @@ HEADER "MILLIS", "MILLIS", F_LEAP
     mov tos_high, ticks_high 
     POON 
  
+/*
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+; strat watchdog 
+;
+HEADER "WDCLR", "WDCLR", F_LEAP
+    NOOP 
+    wdr
+    POON
+
+HEADER "WDON", "WDON", F_LEAP
+    NOOP 
+    in r16, WDTCR
+    ori r16, (WDE)|(WDP2)|(WDP1)|WDP0)
+    out WDTCR, r16
+    POON
+
+HEADER "WDOFF", "WDOFF", F_LEAP
+    NOOP 
+	wdr
+    in r16, WDTCR
+    ori r16, (WDTOE)|(WDE)
+    out WDTCR, r16
+    clr r16
+    out WDTCR, r16
+    POON
+*/
+
 ;********************************************************************** 
 ;
 ;   primitive words 
