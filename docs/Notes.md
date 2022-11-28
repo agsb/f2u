@@ -10,7 +10,9 @@
 
 - rellocating some words, including Dr. Ting eForth picture numeric output word
 
-- avr-suite have a bug "relocation truncated to fit: R_AVR_13_PCREL against 'no symbol' linker error" hard to solve
+- avr-suite have a bug "relocation truncated to fit: R_AVR_13_PCREL against 'no symbol' linker error", 
+      trick to solve: change "rjmp \_link" to "jmp \_link", rjmp only works within -2k to +2k addresses,
+      okey for atmega8 but with atmega328, causes relocation error.
 
 # 23/11/2022
 
