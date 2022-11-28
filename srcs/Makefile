@@ -110,6 +110,7 @@ CFLAGS += -Wall -Wstrict-prototypes
 CFLAGS += -Wa,-adhlns=$(<:.c=.lst)
 CFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
 CFLAGS += $(CSTANDARD)
+CFLAGS += -save-temps
 #
 #CFLAGS += -funsigned-char
 #CFLAGS += -funsigned-bitfields
@@ -149,7 +150,7 @@ PRINTF_LIB =
 SCANF_LIB = 
 
 #MATH_LIB = -lm
-MATH_LIB = 
+MATH_LIB =  
 
 #OU_LIB = -L. -lou_$(MCU)
 OU_LIB = 
@@ -172,7 +173,7 @@ EXTMEMOPTS =
 #    --cref:    add cross reference to  map file
 LDFLAGS = -Wl,-Map=$(TARGET).map,--cref
 LDFLAGS += $(EXTMEMOPTS)
-LDFLAGS += $(OU_LIB) $(PRINTF_LIB) $(SCANF_LIB) $(MATH_LIB)
+LDFLAGS += $(OU_LIB) $(PRINTF_LIB) $(SCANF_LIB) $(MATH_LIB) -lm -lc
 
 # Programming support using avrdude. Settings and variables.
 

@@ -31,6 +31,8 @@
 ; 
 ;---------------------------------------------------------------------- 
  
+.section .text
+
 ;---------------------------------------------------------------------- 
 ; 
 ; ok ( a1 c --- a2 | 0 ) internal 
@@ -388,17 +390,17 @@ HEADER "(digit)", "digitf", F_LEAP
     cp tos_high, tos_low
     brge 2f
     ; return true
-1:  rjmp _iftrue
-2:  rjmp _iffalse
+1:  ser tos_high
+    ser tos_low
+    ; return false
+    rjmp 3f
+2:  clr tos_high
+    clr tos_low
+3:  POON
 
-;
-;1:  ser tos_high
-;    ser tos_low
-;    ; return false
-;    rjmp 3f
-;2:  eor tos_high
-;    eor tos_low
-;3:  POON
+; too far for rjmp
+;1:  rjmp _iftrue
+;2:  rjmp _iffalse
 
 ;---------------------------------------------------------------------- 
 ; 
