@@ -42,7 +42,7 @@
 ;
 ;----------------------------------------------------------------------
 .section .eeprom
-.org 0x0
+.org 0x000
 
 e_void:	.word 0 ; always zero
 e_live:	.word 0 ; seed for random
@@ -122,8 +122,7 @@ US0 = SRAM_END
 ;
 ; code segment, flash
 ;
-.section .text
-
+; all start text segment is in bios.S
 ;----------------------------------------------------------------------
 .p2align 1, 0x00
 #include "bios.S"
@@ -150,11 +149,15 @@ US0 = SRAM_END
 
 ;----------------------------------------------------------------------
 .p2align 1, 0x00
-#include "interpreter.S"
+#include "flush.S"
 
 ;----------------------------------------------------------------------
 .p2align 1, 0x00
-#include "flush.S"
+#include "pictures.S"
+
+;----------------------------------------------------------------------
+.p2align 1, 0x00
+#include "interpreter.S"
 
 ;----------------------------------------------------------------------
 .p2align 1, 0x00

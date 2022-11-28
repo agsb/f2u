@@ -361,6 +361,7 @@ d16s_6:
     sec                         ;    set carry to be shifted into result
     rjmp    d16s_3
 
+/*
 ;----------------------------------------------------------------------
 ; 
 ;   by Peter Dannegger 
@@ -405,7 +406,7 @@ itoa:
     subi wrk_low, -10     
     brcs 4b
 
-    subi wrk_low, -'0'
+    subi wrk_low, - '0'
     st Z+, wrk_low
 
 ; append \0
@@ -414,6 +415,7 @@ itoa:
 
     pspush nos_low, nos_high
     POON
+*/
 
 /* 
  * Macro to divide a 4-byte value by a 2-byte value yielding a 2-byte 

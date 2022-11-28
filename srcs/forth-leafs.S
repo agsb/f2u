@@ -85,8 +85,7 @@
 ; use the address to determine if is flash or is sram, above is flash :)
 ;
 .section .text 
-.org FORTH_INI
-.global forth 
+;.org FORTH_INI
 _forth_: 
 ;----------------------------------------------------------------------
 ; inner interpreter, 

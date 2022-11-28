@@ -23,6 +23,7 @@ This files are in review for make minimal implementations of:
     scan,
     skip,
     move,
+    copy,
     fill,
     find,
     

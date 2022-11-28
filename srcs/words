@@ -123,10 +123,6 @@ forth-twigs.S:HEADER "COMP", "COMP", F_IMMEDIATE
 forth-twigs.S:HEADER "EXIT", "EXIT", F_IMMEDIATE
 forth-twigs.S:HEADER "EXEC", "EXEC", F_IMMEDIATE
 forth-twigs.S:HEADER "TAIL", "TAIL", 
-forth-twigs.S:HEADER "VALUE", "VALUE", 
-forth-twigs.S:HEADER "TO", "TOVALUE", F_IMMEDIATE
-forth-twigs.S:HEADER "DEFER", "DEFER", 
-forth-twigs.S:HEADER "IS", "ISDEFER", F_IMMEDIATE
 forth-twigs.S:HEADER "MARKTO", "MARKTO", F_IMMEDIATE | F_COMPILE,
 forth-twigs.S:HEADER "TOMARK", "TOMARK", F_IMMEDIATE | F_COMPILE,
 forth-twigs.S:HEADER "BEGIN", "BEGIN", F_IMMEDIATE | F_COMPILE,
@@ -156,26 +152,6 @@ forth-twigs.S:HEADER "CR", "CR",
 forth-twigs.S:HEADER "LF", "LF",
 forth-twigs.S:HEADER "BL", "BL",
 forth-twigs.S:HEADER "TYPE", "TYPE",
-forth-twigs.S:HEADER "DIGIT", "DIGIT",
-forth-twigs.S:HEADER "<#", "LTSNUM",
-forth-twigs.S:HEADER "HOLD", "HOLD",
-forth-twigs.S:HEADER "#", "SNUM",
-forth-twigs.S:HEADER "#S", "SNUMS",
-forth-twigs.S:HEADER "SIGN", "SIGN",
-forth-twigs.S:HEADER "#>", "SNUMGT",
-forth-twigs.S:HEADER "(U.)", "UDOTP",
-forth-twigs.S:HEADER "U.", "UDOT",
-forth-twigs.S:HEADER "U.R", "UDOTR",
-forth-twigs.S:HEADER "(.)", "DOTP",
-forth-twigs.S:HEADER ".", "DOT",
-forth-twigs.S:HEADER "?", "QUESTION",
-forth-twigs.S:HEADER ".R", "DOTR",
-forth-twigs.S:HEADER "(UD.)", "UDDOTP",
-forth-twigs.S:HEADER "UD.", "UDDOT",
-forth-twigs.S:HEADER "UD.R", "UDDOTR",
-forth-twigs.S:HEADER "(D.)", "DDOTP",
-forth-twigs.S:HEADER "D.", "DDOT",
-forth-twigs.S:HEADER "D.R", "DDOTR",
 forth-twigs.S:HEADER "UM-", "UMMINUS",
 forth-twigs.S:HEADER "U-", "ULESS",
 forth-twigs.S:HEADER "U+", "UMORE",
@@ -189,16 +165,20 @@ forth-twigs.S:HEADER "EESAVE", "EESAVE", F_LEAP
 forth-twigs.S:HEADER "COLD", "COLD", F_LEAP
 forth-twigs.S:HEADER "WARM", "WARM", F_LEAP
 forth-twigs.S:HEADER "BYE", "BYE", F_LEAP
-interpreter.S:HEADER "(skip)", "skip" 
-interpreter.S:HEADER "(scan)", "scan" 
-interpreter.S:HEADER "(same)", "same" 
-interpreter.S:HEADER "(copy)", "copy" 
-interpreter.S:HEADER "(refill)", "refill" 
-interpreter.S:HEADER "(parse)", "parse" 
-interpreter.S:HEADER "(word)", "word" 
-interpreter.S:HEADER "(digit)", "digit" 
-interpreter.S:HEADER "(number)", "number" 
-interpreter.S:HEADER "(find)", "find" 
+interpreter.S:HEADER "(skip)", "skipf", F_LEAP 
+interpreter.S:HEADER "(scan)", "scanf", F_LEAP
+interpreter.S:HEADER "(same)", "samef", F_LEAP 
+interpreter.S:HEADER "(copy)", "copyf", F_LEAP 
+interpreter.S:HEADER "(refill)", "refillf", F_LEAP 
+interpreter.S:HEADER "(word)", "wordf", F_LEAP
+interpreter.S:HEADER "(parse)", "parsef", F_LEAP
+interpreter.S:HEADER "(digit)", "digitf", F_LEAP
+interpreter.S:HEADER "(number)", "numberf", F_LEAP
+interpreter.S:HEADER "(find)", "findf", F_LEAP
+interpreter.S:HEADER "VALUE", "VALUE", 
+interpreter.S:HEADER "TO", "TOVALUE", F_IMMEDIATE
+interpreter.S:HEADER "DEFER", "DEFER", 
+interpreter.S:HEADER "IS", "ISDEFER", F_IMMEDIATE
 interpreter.S:HEADER "MOVE", "MOVE", 
 interpreter.S:HEADER "FILL", "FILL", 
 interpreter.S:HEADER "]", "RBRAC", 
@@ -260,3 +240,26 @@ math.S:HEADER "UM/MOD", "UMBYMOD", F_LEAP
 math.S:HEADER "*", "SMUL", F_LEAP
 math.S:HEADER "/", "SDIV", F_LEAP
 math.S:HEADER "utoa", "utoa", F_LEAP 
+pictures.S:HEADER "DIGIT", "DIGIT",
+pictures.S:HEADER "<#", "LTSNUM",
+pictures.S:HEADER "HOLD", "HOLD",
+pictures.S:HEADER "#", "SNUM",
+pictures.S:HEADER "#S", "SNUMS",
+pictures.S:HEADER "SIGN", "SIGN",
+pictures.S:HEADER "#>", "SNUMGT",
+pictures.S:HEADER "(U.)", "UDOTP",
+pictures.S:HEADER "U.", "UDOT",
+pictures.S:HEADER "U.R", "UDOTR",
+pictures.S:HEADER "(.)", "DOTP",
+pictures.S:HEADER ".", "DOT",
+pictures.S:HEADER "?", "QUESTION",
+pictures.S:HEADER ".R", "DOTR",
+pictures.S:HEADER "(UD.)", "UDDOTP",
+pictures.S:HEADER "UD.", "UDDOT",
+pictures.S:HEADER "UD.R", "UDDOTR",
+pictures.S:HEADER "(D.)", "DDOTP",
+pictures.S:HEADER "D.", "DDOT",
+pictures.S:HEADER "D.R", "DDOTR",
+pictures.S:HEADER "CHAR", "CHAR",
+pictures.S:HEADER "SPACE", "SPACE",
+pictures.S:HEADER "SPACES", "SPACES",

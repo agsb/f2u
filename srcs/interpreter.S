@@ -37,7 +37,7 @@
 ;   skips chars in address while not equal to c or 0x0 
 ;   not standart, 0x0 ends buffer, works only in sram 
 ; 
-HEADER "(skip)", "skip" 
+HEADER "(skip)", "skipf", F_LEAP 
     NOOP 
     clr tos_high 
     pspull zpm_low, zpm_high 
@@ -65,7 +65,7 @@ HEADER "(skip)", "skip"
 ;   not standart, 0x0 ends buffer 
 ;   works only in sram 
 ; 
-HEADER "(scan)", "scan" 
+HEADER "(scan)", "scanf", F_LEAP
     NOOP 
     clr tos_high 
     pspull zpm_low, zpm_high 
@@ -88,11 +88,11 @@ HEADER "(scan)", "scan"
  
 ;---------------------------------------------------------------------- 
 ; 
-; ok ( a1 a2 u --- ) internal 
+; ok ( a1 a2 u --- flag ) internal 
 ;   compare u chars from a1 to a2, 
 ;   not standart, max 255, no check for overlaps, works only in sram 
 ; 
-HEADER "(same)", "same" 
+HEADER "(same)", "samef", F_LEAP 
     NOOP 
     clr tos_high 
     pspull nos_low, nos_high 
@@ -124,7 +124,7 @@ HEADER "(same)", "same"
 ;   copy u chars from a1 into a2, forward copy, a3 = a1+u+1 
 ;   not standart, max 255, no check for overlaps, works only in sram 
 ; 
-HEADER "(copy)", "copy" 
+HEADER "(copy)", "copyf", F_LEAP 
     NOOP 
     clr tos_high 
     pspull nos_low, nos_high 
@@ -155,7 +155,7 @@ HEADER "(copy)", "copy"
 ;     only \n \r \b, all other control turns into space 
 ;     appends a bl at init and a bl at end 
 ; 
-HEADER "(refill)", "refill" 
+HEADER "(refill)", "refillf", F_LEAP 
     NOOP 
 10: 
     ; get buffer pointer 
@@ -283,20 +283,6 @@ HEADER "(refill)", "refill"
     clr tos_high 
     POON 
  
-;---------------------------------------------------------------------- 
-; 
-; ok ( a c --- a u | 0 ) 
-;    find a for c 
-;    returns address and u lenght or zero if no c or \0 
-;    max lenght is 255 bytes 
-; 
-HEADER "(parse)", "parse" 
-    NOOP 
-    ; start at 
-    pspull zpm_low, zpm_high 
-    ; for \0 check 
-    clr tos_high 
-    rjmp _tows; 
  
 ;---------------------------------------------------------------------- 
 ; 
@@ -305,7 +291,7 @@ HEADER "(parse)", "parse"
 ;    returns address and u lenght or zero if no c or \0 
 ;    max lenght is 255 bytes 
 ; 
-HEADER "(word)", "word" 
+HEADER "(word)", "wordf", F_LEAP
     NOOP 
     ; start at 
     pspull zpm_low, zpm_high 
@@ -313,6 +299,21 @@ HEADER "(word)", "word"
     clr tos_high 
     rjmp _wsto 
  
+;---------------------------------------------------------------------- 
+; 
+; ok ( a c --- a u | 0 ) 
+;    find a for c 
+;    returns address and u lenght or zero if no c or \0 
+;    max lenght is 255 bytes 
+; 
+HEADER "(parse)", "parsef", F_LEAP
+    NOOP 
+    ; start at 
+    pspull zpm_low, zpm_high 
+    ; for \0 check 
+    clr tos_high 
+    rjmp _tows; 
+
 ;---------------------------------------------------------------------- 
 ; 
 ;   pass trhu 
@@ -366,7 +367,7 @@ _wsat:
 ;   return FALSE or TRUE
 ;   eg. base 16, 0-9~A-F
 ;
-HEADER "(digit)", "digit" 
+HEADER "(digit)", "digitf", F_LEAP
     NOOP 
     ; convert from ASCII
     subi tos_low, '0'
@@ -409,7 +410,7 @@ HEADER "(digit)", "digit"
 ;    uses all but X, Y 
 ;    tos, nos, wrk, Z, _zero_, _work_, r0, r1 
 ; 
-HEADER "(number)", "number" 
+HEADER "(number)", "numberf", F_LEAP
     NOOP 
  
     ; tst for c < 1 
@@ -578,12 +579,12 @@ _hex_base:
     cpi wrk_low, 16 
     breq _next_digit 
  
-_next_digit: 
 ; overflow ? 
     brcc _next_digit 
     rjmp 70f 
  
 ; next digit 
+_next_digit: 
     movw tos_low, R0 
  
 60: 
@@ -639,7 +640,7 @@ _next_digit:
 ; 
 ;   dictionary is in flash and word is in sram 
 ; 
-HEADER "(find)", "find" 
+HEADER "(find)", "findf", F_LEAP
     NOOP 
  
     ; load address dictionary 
@@ -783,11 +784,39 @@ HEADER "(find)", "find"
 ; 
 ;---------------------------------------------------------------------- 
  
- 
+;----------------------------------------------------------------------
+;
+; ok make a value ( w -- )
+; header|lit|value|ends
+; zzzz
+HEADER "VALUE", "VALUE", 
+    .word CREATE, DROP, LITERAL, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok make a to value 
+; change value 
+HEADER "TO", "TOVALUE", F_IMMEDIATE
+    .word FIND, ONEPLUS, TO, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok make a defer
+; zzzz no checks for 
+HEADER "DEFER", "DEFER", 
+    .word CREATE, LIT, ZZZZ, LIT, BRANCH, COMMA, COMMA, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok make a is 
+;
+HEADER "IS", "ISDEFER", F_IMMEDIATE
+    .word FIND, ONEPLUS, SWAP, TO, ENDS
+
 ;---------------------------------------------------------------------- 
 ; 
 ; ok MOVE (a1 a2 u -- ) 
-; 
+; must be backwards zzzz
 HEADER "MOVE", "MOVE", 
 1:  .word ZDUP, ZBRANCH, 2f
     .word ONEMINUS, TOR
@@ -976,7 +1005,7 @@ HEADER "SOURCE+", "SOURCEPLUS",
 ; is  REFILL ( -- a n ), toin = 0 
 ; 
 HEADER "REFILL", "REFILL", 
-    .word SOURCE, refill, ZERO, TOIN, TO, ENDS 
+    .word SOURCE, refillf, ZERO, TOIN, TO, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 
@@ -985,7 +1014,7 @@ HEADER "REFILL", "REFILL",
 ; 
 HEADER "PARSE", "PARSE" 
     .word SOURCEPLUS, SWAP 
-    .word parse, ZDUP, ZBRANCH, 2f 
+    .word parsef, ZDUP, ZBRANCH, 2f 
     .word DUP, TOIN, PLUSTO, ENDS 
 2:  .word REFILL, BRANCH, PARSE ; perfect loop 
  
@@ -1034,7 +1063,7 @@ HEADER ".\"", "DOTQUOTE"
 ; 
 HEADER "PARSE-NAME", "PARSEN", 
     .word SOURCEPLUS, SWAP 
-    .word word, ZDUP, ZBRANCH, 2f 
+    .word wordf, ZDUP, ZBRANCH, 2f 
     .word DUP, TOIN, PLUSTO, ENDS 
 2:  .word REFILL, BRANCH, PARSEN  ; perfect loop 
  
@@ -1045,7 +1074,7 @@ HEADER "PARSE-NAME", "PARSEN",
 ;   no vocabularies 
 ; 
 HEADER "FIND-NAME", "FINDN", 
-    .word LATEST, AT, find, ENDS 
+    .word LATEST, AT, findf, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 
@@ -1079,7 +1108,7 @@ HEADER "CREATE", "CREATE",
     .word PARSEN, LIT, UH0 
     .word DUP, LATEST, AT, SWAP, TO, CELLPLUS 
     .word OVER, OVER, TO, ONEPLUS, SWAP, DUP 
-    .word TOR, copy, RTO 
+    .word TOR, copyf, RTO 
     .word DUP, ONE, AND, ZEQU, ZBRANCH, 2f 
     .word DUP, BL, SWAP, TO, ONE, PLUS 
 2:  .word ENDS 
@@ -1155,7 +1184,7 @@ HEADER "COMPXT", "COMPXT", F_IMMEDIATE
 ; is  NUMBN ( a n -- w true | a n false ) 
 ; 
 HEADER "NUMBN", "NUMBN", 
-    .word OVER, OVER, number, ZBRANCH, 2f 
+    .word OVER, OVER, numberf, ZBRANCH, 2f 
     .word TOR, DROP, DROP, RTO, FTRUE, BRANCH, 4f 
 2:  .word FFALSE 
 4:  .word ENDS 

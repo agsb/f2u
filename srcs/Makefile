@@ -41,8 +41,8 @@ MCU = atmega328
 # 0 = turn off optimization. s = optimize for size.
 # (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
 #OPT = 0
-OPT = 0
 OPT = s
+OPT = 0
 
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex
@@ -81,6 +81,7 @@ EXTRAINCDIRS =
 # c99   - ISO C99 standard (not yet fully implemented)
 # gnu99 - c99 plus GCC extensions
 CSTANDARD = -std=gnu99
+CSTANDARD = -std=c89
 
 # Place -D or -U options here
 #CDEFS = -DF_CPU=8000000
@@ -100,20 +101,20 @@ CINCS =
 #    -adhlns...: create assembler listing
 CFLAGS = -g$(DEBUG)
 CFLAGS += -O$(OPT)
+CFLAGS += -nostartfiles
+CFLAGS += -nostdlib 
 CFLAGS += $(CDEFS) $(CINCS)
 #
 CFLAGS += -fverbose-asm
-#CFLAGS += -funsigned-char
-#CFLAGS += -funsigned-bitfields
-#CFLAGS += -fpack-struct
-#
-CFLAGS += -fshort-enums
 CFLAGS += -Wall -Wstrict-prototypes
 CFLAGS += -Wa,-adhlns=$(<:.c=.lst)
 CFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
 CFLAGS += $(CSTANDARD)
-CFLAGS += -nostartfiles
-CFLAGS += -nostdlib -nostartfiles
+#
+#CFLAGS += -funsigned-char
+#CFLAGS += -funsigned-bitfields
+#CFLAGS += -fpack-struct
+#CFLAGS += -fshort-enums 
 #CFLAGS += -x assembler-with-cpp 
 #CFLAGS += --strip-debug
 
@@ -126,6 +127,8 @@ CFLAGS += -nostdlib -nostartfiles
 #             files -- see avr-libc docs [FIXME: not yet described there]
 #ASFLAGS = -Wa,-adhlns=$(<:.S=.lst),-gstabs 
 ASFLAGS = -Wa,-adhlns=$(<:.S=.lst)
+
+#ASFLAGS += -mrelax
 
 #Additional libraries.
 
@@ -145,10 +148,10 @@ PRINTF_LIB =
 
 SCANF_LIB = 
 
-MATH_LIB = -lm
+#MATH_LIB = -lm
 MATH_LIB = 
 
-OU_LIB = -L. -lou_$(MCU)
+#OU_LIB = -L. -lou_$(MCU)
 OU_LIB = 
 
 # External memory options
@@ -227,8 +230,8 @@ OBJDUMP = avr-objdump
 SIZE = avr-size
 NM = avr-nm
 AVRDUDE = avrdude
-REMOVE = rm -f
-COPY = cp
+REMOVE = rm -f 
+COPY = cp 
 
 # Define Messages
 # English
@@ -315,12 +318,9 @@ gccversion :
 	@$(CC) --version
 
 
-
 # Program the device.  
 program: $(TARGET).hex $(TARGET).eep
 	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH) $(AVRDUDE_WRITE_EEPROM)
-
-
 
 
 # Convert ELF to COFF for use in debugging / simulating in AVR Studio or VMLAB.
@@ -341,7 +341,6 @@ extcoff: $(TARGET).elf
 	@echo
 	@echo $(MSG_EXTENDED_COFF) $(TARGET).cof
 	$(COFFCONVERT) -O coff-ext-avr $< $(TARGET).cof
-
 
 
 # Create final output files (.hex, .eep) from ELF output file.
@@ -367,7 +366,6 @@ extcoff: $(TARGET).elf
 	@echo
 	@echo $(MSG_SYMBOL_TABLE) $@
 	$(NM) -n $< > $@
-
 
 
 # Link: create ELF output file from object files.
@@ -396,7 +394,6 @@ extcoff: $(TARGET).elf
 	@echo
 	@echo $(MSG_ASSEMBLING) $<
 	$(CC) -c $(ALL_ASFLAGS) $< -o $@
-
 
 
 # Target: clean project.

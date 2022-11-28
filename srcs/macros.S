@@ -391,6 +391,4 @@ E2P_START = 0x000
 
 /* temporary where start forth */
 
-FORTH_INI = SRAM_END + 1
-
 ;----------------------------------------------------------------------
