@@ -4,17 +4,24 @@
 
 *still lots of english errors, please correct me*
 
+# 27/11/2022
+
+- when change to atmega328, need use a call in do_spm_short
+
+- rellocating some words, including Dr. Ting eForth picture numeric output word
+
+- avr-suite have a bug "relocation truncated to fit: R_AVR_13_PCREL against 'no symbol' linker error" hard to solve
+
 # 23/11/2022
 
-- Using MITC there is no IP. To preserve the reference to the next sequential return,
-      when executing >R R@ R> the values are into/from the second cell of returning
-      stack and the reference in the first cell is used as the next one to be executed. 
-      The effect is transparent to the user.
+- Using MITC there is no IP. To preserve the next sequential reference, when executing >R R@ R>,
+      the values are into/from the second cell of returning stack and 
+      the reference is keeped at the first cell to be executed. 
+      The effect is transparent to the user. 
 
-- Review of compile, execute, literal. 
+- Review of compile, execute, literal, as compile state words. 
 
 - Most of code is precompiled, using references (labels), literals (valies), why ? To have a full assembled forth nucleous. 
-
 
 # 16/11/2022
 
