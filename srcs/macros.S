@@ -220,13 +220,13 @@ is_\label:
 ; all primitives must start with NOOP and end with POON
 ;    a  nop (0x0000) is used as a null reference, and marks all primitives
 ;    as they are really a branch and link mark
-;
 
 .macro NOOP
     nop
 .endm
 
 .macro POON
+;	for atmega8 could use rjmp
     jmp _link
 .endm
 
@@ -284,7 +284,7 @@ BASE_DEFAULT = 16
 ;
 ;   COMPILE is for compile only words.
 ;
-;   HIDDEN or SMUDGE is not used
+;   HIDDEN or SMUDGE is not used, free to reassign any words but not change already compliled
 ;
 ;   LEAP is to mark as pure assembler routines, no calls inside.
 ;
@@ -297,10 +297,13 @@ F_RESERVED = 0x80
 F_IMMEDIATE = 0x40
 F_COMPILE = 0x20
 F_HIDDEN = 0x10
-F_LEAP = 0x00
 
 F_TOMASK = 0xF0
 F_UNMASK = 0x0F
+
+; not flags but usefull to remember
+F_LEAP = 0x00	; for primitives, pure assembler no calls for forth words
+F_CORE = 0x00	; for core words
 
 ;---------------------------------------------------------------------
 ;

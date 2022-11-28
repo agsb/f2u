@@ -63,14 +63,16 @@
 ;----------------------------------------------------------------------
 ;
 ; ok ( w a -- ) 
+;	w = b1b2 ~~ [a] = b1, [a+1] = b2
 ; just write a word
+;
 HEADER "!E", "TOEE", F_LEAP
     .word OVER, OVER, CTOE, ONE, PLUS, TOR, ENDIAN, RTO, CTOE, ENDS   
 
 ;----------------------------------------------------------------------
 ;
-; ok ( w -- u ) 
-;   w1 = b1b2 w2=b3b4 ~ u = b1b3 ????
+; ok ( a -- w ) 
+;   [a] = b1, [a+1] = b2 ~~ w = b1b2
 ;   w1 0x00ff and, w2 0x00ff and, 
 ;   w1 = b100, w2 = b300, w2 endian, w2 = 00b3
 ;   w1 w2 or
@@ -383,7 +385,7 @@ HEADER "UHERE", "UHERE",
 ;
 ; ok HERE ( -- w ) 
 ;
-HEADER "HERE", "HERE",
+HEADER "HERE", "HERE", F_CORE
     .word DPP, AT, ENDS 
  
 ;----------------------------------------------------------------------
@@ -391,7 +393,7 @@ HEADER "HERE", "HERE",
 ; ok ALLOT ( u -- ) 
 ; not standart: updates DP and UP
  
-HEADER "ALLOT", "ALLOT",
+HEADER "ALLOT", "ALLOT", F_CORE
     .word DUP
     .word HPP, AT, PLUS, HPP, TO 
     .word DPP, AT, PLUS, DPP, TO 
@@ -402,7 +404,7 @@ HEADER "ALLOT", "ALLOT",
 ; is ALIGN 
 ; not standart: updates DP and UP
 ;
-HEADER "ALIGN", "ALIGN",
+HEADER "ALIGN", "ALIGN", F_CORE
     .word HPP, AT, ALIGNED, HPP, TO
     .word DPP, AT, ALIGNED, DPP, TO
     .word ENDS 
@@ -411,14 +413,14 @@ HEADER "ALIGN", "ALIGN",
 ;
 ; ok CCOMMA ( w -- ) 
 ;
-HEADER "C,", "CCOMMA", F_IMMEDIATE
+HEADER "C,", "CCOMMA", F_IMMEDIATE | F_CORE
     .word UHERE, CTO, ONE, ALLOT, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok COMMMA ( w -- ) 
 ;
-HEADER ",", "COMMA", F_IMMEDIATE
+HEADER ",", "COMMA", F_IMMEDIATE | F_CORE
     .word UHERE, TO, CELL, ALLOT, ENDS 
  
 ;----------------------------------------------------------------------
@@ -435,6 +437,9 @@ HEADER "<,", "TOMMA", F_IMMEDIATE
 ; is DOVAR ( -- a ), place the address of next cell into stack, 
 ;   R> DUP 2+ >R
 ;
+;	note: the address is at flash, then if is a reference to a value
+;	it must be de-referenced to sram 
+;	      
 HEADER "DOVAR", "DOVAR",
     .word RTO, DUP, TWOPLUS, TOR, ENDS 
  
@@ -443,23 +448,26 @@ HEADER "DOVAR", "DOVAR",
 ; is DOCON ( -- a ), place the contents of next cell into stack, 
 ;   R> DUP 2+ >R @
 ;
+;	note: the address is at flash, then if is a reference to a value
+;	it must be de-referenced to sram 
+;
 HEADER "DOCON", "DOCON",
-    .word DOVAR, AT, ENDS 
+    .word DOVAR, ATAT, AT, ENDS 
 
 ;----------------------------------------------------------------------
 ;
 ; is LITERAL ( w -- ) 
 ;
-HEADER "LITERAL", "LITERAL",
+HEADER "LITERAL", "LITERAL", F_CORE
     .word LIT, LIT, COMMA, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
 ; ok this puts next cell into stack and compiles into HERE 
 ; used only in precompiled sources as forth-twigs
-; zzzz
+; 
 HEADER "COMP", "COMP", F_IMMEDIATE
-    .word RTO, DUP, CELLPLUS, TOR, AT, COMMA, ENDS 
+    .word RTO, DUP, CELLPLUS, TOR, ATAT, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -628,7 +636,7 @@ HEADER "FOR", "FOR", F_IMMEDIATE
 HEADER "TXEN", "TXEN", 
     .word RTO, ONEMINUS
     .word DUP, ZBRANCH, 1f  
-    .word DUP, TOR 
+    .word TOR 
 1:
     .word ENDS
 
@@ -729,6 +737,10 @@ HEADER "TYPE", "TYPE",
 ;
 HEADER "UM-", "UMMINUS",
     .word NEGATE, UMPLUS, ENDS
+
+;----------------------------------------------------------------------
+;   User Stack from end sram
+;
 ;----------------------------------------------------------------------
 ;
 ; is  ( -- )
@@ -737,9 +749,6 @@ HEADER "UM-", "UMMINUS",
 HEADER "U-", "ULESS",
     .word UPP, AT, CELL, MINUS, DUP, UPP, TO, ENDS
 
-;----------------------------------------------------------------------
-;   User Stack from end sram
-;
 ;----------------------------------------------------------------------
 ;
 ; is  ( -- )

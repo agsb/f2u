@@ -1,5 +1,4 @@
 
-
 /*
  *  DISCLAIMER
  *
@@ -147,12 +146,10 @@ HEADER "WITHIN", "WITHIN", F_LEAP
 ; a 64 bit half number, 7FFF FFFF FFFF FFFF is 9.223.372.036.854.775.807
 ;----------------------------------------------------------------------
 
-
-
 ;----------------------------------------------------------------------
 ; adapted from AVR-200 
 ; "mpy16u" "- 16x16 Bit Unsigned Multiplication
-;
+;	( w1 w2 -- w3 w4 ) w1 * w2 
 ; ok UM*
 HEADER "UM*", "UMUL", F_LEAP
     NOOP
@@ -240,6 +237,61 @@ d16u_3:
 d16ures:
     rjmp m16result
 
+
+;----------------------------------------------------------------------
+;
+; ok ( ud u -- ur uq)
+; 
+HEADER "UM/MOD", "UMDIVMOD", F_LEAP
+    NOOP
+    .word OVER, OVER, ULESS, ZBRANCH, 8f, 
+ 2: .word NEGATE, LIT, 15, 
+    .word FOR zzzzz
+    .word TOR, DUP, UMPLUS, TOR, TOR, DUP, UMPLUS, RTO, PLUS, DUP
+    .word RTO, RAT, SWAP, TOR, UMPLUS, RTO, OR, ZBRANCH, 4f
+    .word TOR, DROP, ONEPLUS, RTO, BRANCH, 6f 
+4:  .word DROP
+6:  .word RTO 
+    .word NEXT zzzzz
+    .word DROP, SWAP, ENDS
+8:  .word DROP, DROP, DROP, TRUE, DUP, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok *
+HEADER "M/MOD", "MDIVMOD", F_LEAP
+    NOOP
+    .word DUP, ZEROLT, DUP, TOR, ZBRANCH, 2f, 
+    .word NEGATE, TOR, DNEGATE, RTO
+2:  .word TOR, DUP, ZEROLT, ZBRANCH, 4f, 
+    .word RAT, PLUS,
+4:  .word RTO, UMDIVMOD, RTO, ZBRANCH, 6f
+    .word SWAP, NEGATE, SWAP
+6:  .word ENDS
+
+;----------------------------------------------------------------------
+;
+; ok *
+HEADER "/MOD", "DIVMOD", F_LEAP
+    NOOP
+    .word OVER, ZEROLT, SWAP, MDIVMOD, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok *
+HEADER "MOD", "MOD", F_LEAP
+    NOOP
+    .word DIVMOD, DROP, ENDS
+
+;----------------------------------------------------------------------
+;
+; ok *
+HEADER "/", "DIV", F_LEAP
+    NOOP
+    .word DIVMOD, SWAP, DROP, ENDS
+;
+;
+;***** Code
 ;----------------------------------------------------------------------
 ;
 ;     adapted from AVR-200 

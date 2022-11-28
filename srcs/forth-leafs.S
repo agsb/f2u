@@ -85,8 +85,7 @@
 ; use the address to determine if is flash or is sram, above is flash :)
 ;
 .section .text 
-;.org FORTH_INI
-_forth_: 
+__forth__: 
 ;----------------------------------------------------------------------
 ; inner interpreter, 
 ; it is also a primitive word 
@@ -95,7 +94,7 @@ _forth_:
 ;
 ;   temporary use zpm, wrk, _word_
 ;
-HEADER "ENDS", "ENDS", F_LEAP
+HEADER "ENDS", "ENDS", F_LEAP | F_CORE
 ; does nothing and mark as primitive 
     NOOP 
  
@@ -137,7 +136,7 @@ _link:
 ; ok ( -- w) 
 ; beware, it blocks while test if can receive a char 
 ;
-HEADER "KEY", "KEY", F_LEAP
+HEADER "KEY", "KEY", F_LEAP | F_CORE
     NOOP 
 1: 
     sbis 0x0b, 7 
@@ -153,7 +152,7 @@ HEADER "KEY", "KEY", F_LEAP
 ; ok ( -- FALSE | TRUE ) 
 ; test if can receive a char, or return FALSE 
 ;
-HEADER "KEY?", "QKEY", F_LEAP
+HEADER "KEY?", "QKEY", F_LEAP | F_CORE
     NOOP 
 3: 
     sbis 0x0b, 7 
@@ -165,7 +164,7 @@ HEADER "KEY?", "QKEY", F_LEAP
 ; ok ( w -- ) 
 ; beware, it blocks while test if can send a char 
 ;
-HEADER "EMIT", "EMIT", F_LEAP
+HEADER "EMIT", "EMIT", F_LEAP | F_CORE
     NOOP 
 1: 
     sbis 0x0b, 5 
@@ -180,7 +179,7 @@ HEADER "EMIT", "EMIT", F_LEAP
 ; ok ( -- FALSE | TRUE ) 
 ; test if can send a char, or return FALSE 
 ;
-HEADER "EMIT?", "QEMIT", F_LEAP
+HEADER "EMIT?", "QEMIT", F_LEAP | F_CORE
     NOOP 
 3: 
     sbis 0x0b, 5 
@@ -192,7 +191,7 @@ HEADER "EMIT?", "QEMIT", F_LEAP
 ; ok ( c e -- ) 
 ;   write a byte to eprom 
 ;
-HEADER "C!E", "CTOE", F_LEAP
+HEADER "C!E", "CTOE", F_LEAP 
     NOOP 
     pspull nos_low, nos_high
 
@@ -253,7 +252,7 @@ _ee_read:
 ; also io@
 ; only sram
 ;
-HEADER "C@P", "CATIO", F_LEAP
+HEADER "C@P", "CATIO", F_LEAP 
     NOOP 
 _peek:
     movw zpm_low, tos_low  
@@ -293,7 +292,7 @@ HEADER "MILLIS", "MILLIS", F_LEAP
 ; ok ( -- w) 
 ; strat watchdog 
 ;
-HEADER "WDCLR", "WDCLR", F_LEAP
+HEADER "WDCLR", "WDCLR", F_LEAP 
     NOOP 
     wdr
     POON
@@ -326,7 +325,7 @@ HEADER "WDOFF", "WDOFF", F_LEAP
 ;
 ; ok ( -- -1 ) 
 ;
-HEADER "TRUE", "FTRUE", F_LEAP
+HEADER "TRUE", "FTRUE", F_LEAP | F_CORE
     NOOP 
     pspush tos_low, tos_high 
 _iftrue: 
@@ -338,7 +337,7 @@ _iftrue:
 ;
 ; ok ( -- 0 ) 
 ;
-HEADER "FALSE", "FFALSE", F_LEAP
+HEADER "FALSE", "FFALSE", F_LEAP | F_CORE
     NOOP 
     pspush tos_low, tos_high 
 _iffalse: 
@@ -350,7 +349,7 @@ _iffalse:
 ;
 ; ok 0= 
 ;
-HEADER "0=", "ZEQU", F_LEAP
+HEADER "0=", "ZEQU", F_LEAP | F_CORE
     NOOP 
     or tos_low, tos_high
     brbs BIT_ZERO, _iftrue
@@ -361,7 +360,7 @@ HEADER "0=", "ZEQU", F_LEAP
 ;
 ; ok 0< 
 ;   using 2's complement, negative always have 0x8000
-HEADER "0<", "ZLTH", F_LEAP
+HEADER "0<", "ZLTH", F_LEAP | F_CORE
     NOOP 
     ; 0x80
     andi tos_high, 0x80
@@ -375,7 +374,7 @@ HEADER "0<", "ZLTH", F_LEAP
 ;   unsigned lessthan 
 ;   if u1 < u2, true, else, false
 ;
-HEADER "U<", "UMLESS", F_LEAP
+HEADER "U<", "UMLESS", F_LEAP | F_CORE
     NOOP 
     pspull nos_low, nos_high 
     clc 
@@ -390,10 +389,10 @@ HEADER "U<", "UMLESS", F_LEAP
 
 ;----------------------------------------------------------------------
 ;
-; ok ( w1 w2 -- w3 f ) 
+; ok ( w1 w2 -- w3 c ) 
 ;   unsigned plus 
 ;
-HEADER "UM+", "UMPLUS", F_LEAP
+HEADER "UM+", "UMPLUS", F_LEAP | F_CORE
     NOOP 
     pspull nos_low, nos_high 
     clc 
@@ -415,7 +414,7 @@ HEADER "UM+", "UMPLUS", F_LEAP
 ; ok ! to (w a -- ) 
 ; only in sram 
 ;
-HEADER "!", "TO", F_LEAP
+HEADER "!", "TO", F_LEAP | F_CORE
     NOOP 
     movw  zpm_low, tos_low
     pspull tos_low, tos_high 
@@ -429,13 +428,25 @@ HEADER "!", "TO", F_LEAP
 ; ok @ at ( a -- w ) 
 ; only in sram 
 ;
-HEADER "@", "AT", F_LEAP
+HEADER "@", "AT", F_LEAP | F_CORE
     NOOP 
     movw zpm_low, tos_low 
     srload tos_low 
     srload tos_high 
     POON
  
+;----------------------------------------------------------------------
+;
+; ok @@ at ( a -- a' ) 
+; only in flash, fetches a reference to sram 
+;	that could be used by @ and ! 
+;
+HEADER "@@", "ATAT", F_LEAP 
+    NOOP 
+    movw zpm_low, tos_low
+    pmload tos_low, tos_high
+	POON
+    
 ;----------------------------------------------------------------------
 ; 
 ; Note on return stack operations:
@@ -453,7 +464,7 @@ HEADER "@", "AT", F_LEAP
 ; ok ( w -- ) ( -- w) 
 ;   vide note above
 ;
-HEADER ">R", "TOR", F_COMPILE | F_LEAP
+HEADER ">R", "TOR", F_COMPILE | F_LEAP | F_CORE
     NOOP 
     rspull nos_low, nos_high
     rspush tos_low, tos_high 
@@ -466,7 +477,7 @@ HEADER ">R", "TOR", F_COMPILE | F_LEAP
 ; ok ( -- w ) ( w -- ) 
 ;   vide note above
 ;
-HEADER "R>", "RTO", F_COMPILE | F_LEAP
+HEADER "R>", "RTO", F_COMPILE | F_LEAP | F_CORE
     NOOP 
     pspush tos_low, tos_high 
     rspull nos_low, nos_high
@@ -479,7 +490,7 @@ HEADER "R>", "RTO", F_COMPILE | F_LEAP
 ; ok ( -- w ) ( w -- w ) 
 ;   vide note above
 ;
-HEADER "R@", "RAT", F_COMPILE | F_LEAP
+HEADER "R@", "RAT", F_COMPILE | F_LEAP | F_CORE
     NOOP 
     pspush tos_low, tos_high 
     rspull nos_low, nos_high
@@ -492,7 +503,7 @@ HEADER "R@", "RAT", F_COMPILE | F_LEAP
 ;
 ; ok ( rsp -- w )  
 ;
-HEADER "RS!", "RSTO", F_LEAP
+HEADER "RS!", "RSTO", F_LEAP | F_CORE
     NOOP 
     movw rsp_low, tos_low 
     pspull tos_low, tos_high 
@@ -502,7 +513,7 @@ HEADER "RS!", "RSTO", F_LEAP
 ;
 ; ok ( psp -- w ) 
 ;
-HEADER "PS!", "PSTO", F_LEAP
+HEADER "PS!", "PSTO", F_LEAP | F_CORE
     NOOP 
     movw psp_low, tos_low 
     pspull tos_low, tos_high 
@@ -513,7 +524,7 @@ HEADER "PS!", "PSTO", F_LEAP
 ; ok ( -- rsp) 
 ; put the address to top of return stack at tos
 ;
-HEADER "RS@", "RSAT", F_LEAP
+HEADER "RS@", "RSAT", F_LEAP | F_CORE
     NOOP 
     pspush tos_low, tos_high 
     movw tos_low, rsp_low 
@@ -524,7 +535,7 @@ HEADER "RS@", "RSAT", F_LEAP
 ; ok ( -- psp ) 
 ; put the address to top of parameter stack at tos
 ;
-HEADER "PS@", "PSAT", F_LEAP
+HEADER "PS@", "PSAT", F_LEAP | F_CORE
     NOOP 
     pspush tos_low, tos_high 
     movw tos_low, psp_low 
@@ -535,7 +546,7 @@ HEADER "PS@", "PSAT", F_LEAP
 ; ok ( w -- ) 
 ;     
 ;
-HEADER "DROP", "DROP", F_LEAP
+HEADER "DROP", "DROP", F_LEAP | F_CORE
     NOOP
 PULL: 
     pspull tos_low, tos_high 
@@ -545,7 +556,7 @@ PULL:
 ;
 ; ok ( w -- w w) 
 ;
-HEADER "DUP", "DUP", F_LEAP
+HEADER "DUP", "DUP", F_LEAP | F_CORE
     NOOP 
 PUSH:
     pspush tos_low, tos_high 
@@ -555,7 +566,7 @@ PUSH:
 ;
 ; ok ( w2 w1 -- w1 w2 ) 
 ;
-HEADER "SWAP", "SWAP", F_LEAP
+HEADER "SWAP", "SWAP", F_LEAP | F_CORE
     NOOP 
     pspull nos_low, nos_high 
     pspush tos_low, tos_high 
@@ -566,7 +577,7 @@ HEADER "SWAP", "SWAP", F_LEAP
 ;
 ; ok ( w2 w1 -- w2 w1 w2 ) 
 ;
-HEADER "OVER", "OVER", F_LEAP
+HEADER "OVER", "OVER", F_LEAP | F_CORE
     NOOP 
     pspull nos_low, nos_high 
     pspush nos_low, nos_high 
@@ -579,9 +590,9 @@ HEADER "OVER", "OVER", F_LEAP
 ; ok ( 0 | w -- 0 | w w ) 
 ; dup if tos not zero 
 ;
-HEADER "?DUP", "ZDUP", F_LEAP
+HEADER "?DUP", "ZDUP", F_LEAP | F_CORE
     NOOP 
-    cp tos_low, tos_high
+    or tos_low, tos_high
     brbs BIT_ZERO, 1f 
     pspush tos_low, tos_high 
 1: 
@@ -591,7 +602,7 @@ HEADER "?DUP", "ZDUP", F_LEAP
 ;
 ; ok ( w1 w2 -- 0 | -1 ) 
 ;
-HEADER "<", "LTHAN", F_LEAP
+HEADER "<", "LTHAN", F_LEAP | F_CORE
     NOOP 
     pspull nos_low, nos_high 
     cp tos_low, nos_low 
@@ -607,7 +618,7 @@ HEADER "<", "LTHAN", F_LEAP
 ; ok ( w1 w2 -- w2 + w1 ) 
 ;   signed plus
 ;
-HEADER "+", "PLUS", F_LEAP
+HEADER "+", "PLUS", F_LEAP | F_CORE
     NOOP 
     pspull nos_low, nos_high 
     clc 
@@ -620,7 +631,7 @@ HEADER "+", "PLUS", F_LEAP
 ; ok ( w1 w2 -- w1 - w2 ) 
 ;   signed minus, 0 5 -- -5
 ;
-HEADER "-", "MINUS", F_LEAP
+HEADER "-", "MINUS", F_LEAP | F_CORE
     NOOP 
     pspull nos_low, nos_high 
     clc 
@@ -633,7 +644,7 @@ HEADER "-", "MINUS", F_LEAP
 ;
 ; ok ( w1 w2 -- w2 NAND w1 ) 
 ;
-HEADER "NAND", "NAND", F_LEAP
+HEADER "NAND", "NAND", F_LEAP | F_CORE
     NOOP 
     pspull nos_low, nos_high 
     and tos_low, nos_low 
@@ -646,7 +657,7 @@ HEADER "NAND", "NAND", F_LEAP
 ;
 ; ok ( w1 w2 -- w2 AND w1 ) 
 ;
-HEADER "AND", "AND", F_LEAP
+HEADER "AND", "AND", F_LEAP | F_CORE
     NOOP 
     pspull nos_low, nos_high 
     and  tos_low, nos_low 
@@ -657,7 +668,7 @@ HEADER "AND", "AND", F_LEAP
 ;
 ; ok ( w1 w2 -- w2 OR w1 ) 
 ;
-HEADER "OR", "OR", F_LEAP
+HEADER "OR", "OR", F_LEAP | F_CORE
     NOOP 
     pspull nos_low, nos_high 
     or   tos_low, nos_low 
@@ -668,7 +679,7 @@ HEADER "OR", "OR", F_LEAP
 ;
 ; ok ( w1 w2 -- w2 XOR w1 ) 
 ;
-HEADER "XOR", "XOR", F_LEAP
+HEADER "XOR", "XOR", F_LEAP | F_CORE
     NOOP 
     pspull nos_low, nos_high 
     eor  tos_low, nos_low 
@@ -679,7 +690,7 @@ HEADER "XOR", "XOR", F_LEAP
 ;
 ; ok INV 
 ;
-HEADER "INVERT", "INVERT", F_LEAP
+HEADER "INVERT", "INVERT", F_LEAP | F_CORE
     NOOP 
 _inv: 
     com tos_low 
@@ -690,7 +701,7 @@ _inv:
 ;
 ; ok NEG 
 ;
-HEADER "NEGATE", "NEGATE", F_LEAP
+HEADER "NEGATE", "NEGATE", F_LEAP | F_CORE
     NOOP 
 _neg: 
     neg tos_low 
@@ -701,7 +712,7 @@ _neg:
 ;
 ; ok ( w -- w * 2 ) same as shift left << 1, unsigned 
 ;
-HEADER "2*", "SHL", F_LEAP
+HEADER "2*", "SHL", F_LEAP | F_CORE
     NOOP 
 _shl: 
     clc 
@@ -713,7 +724,7 @@ _shl:
 ;
 ; ok ( w -- w / 2 ) same as shift right >> 1, unsigned 
 ;
-HEADER "2/", "SHR", F_LEAP
+HEADER "2/", "SHR", F_LEAP | F_CORE
     NOOP 
 _shr: 
     clc 
@@ -736,7 +747,7 @@ HEADER "><", "ENDIAN", F_LEAP
 ;
 ; ok ( -- ) ( branch next reference ) 
 ;   no more offsets then no more branch
-HEADER "BRANCH", "BRANCH", F_LEAP
+HEADER "BRANCH", "BRANCH", F_LEAP | F_CORE
     NOOP 
 _branch: 
     rspull zpm_low, zpm_high 
@@ -749,7 +760,7 @@ _branch:
 ; ok ( u -- ) 
 ; if tos is not zero, skip next 
 ; 
-HEADER "0BRANCH", "ZBRANCH", F_LEAP
+HEADER "0BRANCH", "ZBRANCH", F_LEAP | F_CORE
     NOOP 
     movw nos_low, tos_low
     pspull tos_low, tos_high
@@ -765,8 +776,9 @@ HEADER "0BRANCH", "ZBRANCH", F_LEAP
 ;
 ;  ok LIT ( -- w ), 
 ;  push a value from flash to data stack 
-;  
-HEADER "LIT", "LIT", F_LEAP
+;  note auto increment in pmload
+;
+HEADER "LIT", "LIT", F_LEAP | F_CORE
     NOOP 
     pspush tos_low, tos_high
     rspull zpm_low, zpm_high
@@ -780,7 +792,7 @@ HEADER "LIT", "LIT", F_LEAP
 ;  data space pointer align to CELL, atmega is always 
  
 ;
-HEADER "ALIGNED", "ALIGNED", F_LEAP
+HEADER "ALIGNED", "ALIGNED", F_LEAP | F_CORE
     NOOP 
     adiw tos_low, 1 
     cbr tos_low, 0 
@@ -791,7 +803,7 @@ HEADER "ALIGNED", "ALIGNED", F_LEAP
 ; ok ( -- CELL ) 
 ; CELL is 2 ; size of a cell 
 ;
-HEADER "CELL", "CELL", F_LEAP
+HEADER "CELL", "CELL", F_LEAP | F_CORE
     NOOP 
     pspush tos_low, tos_high
     ldi tos_low, CELL_SIZE 
@@ -803,7 +815,7 @@ HEADER "CELL", "CELL", F_LEAP
 ; ok C! ( c a -- ) 
 ; only works in sram
 ;
-HEADER "C!", "CTO", F_LEAP
+HEADER "C!", "CTO", F_LEAP | F_CORE
     NOOP 
     movw zpm_low, tos_low
     pspull tos_low, tos_high
@@ -816,7 +828,7 @@ HEADER "C!", "CTO", F_LEAP
 ; ok C@ ( a -- c ) 
 ; only works in sram
 ;
-HEADER "C@", "CAT", F_LEAP
+HEADER "C@", "CAT", F_LEAP | F_CORE
     NOOP 
     movw zpm_low, tos_low
     ld tos_low, Z
@@ -826,7 +838,7 @@ HEADER "C@", "CAT", F_LEAP
 ;
 ; ok ( -- 0 ) 
 ;
-HEADER "0", "ZERO", F_LEAP
+HEADER "0", "ZERO", F_LEAP | F_CORE
     NOOP 
     pspush tos_low, tos_high 
     clr tos_low 
@@ -837,7 +849,7 @@ HEADER "0", "ZERO", F_LEAP
 ;
 ; ok ( -- 1 ) 
 ;
-HEADER "1", "ONE", F_LEAP
+HEADER "1", "ONE", F_LEAP | F_CORE
     NOOP 
     pspush tos_low, tos_high 
     clr tos_high 
@@ -848,7 +860,7 @@ HEADER "1", "ONE", F_LEAP
 ;
 ; ok ( -- 0 ) 
 ;
-HEADER "2", "TWO", F_LEAP
+HEADER "2", "TWO", F_LEAP | F_CORE
     NOOP 
     pspush tos_low, tos_high 
     clr tos_high 

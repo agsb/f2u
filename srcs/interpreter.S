@@ -799,31 +799,35 @@ HEADER "VALUE", "VALUE",
 ; ok make a to value 
 ; change value 
 HEADER "TO", "TOVALUE", F_IMMEDIATE
-    .word FIND, ONEPLUS, TO, ENDS
+    .word FIND, CELLPLUS, TO, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok make a defer
-; zzzz no checks for 
+; defaults to UNDEF
+; 
 HEADER "DEFER", "DEFER", 
-    .word CREATE, LIT, ZZZZ, LIT, BRANCH, COMMA, COMMA, ENDS
+    .word CREATE, LIT, UNDEF, LIT, BRANCH, COMMA, COMMA, ENDS
 
 ;----------------------------------------------------------------------
 ;
 ; ok make a is 
 ;
 HEADER "IS", "ISDEFER", F_IMMEDIATE
-    .word FIND, ONEPLUS, SWAP, TO, ENDS
+    .word FIND, CELLPLUS, SWAP, TO, ENDS
 
 ;---------------------------------------------------------------------- 
 ; 
 ; ok MOVE (a1 a2 u -- ) 
-; must be backwards zzzz
+; must be backwards
 HEADER "MOVE", "MOVE", 
+	.word ZDUP, ZBRANCH, 2f
+	.word DUP, TOR, DUP, OVER, PLUS					
+	.word TOR, PLUS, RTO, RTO
 1:  .word ZDUP, ZBRANCH, 2f
     .word ONEMINUS, TOR
     .word OVER, AT, OVER, TO
-    .word ONEPLUS, SWAP, ONEPLUS, SWAP
+    .word ONEMINUS, SWAP, ONEMINUS, SWAP
     .word BRANCH, 1b
 2:  .word DROP, DROP, ENDS 
  
@@ -832,7 +836,8 @@ HEADER "MOVE", "MOVE",
 ; ok FILL (a u c -- ) 
 ; 
 HEADER "FILL", "FILL", 
-    .word SWAP, TOR, SWAP
+	.word SWAP, ZDUP, ZBRANCH, 2f
+    .word TOR, SWAP
 1:  .word RTO, ZDUP, ZBRANCH, 2f
     .word ONEMINUS, TOR
     .word OVER, OVER, TO, ONEPLUS 
@@ -873,7 +878,7 @@ HEADER ">NFA", "TONFA",
 ; is >CFA ( a f -- ) 
 ; from link to code 
 HEADER ">CFA", "TOCFA", 
-    .word CELL, PLUS, DUP, AT, F_UNMASK, AND, PLUS, ENDS 
+    .word TONFA, DUP, AT, F_UNMASK, AND, PLUS, ALIGN, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 

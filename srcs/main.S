@@ -167,7 +167,8 @@ US0 = SRAM_END
 ;
 ; is ZZZZ, hook for incompleteness 
 ;
-HEADER "ZZZZ", "ZZZZ",
+HEADER "UNDEF", "UNDEF",
+ZZZZ:
     .word LIT, undefined, LIT, 12, TYPE, CR, ENDS 
  
 ;********************************************************************** 
