@@ -723,6 +723,13 @@ HEADER "BL", "BL",
 ;
 ; is  ( a u -- )
 ;
+HEADER "PACE", "PACE",
+    .word LIT, 0x0B, EMIT, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( a u -- )
+;
 HEADER "TYPE", "TYPE",
 1:
     .word DUP, ZBRANCH, 2f

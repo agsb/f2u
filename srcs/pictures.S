@@ -43,7 +43,7 @@ HEADER "HOLD", "HOLD",
 ;   : # 0 BASE @ UM/MOD >R BASE @ UM/MOD SWAP DIGIT HOLD R> ; 
 ;
 HEADER "#", "SNUM",
-    .word ZERO, BASE, AT, UMBYMOD, TOR, BASE, AT, UMBYMOD
+    .word ZERO, BASE, AT, UMDIVMOD, TOR, BASE, AT, UMDIVMOD
     .word SWAP, DIGIT, HOLD, RTO, ENDS
 
 ;----------------------------------------------------------------------

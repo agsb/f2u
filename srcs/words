@@ -152,6 +152,7 @@ forth-twigs.S:HEADER "ENDCASE", "ENDCASE", F_IMMEDIATE
 forth-twigs.S:HEADER "CR", "CR",
 forth-twigs.S:HEADER "LF", "LF",
 forth-twigs.S:HEADER "BL", "BL",
+forth-twigs.S:HEADER "PACE", "PACE",
 forth-twigs.S:HEADER "TYPE", "TYPE",
 forth-twigs.S:HEADER "UM-", "UMMINUS",
 forth-twigs.S:HEADER "U-", "ULESS",
@@ -236,16 +237,17 @@ math.S:HEADER "ABS", "ABS", F_LEAP
 math.S:HEADER "MAX", "MAX", F_LEAP
 math.S:HEADER "MIN", "MIN", F_LEAP
 math.S:HEADER "WITHIN", "WITHIN", F_LEAP
-math.S:HEADER "UM*", "UMUL", F_LEAP
-math.S:HEADER "UM/MOD", "UMBYMOD", F_LEAP
-math.S:HEADER "UM/MOD", "UMDIVMOD", F_LEAP
+math.S:HEADER "UMPASS", "UMPASS",
+math.S:HEADER "UM/MOD", "UMDIVMOD", 
 math.S:HEADER "M/MOD", "MDIVMOD", F_LEAP
 math.S:HEADER "/MOD", "DIVMOD", F_LEAP
 math.S:HEADER "MOD", "MOD", F_LEAP
 math.S:HEADER "/", "DIV", F_LEAP
-math.S:HEADER "*", "SMUL", F_LEAP
-math.S:HEADER "/", "SDIV", F_LEAP
-math.S:HEADER "utoa", "utoa", F_LEAP 
+math.S:HEADER "UM*", "UMSTAR", F_LEAP
+math.S:HEADER "*", "STAR", F_LEAP
+math.S:HEADER "M*", "MSTAR", F_LEAP
+math.S:HEADER "*/MOD", "STARDIVMOD", F_LEAP
+math.S:HEADER "*/", "STARDIV", F_LEAP
 pictures.S:HEADER "DIGIT", "DIGIT",
 pictures.S:HEADER "<#", "LTSNUM",
 pictures.S:HEADER "HOLD", "HOLD",
