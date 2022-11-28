@@ -14,6 +14,8 @@
       trick to solve: change "rjmp \_link" to "jmp \_link", rjmp only works within -2k to +2k addresses,
       okey for atmega8 but with atmega328, causes relocation error.
 
+- all VARIABLE and VALUE are indirect references. The values are stored in sram and the reference in flash.  ( Implemented as @ @ and @ ! )
+
 # 23/11/2022
 
 - Using MITC there is no IP. To preserve the next sequential reference, when executing >R R@ R>,
