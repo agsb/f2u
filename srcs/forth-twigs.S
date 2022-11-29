@@ -265,13 +265,6 @@ HEADER "TIB", "TIB",
 ;
 ; ok ( -- w) 
 ;
-HEADER "LATEST", "LATEST",
-    .word LIT, LAST, ENDS
- 
-;----------------------------------------------------------------------
-;
-; ok ( -- w) 
-;
 HEADER "STATE", "STATE",
     .word LIT, STAT, ENDS 
  
@@ -281,6 +274,13 @@ HEADER "STATE", "STATE",
 ;
 HEADER "BASE", "BASE",
     .word LIT, BASE, ENDS
+ 
+;----------------------------------------------------------------------
+;
+; ok ( -- w) 
+;
+HEADER "CSP", "CSP",
+    .word LIT, CSPP, ENDS
  
 ;----------------------------------------------------------------------
 ;
@@ -357,6 +357,28 @@ HEADER "RDEPTH", "RDEPTH",
     .word RSAT, LIT, RS0, MINUS, ENDS
  
 
+;********************************************************************** 
+; 
+;   vocabulary words
+;
+;   just a hook, not using, in AVR only one vocabulary
+;
+;----------------------------------------------------------------------
+HEADER "CURRENT", "CURRENT",
+    .word LIT, CURR, ENDS
+
+;----------------------------------------------------------------------
+HEADER "CONTEXT", "CONTEXT",
+    .word LIT, CTXT, ENDS
+
+;----------------------------------------------------------------------
+HEADER "DEFINITIONS", "DEFINITIONS",
+    .word CONTEXT, AT, CURRENT, TO, ENDS
+
+;----------------------------------------------------------------------
+HEADER "LATEST", "LATEST",
+    .word LIT, LAST, ENDS
+ 
 ;********************************************************************** 
 ; 
 ;   basic words
@@ -448,8 +470,8 @@ HEADER "DOVAR", "DOVAR",
 ; is DOCON ( -- a ), place the contents of next cell into stack, 
 ;   R> DUP 2+ >R @
 ;
-;	note: the address is at flash, then if is a reference to a value
-;	it must be de-referenced to sram 
+;	note: the address is at flash, then if is a reference
+;   to a value, it must be de-referenced (ATAT) to sram 
 ;
 HEADER "DOCON", "DOCON",
     .word DOVAR, ATAT, AT, ENDS 
@@ -726,6 +748,36 @@ HEADER "BL", "BL",
 HEADER "PACE", "PACE",
     .word LIT, 0x0B, EMIT, ENDS
 
+;----------------------------------------------------------------------
+;
+; is  ( a u -- )
+;
+HEADER "BELL", "BELL",
+    .word LIT, 0x07, EMIT, ENDS
+
+;---------------------------------------------------------------------- 
+; 
+; is SPACE ( -- )
+; 
+HEADER "SPACE", "SPACE" 
+    .word BL, EMIT, ENDS 
+ 
+;---------------------------------------------------------------------- 
+; 
+; is SPACES ( n -- )
+; 
+HEADER "SPACES", "SPACES" 
+1:  .word ZDUP, ZBRANCH, 2f
+    .word SPACE, ONEMINUS, BRANCH, 1b
+2:  .word ENDS 
+ 
+;---------------------------------------------------------------------- 
+; 
+; is COUNT ( a -- a+1 c ) 
+; from link to code 
+HEADER "COUNT", "COUNT", 
+    .word DUP, AT, TOR, ONEPLUS, RTO, ENDS 
+ 
 ;----------------------------------------------------------------------
 ;
 ; is  ( a u -- )

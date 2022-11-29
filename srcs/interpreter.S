@@ -34,6 +34,10 @@
 .section .text
 
 ;---------------------------------------------------------------------- 
+;
+; these (words) only works in sram
+;
+;---------------------------------------------------------------------- 
 ; 
 ; ok ( a1 c --- a2 | 0 ) internal 
 ;   skips chars in address while not equal to c or 0x0 
@@ -65,7 +69,6 @@ HEADER "(skip)", "skipf", F_LEAP
 ; ok ( a1 c --- a2 | 0 ) internal 
 ;   scan chars in address while equal to c or 0x0 
 ;   not standart, 0x0 ends buffer 
-;   works only in sram 
 ; 
 HEADER "(scan)", "scanf", F_LEAP
     NOOP 
@@ -152,10 +155,10 @@ HEADER "(copy)", "copyf", F_LEAP
 ; ok ( a u --- u ) 
 ; 
 ;   refills address till u chars read, u < 256 
-;     not standart: 
-;     always read from USART 
-;     only \n \r \b, all other control turns into space 
-;     appends a bl at init and a bl at end 
+;   not standart: 
+;   always read from USART 
+;   only \n \r \b, all other control turns into space 
+;   appends a bl at init and a bl at end 
 ; 
 HEADER "(refill)", "refillf", F_LEAP 
     NOOP 
@@ -780,6 +783,59 @@ HEADER "(find)", "findf", F_LEAP
     ; save results 
     POON 
  
+;---------------------------------------------------------------------- 
+; 
+; is NULLS 
+; Dr Ting 'coyote'
+;
+HEADER "NULL", "NULL", 
+    .word 0x0
+    .asciz "coyote"
+    .word ENDS 
+ 
+;********************************************************************** 
+; 
+; almost figforth, http://forthfiles.net/ting/sysguidefig.pdf, pg 84 
+; 
+;---------------------------------------------------------------------- 
+ 
+;----------------------------------------------------------------------
+;
+; ok error scopes
+;
+;----------------------------------------------------------------------
+;
+;   ok ( f n -- )
+;   FALSE is 0
+;   
+HEADER "?ERROR", "QERROR", 
+    .word SWAP, ZBRANCH, 2f
+    .word DROP, BRANCH, 4f
+2:  .word NONEN, DOT, CR, QUIT
+4:  .word ENDS
+
+; not compiling
+HEADER "?COMP", "QCOMP", 
+    .word STATE, AT, ZEQU, LIT, 11, QERROR, ENDS
+
+; not executing
+HEADER "?EXEC", "QEXEC", 
+    .word STATE, AT, ONEMINUS, ZEQU, LIT, 12, QERROR, ENDS
+
+; conditionals unmatch
+HEADER "?PAIR", "QPAIR", 
+    .word MINUS, LIT, 13, QERROR, ENDS
+
+; stack not empty
+HEADER "?CSP", "QCSP", 
+    .word PSAT, CSP, AT, MINUS, LIT, 14, QERROR, ENDS
+
+; parameter stack underflow or overflow
+HEADER "?STACK", "QSTACK", 
+    .word PSAT, PS0, GTHAN, LIT, 1, QERROR ; underflow
+    .word PSAT, PS0, MINUS, LIT, STACK_SIZE, MINUS, LIT, 7, QERROR ; overflow 
+    .word ENDS 
+
 ;********************************************************************** 
 ; 
 ; almost forth94 
@@ -819,7 +875,7 @@ HEADER "IS", "ISDEFER", F_IMMEDIATE
 ;---------------------------------------------------------------------- 
 ; 
 ; ok MOVE (a1 a2 u -- ) 
-; must be backwards
+;   moves CELLS !
 HEADER "MOVE", "MOVE", 
 	.word ZDUP, ZBRANCH, 2f
 	.word DUP, TOR, DUP, OVER, PLUS					
@@ -833,14 +889,30 @@ HEADER "MOVE", "MOVE",
  
 ;---------------------------------------------------------------------- 
 ; 
-; ok FILL (a u c -- ) 
+; ok MOVE (a1 a2 u -- ) 
+;   moves CHARS !
+HEADER "CMOVE", "CMOVE", 
+	.word ZDUP, ZBRANCH, 2f
+	.word DUP, TOR, DUP, OVER, PLUS					
+	.word TOR, PLUS, RTO, RTO
+1:  .word ZDUP, ZBRANCH, 2f
+    .word ONEMINUS, TOR
+    .word OVER, CAT, OVER, CTO
+    .word ONEMINUS, SWAP, ONEMINUS, SWAP
+    .word BRANCH, 1b
+2:  .word DROP, DROP, ENDS 
+ 
+;---------------------------------------------------------------------- 
+;---------------------------------------------------------------------- 
 ; 
+; ok FILL (a u c -- ) 
+; fills CHARS
 HEADER "FILL", "FILL", 
 	.word SWAP, ZDUP, ZBRANCH, 2f
     .word TOR, SWAP
 1:  .word RTO, ZDUP, ZBRANCH, 2f
     .word ONEMINUS, TOR
-    .word OVER, OVER, TO, ONEPLUS 
+    .word OVER, OVER, CTO, ONEPLUS 
     .word BRANCH, 1b 
 2:  .word DROP, DROP, ENDS 
  
@@ -910,16 +982,6 @@ HEADER "HANDLER", "HANDLER",
  
 ;---------------------------------------------------------------------- 
 ; 
-; is NULLS 
-; Dr Ting 'coyote'
-;
-HEADER "NULL", "NULL", 
-    .word 0x0
-    .asciz "coyote"
-    .word ENDS 
- 
-;---------------------------------------------------------------------- 
-; 
 ; is CATCH 
 ; 
 HEADER "CATCH", "CATCH", 
@@ -936,22 +998,6 @@ HEADER "THROW", "THROW",
     .word HANDLER, AT, RSTO, RTO, HANDLER, TO 
     .word RTO, SWAP, TOR, PSTO, DROP, RTO 
 1:  .word ENDS 
- 
-;---------------------------------------------------------------------- 
-; 
-; is SPACE ( -- )
-; 
-HEADER "SPACE", "SPACE" 
-    .word BL, EMIT, ENDS 
- 
-;---------------------------------------------------------------------- 
-; 
-; is SPACES ( n -- )
-; 
-HEADER "SPACES", "SPACES" 
-1:  .word ZDUP, ZBRANCH, 2f
-    .word SPACE, ONEMINUS, BRANCH, 1b
-2:  .word ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 
@@ -1049,19 +1095,26 @@ HEADER ".(", "DOTPAREN"
 
 ;---------------------------------------------------------------------- 
 ; 
-; is SQUOTE S\" ( "<chars>ccc" c -- a n )
+; is SQUOTE S\" ( -- )
 ;   not standart, no multi-task support
 ;
 HEADER "S\"", "SQUOTE" 
-    .word LIT, '\"', PARSE, ENDS ;
+    .word RTO, DUP, COUNT, TYPE
+    .word DUP, AT, SHR, ONE, PLUS, PLUS, TOR, ENDS
 
 ;---------------------------------------------------------------------- 
 ; 
 ; is DOTQUOTE .\" ( "<chars>ccc" c -- a n )
 ;   not standart, no multi-task support
+;   parse returns chars
+;   bad things if no ending "
 ;
-HEADER ".\"", "DOTQUOTE" 
-    .word SQUOTE, TYPE, ENDS ;
+HEADER ".\"", "DOTQUOTE", F_IMMEDIATE 
+    .word LIT, 0x22, PARSE
+    .word STATE, AT, ZBRANCH, 4f
+    .word COMP, SQUOTE, HERE, SWAP, DUP, SHR, ONEPLUS, ALLOT, ALIGN, CMOVE, BRANCH, 6f  
+4:  .word TYPE 
+6:  .word ENDS 
 
 ;---------------------------------------------------------------------- 
 ; 
@@ -1123,7 +1176,7 @@ HEADER "CREATE", "CREATE",
 ;---------------------------------------------------------------------- 
 ;
 ; is DOES ( xt -- ) 
-; 
+; zzzz ???? 
 HEADER "DOES", "DOES", 
     .word LIT, BRANCH, COMMA, HERE, COMMA, ENDS 
 
@@ -1179,6 +1232,13 @@ HEADER "'", "TICK",
 HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE, 
     .word TICK, COMMA, ENDS 
  
+;----------------------------------------------------------------------
+;
+; ok compile real
+;
+HEADER "COMPILE", "COMPILE", F_IMMEDIATE
+    .word QCOMP, DOVAR, AT, COMMA, ENDS
+
 ;---------------------------------------------------------------------- 
 ; 
 ; is 
@@ -1201,7 +1261,7 @@ HEADER "NUMBN", "NUMBN",
 ; is  NONEN ( a n -- ) 
 ; 
 HEADER "NONEN", "NONEN", 
-    .word CR, TYPE, LIT, notoky, LIT, 4, TYPE, ENDS 
+    .word CR, TYPE, LIT, question, LIT, 4, TYPE, ENDS 
 
 ;---------------------------------------------------------------------- 
 ; 

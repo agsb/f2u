@@ -97,9 +97,9 @@ forth-twigs.S:HEADER "CHAR+", "CHARPLUS",
 forth-twigs.S:HEADER "CHAR-", "CHARMINUS",
 forth-twigs.S:HEADER "CHARS", "CHARS",
 forth-twigs.S:HEADER "TIB", "TIB",
-forth-twigs.S:HEADER "LATEST", "LATEST",
 forth-twigs.S:HEADER "STATE", "STATE",
 forth-twigs.S:HEADER "BASE", "BASE",
+forth-twigs.S:HEADER "CSP", "CSP",
 forth-twigs.S:HEADER "EP", "EPP",
 forth-twigs.S:HEADER "DP", "DPP",
 forth-twigs.S:HEADER "HP", "HPP",
@@ -110,6 +110,10 @@ forth-twigs.S:;HEADER "RS$", "RSIS",
 forth-twigs.S:;HEADER "PS$", "PSIS",
 forth-twigs.S:HEADER "DEPTH", "DEPTH",
 forth-twigs.S:HEADER "RDEPTH", "RDEPTH",
+forth-twigs.S:HEADER "CURRENT", "CURRENT",
+forth-twigs.S:HEADER "CONTEXT", "CONTEXT",
+forth-twigs.S:HEADER "DEFINITIONS", "DEFINITIONS",
+forth-twigs.S:HEADER "LATEST", "LATEST",
 forth-twigs.S:HEADER "UHERE", "UHERE",
 forth-twigs.S:HEADER "HERE", "HERE", F_CORE
 forth-twigs.S:HEADER "ALLOT", "ALLOT", F_CORE
@@ -153,6 +157,10 @@ forth-twigs.S:HEADER "CR", "CR",
 forth-twigs.S:HEADER "LF", "LF",
 forth-twigs.S:HEADER "BL", "BL",
 forth-twigs.S:HEADER "PACE", "PACE",
+forth-twigs.S:HEADER "BELL", "BELL",
+forth-twigs.S:HEADER "SPACE", "SPACE" 
+forth-twigs.S:HEADER "SPACES", "SPACES" 
+forth-twigs.S:HEADER "COUNT", "COUNT", 
 forth-twigs.S:HEADER "TYPE", "TYPE",
 forth-twigs.S:HEADER "UM-", "UMMINUS",
 forth-twigs.S:HEADER "U-", "ULESS",
@@ -177,11 +185,19 @@ interpreter.S:HEADER "(parse)", "parsef", F_LEAP
 interpreter.S:HEADER "(digit)", "digitf", F_LEAP
 interpreter.S:HEADER "(number)", "numberf", F_LEAP
 interpreter.S:HEADER "(find)", "findf", F_LEAP
+interpreter.S:HEADER "NULL", "NULL", 
+interpreter.S:HEADER "?ERROR", "QERROR", 
+interpreter.S:HEADER "?COMP", "QCOMP", 
+interpreter.S:HEADER "?EXEC", "QEXEC", 
+interpreter.S:HEADER "?PAIR", "QPAIR", 
+interpreter.S:HEADER "?CSP", "QCSP", 
+interpreter.S:HEADER "?STACK", "QSTACK", 
 interpreter.S:HEADER "VALUE", "VALUE", 
 interpreter.S:HEADER "TO", "TOVALUE", F_IMMEDIATE
 interpreter.S:HEADER "DEFER", "DEFER", 
 interpreter.S:HEADER "IS", "ISDEFER", F_IMMEDIATE
 interpreter.S:HEADER "MOVE", "MOVE", 
+interpreter.S:HEADER "CMOVE", "CMOVE", 
 interpreter.S:HEADER "FILL", "FILL", 
 interpreter.S:HEADER "]", "RBRAC", 
 interpreter.S:HEADER "[", "LBRAC", F_IMMEDIATE 
@@ -192,11 +208,8 @@ interpreter.S:HEADER "HIDDEN", "HIDDEN",
 interpreter.S:HEADER "IMMEDIATE", "IMMEDIATE", 
 interpreter.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY", 
 interpreter.S:HEADER "HANDLER", "HANDLER", 
-interpreter.S:HEADER "NULL", "NULL", 
 interpreter.S:HEADER "CATCH", "CATCH", 
 interpreter.S:HEADER "THROW", "THROW", 
-interpreter.S:HEADER "SPACE", "SPACE" 
-interpreter.S:HEADER "SPACES", "SPACES" 
 interpreter.S:HEADER "ABORT", "ABORT" 
 interpreter.S:HEADER "ACCEPT", "ACCEPT", 
 interpreter.S:HEADER "OVERT", "OVERT", 
@@ -210,7 +223,7 @@ interpreter.S:HEADER "\\", "BACKSLASH", F_IMMEDIATE
 interpreter.S:HEADER "(", "PAREN", F_IMMEDIATE 
 interpreter.S:HEADER ".(", "DOTPAREN" 
 interpreter.S:HEADER "S\"", "SQUOTE" 
-interpreter.S:HEADER ".\"", "DOTQUOTE" 
+interpreter.S:HEADER ".\"", "DOTQUOTE", F_IMMEDIATE 
 interpreter.S:HEADER "PARSE-NAME", "PARSEN", 
 interpreter.S:HEADER "FIND-NAME", "FINDN", 
 interpreter.S:HEADER "FIND", "FIND", 
@@ -223,6 +236,7 @@ interpreter.S: HEADER "CONSTANT", "CONSTANT",
 interpreter.S:HEADER "VARIABLE", "VARIABLE", 
 interpreter.S:HEADER "'", "TICK", 
 interpreter.S:HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE, 
+interpreter.S:HEADER "COMPILE", "COMPILE", F_IMMEDIATE
 interpreter.S:HEADER "COMPXT", "COMPXT", F_IMMEDIATE 
 interpreter.S:HEADER "NUMBN", "NUMBN", 
 interpreter.S:HEADER "NONEN", "NONEN", 

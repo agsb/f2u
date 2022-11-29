@@ -101,10 +101,16 @@ SCRS:   .word 0     ; screen number
 BLKS:   .word 0     ; block number
 
 HAND:   .word 0     ; handler for catch and throw
-CURS:   .word 0     ; cursor
+CSPP:   .word 0     ; keep last ps
+
+CURR:   .word 0     ; reference to current vocabulary
+CTXT:   .word 0     ; reference to context vocabulary
 
 HLD:    .word 0     ; picture number buffer
 HLDS:   .word 0     ; picture number cursor
+
+WARN:   .word 0     ; warning number
+ERRN:   .word 0     ; error number
 
 TMP0:   .word 0     ; temporary
 TMP1:   .word 0     ; temporary
@@ -160,10 +166,6 @@ US0 = SRAM_END
 #include "interpreter.S"
 
 ;----------------------------------------------------------------------
-.p2align 1, 0x00
-.equ free_flash, .
-
-;----------------------------------------------------------------------
 ;
 ; is ZZZZ, hook for incompleteness 
 ;
@@ -171,11 +173,11 @@ HEADER "UNDEF", "UNDEF",
 ZZZZ:
     .word LIT, undefined, LIT, 12, TYPE, CR, ENDS 
  
-;********************************************************************** 
-
 ;----------------------------------------------------------------------
-;
-;FULL: .word  _list_
+.p2align 1, 0x00
+.equ free_flash, .
+
+;********************************************************************** 
 
 ;----------------------------------------------------------------------
 

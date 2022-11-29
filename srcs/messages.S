@@ -36,19 +36,19 @@
  .asciz " Ok"
  
  .byte 4
- notoky : ; 4
+ question : ; 4
  .asciz " ??"
  
  .byte 12
- undefined: ; 12
+ undefined : ; 12
  .asciz " undefined?"
  
  .byte 12
- exception: ; 12
+ exception : ; 12
  .asciz " exception!"
  
  .byte 10
- abort: ; 10
+ abort : ; 10
  .asciz " aborted."
  
  roullete: ; 37, Pascal
