@@ -44,7 +44,7 @@
 # 12/11/2022
 
 - made for new flags, 0x80 is F_RESERVED, to identify the byte size+flags,
-    0x40 is IMMEDIATE, 0X20 is COMPILE_ONLY, 0x10 is HIDDEN. 
+    0x40 is IMMEDIATE, 0X20 is COMPILE_ONLY, 0x10 is HIDDEN. PS. 0x40 is IMMEDIATE in FigForth  
 
 - start of eeprom stuff, forth variables load/save and constants,
     yet not complete
