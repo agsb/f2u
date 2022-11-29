@@ -64,6 +64,9 @@ Details.md
 - A NOS, work register, pull next on parameter stack, is N (r22:r23);
 - A WRK, work register, generic auxiliary parameter,  is W (r20:r21);
 
+The TOS is really a Acumulator, as in most CPUs, Z is a Address register, 
+    Y and X are stack pointers, WRK and NOS are general registers.
+
 ## Registers Use
 
 - reserved r0:r1, used as generic scratch for internal routines (mul, div, etc)
