@@ -392,6 +392,19 @@ E2P_PAGESIZE = 4
 
 E2P_START = 0x000
 
+/* avr signature bytes */
+
+SIGNATURE_000	= 0x1e
+SIGNATURE_001	= 0x95
+
+; for atmega328
+SIGNATURE_002	= 0x0f
+; for atmega328P
+SIGNATURE_003	= 0x0f
+; for atmega328PB
+SIGNATURE_004	= 0x16
+
+;----------------------------------------------------------------------
 /* temporary where start forth */
 
 ;----------------------------------------------------------------------
