@@ -41,14 +41,15 @@ defer nexti
 
 : nest ip @ >r   nexti ;
 
-: jump wk ! ip dup @ 2+ ! exec ;
+: jump wk @ ip dup @ 2+ ! exec ;
 
 : next ip @ dup @ wk ! 2+ ip ! 
-    wk @ IF jump    
-         ELSE unnest
-         THEN ;
+    wk @ if jump else nest then ;
 
 nexti is next
+
+\ all twig words end with: unnest 
+\ all leaf words end with: jmp unnest
 
 */
 
