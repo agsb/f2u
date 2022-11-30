@@ -485,6 +485,13 @@ HEADER "LITERAL", "LITERAL", F_CORE
  
 ;----------------------------------------------------------------------
 ;
+; is ['] ( w -- ) 
+; zzzz
+HEADER "[']", "KTICK", F_CORE
+    .word LIT, LIT, COMMA, ENDS 
+ 
+;----------------------------------------------------------------------
+;
 ; ok this puts next cell into stack and compiles into HERE 
 ; used only in precompiled sources as forth-twigs
 ; 
@@ -719,6 +726,89 @@ HEADER "ENDCASE", "ENDCASE", F_IMMEDIATE
     .word COMP, DROP 
     .word FOR, COMP, THEN, NEXT, ENDS
 
+;----------------------------------------------------------------------
+;
+; is DOIT ( n m -- ; -- m n ) 
+; counts from n to m
+HEADER "DOIT", "DOIT", 
+    .word TOR, TOR, ENDS
+
+;----------------------------------------------------------------------
+;
+; is LOOPN ( k -- f ; m n -- m n+k false | true) 
+;
+HEADER "+LOOPI", "LOOPN", 
+    .word DUP, RTO, PLUS, RTO, ROTU ; ( n+k m k )
+    .word TOR, OVER, OVER, MINUS, RTO ; (n+k m m-n+k k)
+    .word ZEROLT, ZBRANCH, 4f
+    .word LTHAN, ZBRANCH, 8f
+    .word BRANCH, 6f
+4:  
+    .word GTHAN, ZBRANCH, 8f
+6:  
+    .word TOR, TOR, FFALSE, ENDS ; ( n m v -- f ; -- m n+1 )
+8:  
+    .word FTRUE, ENDS
+
+;----------------------------------------------------------------------
+;
+; is LOOPI ( k -- f ; m n -- m n+k false | true) 
+;
+HEADER "LOOPI", "LOOPI", 
+    .word ONE, LOOPN, ENDS
+
+;----------------------------------------------------------------------
+;
+; is DO ( n m -- ; --  m n ) 
+; counts from n to m
+;
+HEADER "DO", "DO", F_IMMEDIATE
+    .word COMP, DOIT, BEGIN, ENDS
+
+;----------------------------------------------------------------------
+;
+; is I (  -- n ; m n -- m n ) 
+;
+HEADER "I", "I", 
+    .word RTO, DUP, TOR, ENDS
+
+;----------------------------------------------------------------------
+;
+; is j (  -- n ; m n -- m n ) 
+;
+HEADER "J", "J", 
+    .word RTO, RTO, RTO, DUP, TOR, TOR, TOR, ENDS
+
+;----------------------------------------------------------------------
+;
+; is LEAVE ( n m -- ; -- n m ) 
+;   old way, runs last one
+;
+HEADER "LEAVE", "LEAVE", F_IMMEDIATE
+    .word UNLOOP, COMP, BRANCH, HERE, DUP, COMMA, EXIT, ENDS
+
+;----------------------------------------------------------------------
+;
+; is LOOP ( -- ; -- m n+1 ) 
+;
+HEADER "LOOP", "LOOP", F_IMMEDIATE
+    .word COMP, LOOPI, UNTIL, ENDS
+
+;----------------------------------------------------------------------
+;
+; is LOOP ( k -- ; -- m n+k ) 
+;
+HEADER "+LOOP", "PLOOP", F_IMMEDIATE
+    .word COMP, LOOPN, UNTIL, ENDS
+
+;----------------------------------------------------------------------
+;
+; is UNLOOP ( -- ; -- m n+1 ) 
+;
+HEADER "UNLOOP", "UNLOOP", F_IMMEDIATE
+    .word RTO, RTO, DROP, DROP, ENDS
+
+;**********************************************************************
 ;----------------------------------------------------------------------
 ;
 ; is  ( a u -- )

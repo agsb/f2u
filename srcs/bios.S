@@ -119,6 +119,8 @@ boot:
     reti ; rjmp TWSI ; Two-wire Serial Interface Handler
     reti ; rjmp SPM_RDY ; Store Program Memory Ready Handler;
 
+; todo: use USART_RXC to allow ^C, ^S, ^Q, ^D controls
+
 ;----------------------------------------------------------------------
 ; 
 RESET:

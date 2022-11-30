@@ -404,6 +404,16 @@ SIGNATURE_003	= 0x0f
 ; for atmega328PB
 SIGNATURE_004	= 0x16
 
+/* task states, QNX */
+
+HALT = 0x0
+IDLE = 0x1
+BUSY = 0x2
+WAIT = 0x3
+
+GIVE = 0x4
+TAKE = 0x8
+
 ;----------------------------------------------------------------------
 /* temporary where start forth */
 

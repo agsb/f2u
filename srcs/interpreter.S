@@ -814,6 +814,7 @@ HEADER "?ERROR", "QERROR",
 2:  .word NONEN, DOT, CR, QUIT
 4:  .word ENDS
 
+;----------------------------------------------------------------------
 ; not compiling
 HEADER "?COMP", "QCOMP", 
     .word STATE, AT, ZEQU, LIT, 11, QERROR, ENDS
@@ -822,20 +823,7 @@ HEADER "?COMP", "QCOMP",
 HEADER "?EXEC", "QEXEC", 
     .word STATE, AT, ONEMINUS, ZEQU, LIT, 12, QERROR, ENDS
 
-; conditionals unmatch
-; 1 hook back
-; 2 if else then endif
-; 3 begin again until
-; 4 while repeat
-; 5 case endcase
-; 6 of endof
-; 7 for next
-; 8 do loop +loop -loop leave
-; 
-HEADER "?PAIR", "QPAIR", 
-    .word MINUS, LIT, 13, QERROR, ENDS
-
-; stack not same 
+;----------------------------------------------------------------------
 HEADER "?CSP", "QCSP", 
     .word PSAT, CSP, AT, MINUS, LIT, 14, QERROR, ENDS
 
@@ -844,6 +832,94 @@ HEADER "?STACK", "QSTACK",
     .word PSAT, PS0, GTHAN, LIT, 1, QERROR ; underflow
     .word PSAT, PS0, MINUS, LIT, STACK_SIZE, MINUS, LIT, 7, QERROR ; overflow 
     .word ENDS 
+
+;----------------------------------------------------------------------
+HEADER "?PAIR", "QPAIR", 
+    .word MINUS, LIT, 13, QERROR, ENDS
+
+; stack not same 
+; conditionals match
+; 1 hook back
+; 2 if else then endif
+; 3 begin again until
+; 4 while repeat
+; 5 for next
+; 6 case endcase
+; 7 of endof
+; 8 do loop +loop -loop leave
+;
+HEADER "HOOK", "QHOOK", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, HOOK, LIT, 0x01, ENDS
+
+HEADER "BACK", "QBACK", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x01, QPAIR, BACK, ENDS
+
+HEADER "IF", "QIF", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, IF, LIT, 0x02, ENDS
+
+HEADER "ELSE", "QELSE", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x02, QPAIR, LIT, 0x02, ELSE, ENDS
+
+HEADER "ENDIF", "QENDIF", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x02, QPAIR, ENDIF, ENDS
+
+HEADER "THEN", "QTHEN", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x02, QPAIR, ENDIF, ENDS
+
+HEADER "AHEAD", "QAHEAD", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, GO, LIT, 0x02, ENDS
+
+HEADER "AFT", "QAFT", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x02, QPAIR, AFT, LIT, 0x02, ENDS
+
+HEADER "BEGIN", "QBEGIN", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, BEGIN, LIT, 0x03, ENDS
+
+HEADER "AGAIN", "QAGAIN", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x03, QPAIR, AGAIN, ENDS
+
+HEADER "UNTIL", "QUNTIL", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x03, QPAIR, UNTIL, ENDS
+
+HEADER "WHILE", "QWHILE", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x03, QPAIR, WHILE, LIT, 0x04, ENDS
+
+HEADER "REPEAT", "QREPEAT", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x04, QPAIR, REPEAT, ENDS
+
+HEADER "FOR", "QFOR", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, FOR, LIT, 0x05, ENDS
+
+HEADER "NEXT", "QNEXT", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x05, QPAIR, NEXT, ENDS
+
+HEADER "CASE", "QCASE", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, CASE, LIT, 0x06, ENDS
+
+HEADER "ENDCASE", "QENDCASE", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x06, QPAIR, ENDCASE, ENDS
+
+HEADER "OF", "QOF", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x06, OF, QPAIR, 0x07, ENDS
+
+HEADER "ENDOF", "QENDOF", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x07, QPAIR, ENDOF, LIT, 0x06, ENDS
+
+HEADER "DO", "QDO", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, DO, LIT, 0x08, ENDS
+
+HEADER "LOOP", "QLOOP", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x08, QPAIR, LOOP, ENDS
+
+HEADER "+LOOP", "QPLOOP", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x08, QPAIR, PLOOP, ENDS
+
+HEADER "LEAVE", "QLEAVE", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x08, QPAIR, LEAVE, LIT, 0x08, ENDS
+
+HEADER "UNLOOP", "QUNLOOP", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x08, QPAIR, UNLOOP, LIT, 0x08, ENDS
+
 
 ;********************************************************************** 
 ; 
@@ -1161,8 +1237,8 @@ HEADER "CHAR", "CHAR",
 ; 
 ; is  NONAME ( "" ), toin = 0 
 ; 
-HEADER "NONAME", "NONAME", 
-    .word ZZZZ, ENDS 
+HEADER ":NONAME", "NONAME", 
+    .word ZERO, ZERO, CREATE, RBRAC, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 

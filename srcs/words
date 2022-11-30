@@ -124,6 +124,7 @@ forth-twigs.S:HEADER "<,", "TOMMA", F_IMMEDIATE
 forth-twigs.S:HEADER "DOVAR", "DOVAR",
 forth-twigs.S:HEADER "DOCON", "DOCON",
 forth-twigs.S:HEADER "LITERAL", "LITERAL", F_CORE
+forth-twigs.S:HEADER "[']", "KTICK", F_CORE
 forth-twigs.S:HEADER "COMP", "COMP", F_IMMEDIATE
 forth-twigs.S:HEADER "EXIT", "EXIT", F_IMMEDIATE
 forth-twigs.S:HEADER "EXECUTE", "EXEC", F_IMMEDIATE
@@ -153,6 +154,16 @@ forth-twigs.S:HEADER "OF", "OF", F_IMMEDIATE
 forth-twigs.S:HEADER "ENDOF", "ENDOF", F_IMMEDIATE
 forth-twigs.S:HEADER "DEFAULT", "DEFAULT", F_IMMEDIATE
 forth-twigs.S:HEADER "ENDCASE", "ENDCASE", F_IMMEDIATE
+forth-twigs.S:HEADER "DOIT", "DOIT", 
+forth-twigs.S:HEADER "+LOOPI", "LOOPN", 
+forth-twigs.S:HEADER "LOOPI", "LOOPI", 
+forth-twigs.S:HEADER "DO", "DO", F_IMMEDIATE
+forth-twigs.S:HEADER "I", "I", 
+forth-twigs.S:HEADER "J", "J", 
+forth-twigs.S:HEADER "LEAVE", "LEAVE", F_IMMEDIATE
+forth-twigs.S:HEADER "LOOP", "LOOP", F_IMMEDIATE
+forth-twigs.S:HEADER "+LOOP", "PLOOP", F_IMMEDIATE
+forth-twigs.S:HEADER "UNLOOP", "UNLOOP", F_IMMEDIATE
 forth-twigs.S:HEADER "CR", "CR",
 forth-twigs.S:HEADER "LF", "LF",
 forth-twigs.S:HEADER "BL", "BL",
@@ -189,9 +200,33 @@ interpreter.S:HEADER "NULL", "NULL",
 interpreter.S:HEADER "?ERROR", "QERROR", 
 interpreter.S:HEADER "?COMP", "QCOMP", 
 interpreter.S:HEADER "?EXEC", "QEXEC", 
-interpreter.S:HEADER "?PAIR", "QPAIR", 
 interpreter.S:HEADER "?CSP", "QCSP", 
 interpreter.S:HEADER "?STACK", "QSTACK", 
+interpreter.S:HEADER "?PAIR", "QPAIR", 
+interpreter.S:HEADER "HOOK", "QHOOK", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "BACK", "QBACK", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "IF", "QIF", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "ELSE", "QELSE", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "ENDIF", "QENDIF", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "THEN", "QTHEN", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "AHEAD", "QAHEAD", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "AFT", "QAFT", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "BEGIN", "QBEGIN", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "AGAIN", "QAGAIN", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "UNTIL", "QUNTIL", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "WHILE", "QWHILE", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "REPEAT", "QREPEAT", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "FOR", "QFOR", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "NEXT", "QNEXT", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "CASE", "QCASE", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "ENDCASE", "QENDCASE", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "OF", "QOF", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "ENDOF", "QENDOF", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "DO", "QDO", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "LOOP", "QLOOP", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "+LOOP", "QPLOOP", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "LEAVE", "QLEAVE", F_IMMEDIATE | F_COMPILE
+interpreter.S:HEADER "UNLOOP", "QUNLOOP", F_IMMEDIATE | F_COMPILE
 interpreter.S:HEADER "VALUE", "VALUE", 
 interpreter.S:HEADER "TO", "TOVALUE", F_IMMEDIATE
 interpreter.S:HEADER "DEFER", "DEFER", 
@@ -228,7 +263,7 @@ interpreter.S:HEADER "PARSE-NAME", "PARSEN",
 interpreter.S:HEADER "FIND-NAME", "FINDN", 
 interpreter.S:HEADER "FIND", "FIND", 
 interpreter.S:HEADER "CHAR", "CHAR", 
-interpreter.S:HEADER "NONAME", "NONAME", 
+interpreter.S:HEADER ":NONAME", "NONAME", 
 interpreter.S:HEADER "CREATE", "CREATE", 
 interpreter.S:HEADER "DOES", "DOES", 
 interpreter.S:HEADER "DOES>", "DOESTO", F_IMMEDIATE 
