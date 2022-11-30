@@ -126,7 +126,7 @@ forth-twigs.S:HEADER "DOCON", "DOCON",
 forth-twigs.S:HEADER "LITERAL", "LITERAL", F_CORE
 forth-twigs.S:HEADER "COMP", "COMP", F_IMMEDIATE
 forth-twigs.S:HEADER "EXIT", "EXIT", F_IMMEDIATE
-forth-twigs.S:HEADER "EXEC", "EXEC", F_IMMEDIATE
+forth-twigs.S:HEADER "EXECUTE", "EXEC", F_IMMEDIATE
 forth-twigs.S:HEADER "TAIL", "TAIL", 
 forth-twigs.S:HEADER "MARKTO", "MARKTO", F_IMMEDIATE | F_COMPILE,
 forth-twigs.S:HEADER "TOMARK", "TOMARK", F_IMMEDIATE | F_COMPILE,
@@ -237,7 +237,6 @@ interpreter.S:HEADER "VARIABLE", "VARIABLE",
 interpreter.S:HEADER "'", "TICK", 
 interpreter.S:HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE, 
 interpreter.S:HEADER "COMPILE", "COMPILE", F_IMMEDIATE
-interpreter.S:HEADER "COMPXT", "COMPXT", F_IMMEDIATE 
 interpreter.S:HEADER "NUMBN", "NUMBN", 
 interpreter.S:HEADER "NONEN", "NONEN", 
 interpreter.S:HEADER "EVAL", "EVAL", 
@@ -282,6 +281,3 @@ pictures.S:HEADER "UD.R", "UDDOTR",
 pictures.S:HEADER "(D.)", "DDOTP",
 pictures.S:HEADER "D.", "DDOT",
 pictures.S:HEADER "D.R", "DDOTR",
-pictures.S:HEADER "CHAR", "CHAR",
-pictures.S:HEADER "SPACE", "SPACE",
-pictures.S:HEADER "SPACES", "SPACES",

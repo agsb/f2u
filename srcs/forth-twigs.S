@@ -56,7 +56,7 @@
 ;    No preorder because the assembler does translation 
 ;    of names to address (references) 
 ;
-;    (some adapted from old fig-forth listings) 
+;    (some adapted from old fig-forth and eforth istings) 
 ;
 ;********************************************************************** 
 
@@ -278,7 +278,7 @@ HEADER "BASE", "BASE",
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- w) 
-;
+;   keep PS for checks
 HEADER "CSP", "CSP",
     .word LIT, CSPP, ENDS
  
@@ -502,7 +502,7 @@ HEADER "EXIT", "EXIT", F_IMMEDIATE
 ;
 ; ok execute xt from tos
 ;
-HEADER "EXEC", "EXEC", F_IMMEDIATE
+HEADER "EXECUTE", "EXEC", F_IMMEDIATE
     .word TOR, ENDS
 
 ;----------------------------------------------------------------------
@@ -511,7 +511,7 @@ HEADER "EXEC", "EXEC", F_IMMEDIATE
 ; recursive return to last 
 ;
 HEADER "TAIL", "TAIL", 
-    .word RAT, CELL, MINUS, RTO, ENDS
+    .word RAT, CELL, MINUS, TOR, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -646,25 +646,24 @@ HEADER "BACK", "BACK", F_IMMEDIATE | F_COMPILE,
  
 ;----------------------------------------------------------------------
 ;
-; is FOR ( u -- ) R:( -- h u )
+; is FOR ( u -- h ; -- u )
 ; count down, from +32767
 HEADER "FOR", "FOR", F_IMMEDIATE
     .word COMP, TOR, BEGIN, ENDS 
  
 ;----------------------------------------------------------------------
 ;
-; is TXEN ( -- ) R:( -- h u ) 
+; is TXEN ( -- ; -- u ) 
 ;
 HEADER "TXEN", "TXEN", 
     .word RTO, ONEMINUS
     .word DUP, ZBRANCH, 1f  
     .word TOR 
-1:
-    .word ENDS
+1:  .word ENDS
 
 ;----------------------------------------------------------------------
 ;
-; is NEXT ( -- ) R:( -- h u ) 
+; is NEXT ( h -- ) R:( -- h u ) 
 ;
 HEADER "NEXT", "NEXT", F_IMMEDIATE
     .word COMP, TXEN, UNLESS, ENDS
@@ -760,12 +759,12 @@ HEADER "BELL", "BELL",
 ; is SPACE ( -- )
 ; 
 HEADER "SPACE", "SPACE" 
-    .word BL, EMIT, ENDS 
+    .word LIT, 0x20, EMIT, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 
 ; is SPACES ( n -- )
-; 
+;   emits until 0
 HEADER "SPACES", "SPACES" 
 1:  .word ZDUP, ZBRANCH, 2f
     .word SPACE, ONEMINUS, BRANCH, 1b
@@ -783,12 +782,10 @@ HEADER "COUNT", "COUNT",
 ; is  ( a u -- )
 ;
 HEADER "TYPE", "TYPE",
-1:
-    .word DUP, ZBRANCH, 2f
+1:  .word DUP, ZBRANCH, 2f
     .word ONEMINUS, TOR, DUP, AT, EMIT, ONEPLUS, RTO
     .word BRANCH, 1b
-2:
-    .word DROP, DROP, ENDS 
+2:  .word DROP, DROP, ENDS 
   
 ;----------------------------------------------------------------------
 ;
@@ -913,8 +910,7 @@ _safe:
 HEADER "WARM", "WARM", F_LEAP
     ; verify error code 
     ; resets etc 
-    ;.word TURN, AT, EXEC, QUIT, ENDS 
-    .word TURN, AT, EXEC, ENDS 
+    .word TURN, AT, EXEC, QUIT, ENDS 
  
 ;----------------------------------------------------------------------
 ; does reset 

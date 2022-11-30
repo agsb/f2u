@@ -80,7 +80,7 @@ HEADER "2R>", "TWORTO",
 ; ok ( w1 w2 -- ) 
 ;
 HEADER "2R@", "TWORAT",
-     .word RTO, RTO, TWODUP, TOR, TOR, SWAP, ENDS
+     .word RTO, RTO, OVER, OVER, TOR, TOR, SWAP, ENDS
  
 ;----------------------------------------------------------------------
 ;

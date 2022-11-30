@@ -164,13 +164,4 @@ HEADER "D.R", "DDOTR",
     .word TOR, DDOTP, ROTU, OVER, SPACES, TYPE, ENDS
 
 ;**********************************************************************
-/*
-; fakes for compiler
 
-HEADER "CHAR", "CHAR",
-	.word ENDS
-HEADER "SPACE", "SPACE",
-	.word ENDS
-HEADER "SPACES", "SPACES",
-	.word ENDS
-*/

@@ -823,10 +823,19 @@ HEADER "?EXEC", "QEXEC",
     .word STATE, AT, ONEMINUS, ZEQU, LIT, 12, QERROR, ENDS
 
 ; conditionals unmatch
+; 1 hook back
+; 2 if else then endif
+; 3 begin again until
+; 4 while repeat
+; 5 case endcase
+; 6 of endof
+; 7 for next
+; 8 do loop +loop -loop leave
+; 
 HEADER "?PAIR", "QPAIR", 
     .word MINUS, LIT, 13, QERROR, ENDS
 
-; stack not empty
+; stack not same 
 HEADER "?CSP", "QCSP", 
     .word PSAT, CSP, AT, MINUS, LIT, 14, QERROR, ENDS
 
@@ -875,7 +884,7 @@ HEADER "IS", "ISDEFER", F_IMMEDIATE
 ;---------------------------------------------------------------------- 
 ; 
 ; ok MOVE (a1 a2 u -- ) 
-;   moves CELLS !
+;   moves CELLS ! backwards
 HEADER "MOVE", "MOVE", 
 	.word ZDUP, ZBRANCH, 2f
 	.word DUP, TOR, DUP, OVER, PLUS					
@@ -890,19 +899,12 @@ HEADER "MOVE", "MOVE",
 ;---------------------------------------------------------------------- 
 ; 
 ; ok MOVE (a1 a2 u -- ) 
-;   moves CHARS !
+;   moves CHARS ! backwards
 HEADER "CMOVE", "CMOVE", 
 	.word ZDUP, ZBRANCH, 2f
-	.word DUP, TOR, DUP, OVER, PLUS					
-	.word TOR, PLUS, RTO, RTO
-1:  .word ZDUP, ZBRANCH, 2f
-    .word ONEMINUS, TOR
-    .word OVER, CAT, OVER, CTO
-    .word ONEMINUS, SWAP, ONEMINUS, SWAP
-    .word BRANCH, 1b
+	.word SHR, ONE, PLUS, MOVE, ENDS					
 2:  .word DROP, DROP, ENDS 
  
-;---------------------------------------------------------------------- 
 ;---------------------------------------------------------------------- 
 ; 
 ; ok FILL (a u c -- ) 
@@ -1039,10 +1041,10 @@ HEADER ";", "SEMIS",
 ; 
 ; is SOURCE 
 ;   place terminal buffer address and length in stack 
+;   no standart: also place a \0 at end :) 
 ; 
 HEADER "SOURCE", "SOURCE", 
     .word LIT, TIB0, LIT, TIB_SIZE 
-;   no standart: also place a \0 at end :) 
     .word OVER, OVER, PLUS, LIT, ZERO, SWAP, TO, ONE, MINUS 
     .word ENDS 
  
@@ -1096,23 +1098,26 @@ HEADER ".(", "DOTPAREN"
 ;---------------------------------------------------------------------- 
 ; 
 ; is SQUOTE S\" ( -- )
-;   not standart, no multi-task support
+;   not standart, 
 ;
 HEADER "S\"", "SQUOTE" 
     .word RTO, DUP, COUNT, TYPE
-    .word DUP, AT, SHR, ONE, PLUS, PLUS, TOR, ENDS
+    .word DUP, AT, ONE, PLUS, PLUS 
+    .word CELL, PLUS, ALIGNED, TOR, ENDS
 
 ;---------------------------------------------------------------------- 
 ; 
 ; is DOTQUOTE .\" ( "<chars>ccc" c -- a n )
-;   not standart, no multi-task support
+;   not standart, 
 ;   parse returns chars
 ;   bad things if no ending "
 ;
 HEADER ".\"", "DOTQUOTE", F_IMMEDIATE 
     .word LIT, 0x22, PARSE
     .word STATE, AT, ZBRANCH, 4f
-    .word COMP, SQUOTE, HERE, SWAP, DUP, SHR, ONEPLUS, ALLOT, ALIGN, CMOVE, BRANCH, 6f  
+    .word COMP, SQUOTE, DUP, CCOMMA
+    .word HERE, OVER, ALLOT, ALIGN
+    .word SWAP, CMOVE, BRANCH, 6f  
 4:  .word TYPE 
 6:  .word ENDS 
 
@@ -1237,15 +1242,8 @@ HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE,
 ; ok compile real
 ;
 HEADER "COMPILE", "COMPILE", F_IMMEDIATE
-    .word QCOMP, DOVAR, AT, COMMA, ENDS
+    .word DOVAR, AT, COMMA, ENDS
 
-;---------------------------------------------------------------------- 
-; 
-; is 
-; 
-HEADER "COMPXT", "COMPXT", F_IMMEDIATE 
-    .word LIT, LIT, COMMA, COMMA, ENDS 
- 
 ;---------------------------------------------------------------------- 
 ; 
 ; is  NUMBN ( a n -- w true | a n false ) 
