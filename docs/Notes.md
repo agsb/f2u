@@ -4,6 +4,14 @@
 
 *still lots of english errors, please correct me*
 
+# 30/11/2022
+
+- full control compile? and matched? conditionals
+
+- changed FOR NEXT to start stop limits, counts downwards from stop to start
+
+- first try for: DO, LOOP, +LOOP, LEAVE, UNLOOP, I, J, K
+
 # 27/11/2022
 
 - when change to atmega328, need use a call in do_spm_short
@@ -202,7 +210,8 @@
 
 - refactoring all flush flash stuff to use optiboot, <https://github.com/Optiboot/optiboot> version 8.2, routine do_spm, bulletproof for do not reinvent wheel.
 
-- the use do_spm is hack inside standart call to a C function from gcc compiler, then a rcall is used. Nice have a SP and stack availabe. 
+- the use do_spm is hack inside standart call to a C function from gcc compiler, then a rcall is used. Nice have a SP and stack availabe.
+ 
 # 15/10/2021
 
 - rewrite of MemoryModel, with buffers, constants, variables, stacks, etc
@@ -291,7 +300,6 @@ postone implemented as a new status in the STATE variable, valid only for the ne
 # 18/04/2021
 
 - Rewrite all from u2f*, using a new minimal forth engine as LAST word 
-
     
 # 12/05/2021
 
@@ -314,8 +322,8 @@ postone implemented as a new status in the STATE variable, valid only for the ne
 - The primitive words are done, as minimal set from forth plus some extras;
 
 - But I'm at easter egg of forth:
-I have sources of words as ": word ~~~ ;" and I need a forth done to compile or
-I have sources of words compiled with some forth and need use same forth engine;
+            I have sources of words as ": word ~~~ ;" and I need a forth done to compile or
+            I have sources of words compiled with some forth and need use same forth engine;
 
 - Then sectorforth (https://github.com/cesarblum/sectorforth) comes to simplifly all, and I restart again.
 
@@ -338,7 +346,11 @@ I have sources of words compiled with some forth and need use same forth engine;
 
 - I made a bag of notes from many implementations of eforth, amforth, flashforth, jonasforth, sectorforth, cmforth and etc, to learn about how it resolve issues of CPU, MCU, memory models, protocols, devices, speed, and do not reinvent the wheel.
 
-- For dictionary struture, and vocabularies: a) unique LINK+NAME+CODE+PARAMETERS; b) link is the reference for previous word and is NULL at end of linked list; c) names are counted strings, with length of 1 to 15 7bit ASCII and 4 bit flags in counter byte (first one); d) CODE and PARAMETERS are implementation dependent at next section
+- For dictionary struture, and vocabularies: 
+            a) unique LINK+NAME+CODE+PARAMETERS; 
+            b) link is the reference for previous word and is NULL at end of linked list; 
+            c) names are counted strings, with length of 1 to 15 7bit ASCII and 4 bit flags in counter byte (first one); 
+            d) CODE and PARAMETERS are implementation dependent at next section
 
 - All forth constants are in flash and all forth variables are at top of sram, how else ?
 
