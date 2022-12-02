@@ -57,7 +57,7 @@ I pretend use a Atmega8 as like a PDP-11.
 
 Using inner (address) interpreter as dispatcher for code to reference (twigs), and for code to execute (leafs).
 
-the common instructions of _call and ret_ are used only when is absolutely need.
+The common instructions of _call and ret_ are used only when is absolutely need.
 
 UPDATE: 16/11/2022 changed to ATMEGA328, for more Flash (32 kb), SRAM (2 kb) and EEPROM (1kb) memory.
 
