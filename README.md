@@ -41,7 +41,7 @@ The dictionary is a unique linked list composed by:  a) a link for previous word
 
 The word names, until 15 characters, are full preserved, not hashed, not lowered, for trace back compound words, word by word. As well, 15 letters are enought to almost 86% of [common words](https://digitalcommons.butler.edu/cgi/viewcontent.cgi?article=1116&context=wordways) in [many languages](https://arxiv.org/ftp/arxiv/papers/1207/1207.2334.pdf)
 
-I like use the terms leaf for primitives words and twig for compound words, as in https://muforth.nimblemachines.com/threaded-code/.
+I like use the terms leaf for primitives words and twig for compound words, [a tree view](https://muforth.nimblemachines.com/threaded-code/).
 
 # Size or Speed
 
@@ -77,13 +77,17 @@ The [notes](https://github.com/agsb/f2u/tree/main/docs/Notes.md) resumes some de
 
 the DEC PDP-11 was the most important tool for creation of Internet, UNIX, language C and language Forth.
 
-For comparation, in 1979, the Von Newman architeture PDP-11, Programmed Data Processor, was eight 16-bit registers, (including one stack pointer R6, and one program counter R7), memory mapped devices, but with a Von Newman unifed memory addressing. <http://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP11_Handbook1979.pdf>.
+For comparation, in 1979, the Von Newman architeture [PDP-11](http://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP11_Handbook1979.pdf), Programmed Data Processor, was eight 16-bit registers, (including one stack pointer R6, and one program counter R7), memory mapped devices, but with a Von Newman unifed memory addressing. .
 
 The PDP-11 had successful implementations of Forth, by Charles H. Moore reported in [1974](https://library.nrao.edu/public/memos/comp/CDIR_17.pdf), and a Fig-Forth by John S. James in [1980](http://www.forth.org/fig-forth/fig-forth_PDP-11.pdf).
 
 ## the 1130
 
-Charles H. Moore creates Forth in a IBM-1130, back [1968](https://github.com/monsonite/1968-FORTH), and "The IBM 1130 was a fairly simple 16-bit computer, with a load-store architecture, a single accumulator and three index registers X1, X2, X3, stored at locations 01, 02, 03 in the core memory."
+Charles H. Moore also creates Forth in a IBM-1130, back [1968](https://github.com/monsonite/1968-FORTH), and "The IBM 1130 was a fairly simple 16-bit computer, with a load-store architecture, a single accumulator and three index registers X1, X2, X3, stored at locations 01, 02, 03 in the core memory."
+
+## More Docs ?
+
+please follow to the [docs](https://github.com/agsb/f2u/tree/main/docs) diretory
 
 ## ForthS
 
@@ -109,9 +113,7 @@ Some special insights from
 
 [fig-forth, John S. James](http://www.forth.org/fig-forth/fig-forth_PDP-11.pdf)
 
-## More Docs ?
 
-please follow to the [docs](https://github.com/agsb/f2u/tree/main/docs) diretory
 
 ## Licensing:
 
