@@ -37,7 +37,7 @@ I want a forth with:
 
 - all compound words independent of any specific MCU family, without any assembler specifc code inline, like a imutable list with rellocable references.
 
-The dictionary is a unique linked list composed by:  a) a link for previous word's link, b) a byte with size of name plus flags, c) a sequence of characters of name and d) a sequence of, or references or assembler code.
+The dictionary is a unique linked list composed by:  a) a link for previous word's link, b) a byte with size of name plus flags, c) a sequence of characters of name (with a pad byte, if need) and d) a sequence of, or references or assembler code.
 
 The word names, until 15 characters, are full preserved, not hashed, not lowered, for trace back compound words, word by word. As well, 15 letters are enought to almost 86% of [common words](https://digitalcommons.butler.edu/cgi/viewcontent.cgi?article=1116&context=wordways) in [many languages](https://arxiv.org/ftp/arxiv/papers/1207/1207.2334.pdf)
 
@@ -53,7 +53,11 @@ A MCU 32 bits, as ARM Cortex-M4 STM32L4+ with 2048k bytes flash and 640k bytes s
 
 But my choice for design is a small AVR Atmega8, a complete RISC MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, with 32 (R0 to R31) 8 bits registers, with some that could be used as eight (R16 to R31) 16 bits registers. 
 
-I pretend use a Atmega8 almost as a PDP-11.  Using MCU call//ret only when absolutely need.
+I pretend use a Atmega8 as like a PDP-11.  
+
+Using inner (address) interpreter as dispatcher for code to reference (twigs), and for code to execute (leafs).
+
+the common instructions of _call and ret_ are used only when is absolutely need.
 
 UPDATE: 16/11/2022 changed to ATMEGA328, for more Flash (32 kb), SRAM (2 kb) and EEPROM (1kb) memory.
 
@@ -65,13 +69,21 @@ Most to refine language paradigms and understood manage memory, RAM and FLASH, a
 
 Many challenges to resolve, how make a minimal bios, what basic word must set, how update flash memory, how access internal resources, etc. Learn from previous many implementations of Forth and adapt to survive.
 
-For comparation, in 1979, the Von Newman architeture PDP-11, Programmed Data Processor, was also eight 16-bit registers, (including one stack pointer R6, and one program counter R7), memory mapped devices, but with unifed memory addressing. <http://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP11_Handbook1979.pdf>.
-
-The PDP-11 had successful implementations of Forth, by Charles H. Moore reported in 1974, <https://library.nrao.edu/public/memos/comp/CDIR_17.pdf>, and a Fig-Forth by John S. James in 1980, <http://www.forth.org/fig-forth/fig-forth_PDP-11.pdf>
-
-In back 1968, Charles H. Moore creates Forth in a IBM-1130, <https://github.com/monsonite/1968-FORTH>,"The IBM 1130 was a fairly simple 16-bit computer, with a load-store architecture, a single accumulator and three index registers X1, X2, X3, stored at locations 01, 02, 03 in the core memory." <https://github.com/monsonite/1968-FORTH>
-
 There are also Forth implementations for many AVR RISCs, mostly for the larger ones like Amforth, Avrforth, CamelForth, Eforth, Flashforth. Studying these codes, as references for models and styles, has been an excellent learning experience for comparing solutions and techniques. 
+
+The [notes](https://github.com/agsb/f2u/tree/main/docs/Notes.md) resumes some decisions and details.
+
+## the PDP-11
+
+the DEC PDP-11 was the most important tool for creation of Internet, UNIX, language C and language Forth.
+
+For comparation, in 1979, the Von Newman architeture PDP-11, Programmed Data Processor, was eight 16-bit registers, (including one stack pointer R6, and one program counter R7), memory mapped devices, but with a Von Newman unifed memory addressing. <http://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP11_Handbook1979.pdf>.
+
+The PDP-11 had successful implementations of Forth, by Charles H. Moore reported in [1974](https://library.nrao.edu/public/memos/comp/CDIR_17.pdf), and a Fig-Forth by John S. James in [1980](http://www.forth.org/fig-forth/fig-forth_PDP-11.pdf).
+
+## the 1130
+
+Charles H. Moore creates Forth in a IBM-1130, back [1968](https://github.com/monsonite/1968-FORTH), and "The IBM 1130 was a fairly simple 16-bit computer, with a load-store architecture, a single accumulator and three index registers X1, X2, X3, stored at locations 01, 02, 03 in the core memory."
 
 ## ForthS
 
