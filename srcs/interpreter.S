@@ -959,6 +959,62 @@ HEADER "IS", "ISDEFER", F_IMMEDIATE
 
 ;---------------------------------------------------------------------- 
 ; 
+; ok SLASHMOVE (a1 a2 u -- ) 
+;   moves CELLS ! backwards
+HEADER "SSMOVE", "SSMOVE", 
+	.word ZDUP, ZBRANCH, 80f
+	.word DUP, TOR, DUP, OVER, PLUS					
+	.word TOR, PLUS, RTO, RTO
+1:  .word ZDUP, ZBRANCH, 80f
+    .word ONEMINUS, TOR
+    .word OVER, AT 
+    
+    ; escaped controls allowed
+
+    .word DUP, LIT, '\', MINUS, ZEQU, ZBRANCH, 60f
+10:    .word DUP, LIT, 'a', MINUS, ZEQU, 12  ; BEL bell
+    .word DROP, LIT, 7, BRANCH, 60f
+12:    .word DUP, LIT, 'b', MINUS, ZEQU, 14  ; BS backspace
+    .word DROP, LIT, 8, BRANCH, 60f
+14:    .word DUP, LIT, 'e', MINUS, ZEQU, 16  ; ESC escape
+    .word DROP, LIT, 27, BRANCH, 60f
+16:    .word DUP, LIT, 'f', MINUS, ZEQU, 18  ; FF form feed
+    .word DROP, LIT, 12, BRANCH, 60f
+18:    .word DUP, LIT, 'l', MINUS, ZEQU, 20  ; LF line feed
+    .word DROP, LIT, 10, BRANCH, 60f
+20:    .word DUP, LIT, 'n', MINUS, ZEQU, 22  ; NL new line 
+    .word DROP, LIT, 10, BRANCH, 60f
+22:    .word DUP, LIT, 'q', MINUS, ZEQU, 24  ; double quote
+    .word DROP, LIT, 34, BRANCH, 60f
+24:    .word DUP, LIT, 'r', MINUS, ZEQU, 26  ; CR carriage return
+    .word DROP, LIT, 13, BRANCH, 60f
+26:    .word DUP, LIT, 't', MINUS, ZEQU, 28  ; HT horizontal tab
+    .word DROP, LIT, 9, BRANCH, 60f
+28:    .word DUP, LIT, 'v', MINUS, ZEQU, 30  ; VT vertical tab
+    .word DROP, LIT, 11, BRANCH, 60f
+30:    .word DUP, LIT, 'z', MINUS, ZEQU, 32  ; NUL no char 0x0
+    .word DROP, LIT, 0, BRANCH, 60f
+32:    .word DUP, LIT, '\"', MINUS, ZEQU,34  ; double quote
+    .word DROP, LIT, 34, BRANCH, 60f
+34:    .word DUP, LIT, '\', MINUS, ZEQU, 36  ; backslash
+    .word DROP, LIT, 92, BRANCH, 60f
+
+     ; dual chars zzzz
+
+36:    .word DUP, LIT, 'x', MINUS, ZEQU, 38  ; hexdigit hexdigit
+    .word DROP, LIT, 10, BRANCH, 60f
+38:    .word DUP, LIT, 'm', MINUS, ZEQU, 40  ; pair cr/lf  
+    .word DROP, LIT, 10, BRANCH, 60f
+40: 
+    .word DROP, LIT, 32
+
+60: .word OVER, TO
+    .word ONEMINUS, SWAP, ONEMINUS, SWAP
+    .word BRANCH, 1b
+80: .word DROP, DROP, ENDS 
+ 
+;---------------------------------------------------------------------- 
+; 
 ; ok MOVE (a1 a2 u -- ) 
 ;   moves CELLS ! backwards
 HEADER "MOVE", "MOVE", 
@@ -975,7 +1031,7 @@ HEADER "MOVE", "MOVE",
 ;---------------------------------------------------------------------- 
 ; 
 ; ok MOVE (a1 a2 u -- ) 
-;   moves CHARS ! backwards
+;   moves CHARS ! and align from backwards
 HEADER "CMOVE", "CMOVE", 
 	.word ZDUP, ZBRANCH, 2f
 	.word SHR, ONE, PLUS, MOVE, ENDS					
@@ -1173,9 +1229,19 @@ HEADER ".(", "DOTPAREN"
 
 ;---------------------------------------------------------------------- 
 ; 
+; is S BACK SLASH QUOTE S\" ( -- )
+;   not standart, 
+; zzzz
+HEADER "S\\\"", "SBSQUOTE" 
+    .word RTO, DUP, COUNT, TYPE
+    .word DUP, AT, ONE, PLUS, PLUS 
+    .word CELL, PLUS, ALIGNED, TOR, ENDS
+
+;---------------------------------------------------------------------- 
+; 
 ; is SQUOTE S\" ( -- )
 ;   not standart, 
-;
+; zzzz
 HEADER "S\"", "SQUOTE" 
     .word RTO, DUP, COUNT, TYPE
     .word DUP, AT, ONE, PLUS, PLUS 

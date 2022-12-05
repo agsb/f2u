@@ -231,6 +231,7 @@ interpreter.S:HEADER "VALUE", "VALUE",
 interpreter.S:HEADER "TO", "TOVALUE", F_IMMEDIATE
 interpreter.S:HEADER "DEFER", "DEFER", 
 interpreter.S:HEADER "IS", "ISDEFER", F_IMMEDIATE
+interpreter.S:HEADER "SSMOVE", "SSMOVE", 
 interpreter.S:HEADER "MOVE", "MOVE", 
 interpreter.S:HEADER "CMOVE", "CMOVE", 
 interpreter.S:HEADER "FILL", "FILL", 
@@ -257,6 +258,7 @@ interpreter.S:HEADER "PARSE", "PARSE"
 interpreter.S:HEADER "\\", "BACKSLASH", F_IMMEDIATE 
 interpreter.S:HEADER "(", "PAREN", F_IMMEDIATE 
 interpreter.S:HEADER ".(", "DOTPAREN" 
+interpreter.S:HEADER "S\\\"", "SBSQUOTE" 
 interpreter.S:HEADER "S\"", "SQUOTE" 
 interpreter.S:HEADER ".\"", "DOTQUOTE", F_IMMEDIATE 
 interpreter.S:HEADER "PARSE-NAME", "PARSEN", 
