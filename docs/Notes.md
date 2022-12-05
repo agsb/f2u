@@ -4,6 +4,27 @@
 
 *still lots of english errors, please correct me*
 
+# 05/12/2022
+
+- review of conditionals:
+
+            : branch, POSTPONE BRANCH ;
+            : zbranch, POSTPONE ZBRANCH ;
+            : heredup, HERE DUP ! ;
+            
+            : GO branch, heredup, ;
+            : IF zbranch, heredup, ;
+            
+            : THEN HERE SWAP ! ;
+            : ELSE GO SWAP THEN ;
+            
+            : BEGIN HERE ;
+            : AGAIN branch, , ;
+            : UNTIL zbranch, , ;
+            
+            : WHILE zbranch, SWAP ;
+            : REPEAT THEN THEN ;
+            
 # 30/11/2022
 
 - full control compile? and matched? conditionals
