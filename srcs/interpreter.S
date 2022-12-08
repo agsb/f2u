@@ -971,40 +971,41 @@ HEADER "SSMOVE", "SSMOVE",
     
     ; escaped controls allowed
 
-    .word DUP, LIT, '\', MINUS, ZEQU, ZBRANCH, 60f
-10:    .word DUP, LIT, 'a', MINUS, ZEQU, 12  ; BEL bell
+    .word DUP, LIT, '\', EQU, ZBRANCH, 60f
+10:    .word DUP, LIT, 'a', EQU, ZBRANCH,  12  ; BEL bell
     .word DROP, LIT, 7, BRANCH, 60f
-12:    .word DUP, LIT, 'b', MINUS, ZEQU, 14  ; BS backspace
+12:    .word DUP, LIT, 'b', EQU, ZBRANCH,  14  ; BS backspace
     .word DROP, LIT, 8, BRANCH, 60f
-14:    .word DUP, LIT, 'e', MINUS, ZEQU, 16  ; ESC escape
+14:    .word DUP, LIT, 'e', EQU, ZBRANCH,  16  ; ESC escape
     .word DROP, LIT, 27, BRANCH, 60f
-16:    .word DUP, LIT, 'f', MINUS, ZEQU, 18  ; FF form feed
+16:    .word DUP, LIT, 'f', EQU, ZBRANCH,  18  ; FF form feed
     .word DROP, LIT, 12, BRANCH, 60f
-18:    .word DUP, LIT, 'l', MINUS, ZEQU, 20  ; LF line feed
+18:    .word DUP, LIT, 'l', EQU, ZBRANCH,  20  ; LF line feed
     .word DROP, LIT, 10, BRANCH, 60f
-20:    .word DUP, LIT, 'n', MINUS, ZEQU, 22  ; NL new line 
+20:    .word DUP, LIT, 'n', EQU, ZBRANCH,  22  ; NL new line 
     .word DROP, LIT, 10, BRANCH, 60f
-22:    .word DUP, LIT, 'q', MINUS, ZEQU, 24  ; double quote
+22:    .word DUP, LIT, 'q', EQU, ZBRANCH,  24  ; double quote
     .word DROP, LIT, 34, BRANCH, 60f
-24:    .word DUP, LIT, 'r', MINUS, ZEQU, 26  ; CR carriage return
+24:    .word DUP, LIT, 'r', EQU, ZBRANCH,  26  ; CR carriage return
     .word DROP, LIT, 13, BRANCH, 60f
-26:    .word DUP, LIT, 't', MINUS, ZEQU, 28  ; HT horizontal tab
+26:    .word DUP, LIT, 't', EQU, ZBRANCH,  28  ; HT horizontal tab
     .word DROP, LIT, 9, BRANCH, 60f
-28:    .word DUP, LIT, 'v', MINUS, ZEQU, 30  ; VT vertical tab
+28:    .word DUP, LIT, 'v', EQU, ZBRANCH,  30  ; VT vertical tab
     .word DROP, LIT, 11, BRANCH, 60f
-30:    .word DUP, LIT, 'z', MINUS, ZEQU, 32  ; NUL no char 0x0
+30:    .word DUP, LIT, 'z', EQU, ZBRANCH,  32  ; NUL no char 0x0
     .word DROP, LIT, 0, BRANCH, 60f
-32:    .word DUP, LIT, '\"', MINUS, ZEQU,34  ; double quote
+32:    .word DUP, LIT, '\"', EQU, ZBRANCH, 34  ; double quote
     .word DROP, LIT, 34, BRANCH, 60f
-34:    .word DUP, LIT, '\', MINUS, ZEQU, 36  ; backslash
+34:    .word DUP, LIT, '\\', EQU, ZBRANCH,  36  ; backslash
     .word DROP, LIT, 92, BRANCH, 60f
 
      ; dual chars zzzz
 
-36:    .word DUP, LIT, 'x', MINUS, ZEQU, 38  ; hexdigit hexdigit
+36:    .word DUP, LIT, 'x', EQU, ZBRANCH,  38  ; hexdigit hexdigit
     .word DROP, LIT, 10, BRANCH, 60f
-38:    .word DUP, LIT, 'm', MINUS, ZEQU, 40  ; pair cr/lf  
+38:    .word DUP, LIT, 'm', EQU, ZBRANCH,  40  ; pair cr/lf  
     .word DROP, LIT, 10, BRANCH, 60f
+    ; else clear to space
 40: 
     .word DROP, LIT, 32
 
