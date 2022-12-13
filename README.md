@@ -53,11 +53,11 @@ A MCU 32 bits, as ARM Cortex-M4 STM32L4+ with 2048k bytes flash and 640k bytes s
 
 But my choice for design is a small AVR Atmega8, a complete RISC MCU with harvard memory architeture, 4k words (16-bits) program flash memory, 1k bytes (8-bits) static ram memory, 512 bytes of EEPROM,  memory-mapped I/O, one UART, one SPI, one I2C, with 32 (R0 to R31) 8 bits registers, with some that could be used as eight (R16 to R31) 16 bits registers. 
 
-I pretend use a Atmega8 as like a PDP-11.  
+I intend to use the AVR Atmega8 as if it were a PDP-11, but with some adaptations due to the Harvard architecture and only 1k bytes of SRAM. 
 
 Using inner (address) interpreter as dispatcher for code to reference (twigs), and for code to execute (leafs).
 
-The common instructions of _call and ret_ are used only when is absolutely need.
+All code are made with absolute jumps, imediate or indirected, the common instructions of _call and ret_ are used only when is absolutely need.
 
 UPDATE: 16/11/2022 changed to ATMEGA328, for more Flash (32 kb), SRAM (2 kb) and EEPROM (1kb) memory.
 
