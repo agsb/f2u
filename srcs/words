@@ -20,6 +20,8 @@ forth-leafs.S:HEADER "KEY", "KEY", F_LEAP | F_CORE
 forth-leafs.S:HEADER "KEY?", "QKEY", F_LEAP | F_CORE
 forth-leafs.S:HEADER "EMIT", "EMIT", F_LEAP | F_CORE
 forth-leafs.S:HEADER "EMIT?", "QEMIT", F_LEAP | F_CORE
+forth-leafs.S:HEADER "PULLUP!", "PUPTO", F_LEAP 
+forth-leafs.S:HEADER "PULLDN!", "PDNTO", F_LEAP 
 forth-leafs.S:HEADER "EC!", "ECTO", F_LEAP 
 forth-leafs.S:HEADER "EC@", "ECAT", F_LEAP
 forth-leafs.S:HEADER "PC@", "PCAT", F_LEAP 
