@@ -35,7 +35,7 @@
 ; cell size is a word of 16 bits 
 ;
 ; .word  link    link to previous 
-; .byte  size    sizeof name OR flags 
+; .byte  size    sizeof name (1..15) OR flags 
 ; .ascii "name"  name, plus a pad byte with BL (0x32) if size is even 
 ; .word  param,  many references 
 ;
@@ -189,9 +189,29 @@ HEADER "EMIT?", "QEMIT", F_LEAP | F_CORE
 ;----------------------------------------------------------------------
 ;
 ; ok ( c e -- ) 
+;   pull up port 
+;   zzzz
+;
+HEADER "PULLUP!", "PUPTO", F_LEAP 
+    NOOP 
+    POON
+
+;----------------------------------------------------------------------
+;
+; ok ( c e -- ) 
+;   pull down port 
+;   zzzz
+;
+HEADER "PULLDN!", "PDNTO", F_LEAP 
+    NOOP 
+    POON
+
+;----------------------------------------------------------------------
+;
+; ok ( c e -- ) 
 ;   write a byte to eprom 
 ;
-HEADER "C!E", "CTOE", F_LEAP 
+HEADER "EC!", "ECTO", F_LEAP 
     NOOP 
     pspull nos_low, nos_high
 
@@ -226,7 +246,7 @@ _ee_write:
 ; ok ( e -- u ) 
 ;   read eeprom
 ;
-HEADER "C@E", "CATE", F_LEAP
+HEADER "EC@", "ECAT", F_LEAP
     NOOP 
     pspull nos_low, nos_high
 
@@ -252,7 +272,7 @@ _ee_read:
 ; also io@
 ; only sram
 ;
-HEADER "C@P", "CATIO", F_LEAP 
+HEADER "PC@", "PCAT", F_LEAP 
     NOOP 
 _peek:
     movw zpm_low, tos_low  
@@ -266,7 +286,7 @@ _peek:
 ; also io!
 ; only sram
 ;
-HEADER "C!P", "CTOIO", F_LEAP
+HEADER "PC!", "PCTO", F_LEAP
     NOOP
 _poke:
     movw zpm_low, tos_low  

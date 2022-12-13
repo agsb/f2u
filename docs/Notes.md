@@ -4,6 +4,13 @@
 
 *still lots of english errors, please correct me*
 
+# 08/12/2022
+
+- review of lexical, using prefix for indicate EEPROM, IO Ports, I2C:
+        @ ! word 16bits ram ; C@ C! byte 8bits ram
+        E@ E! word 16bits eeprom ; EC@ EC! byte 8bits eeprom
+        P@ P! word 16bits port I/O ; PC@ PC! byte 8bits port I/O
+
 # 05/12/2022
 
 - review of conditionals:

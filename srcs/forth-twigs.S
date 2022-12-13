@@ -66,8 +66,8 @@
 ;	w = b1b2 ~~ [a] = b1, [a+1] = b2
 ; just write a word
 ;
-HEADER "!E", "TOEE", F_LEAP
-    .word OVER, OVER, CTOE, ONE, PLUS, TOR, ENDIAN, RTO, CTOE, ENDS   
+HEADER "E!", "ETO", F_LEAP
+    .word OVER, OVER, ECTO, ONE, PLUS, TOR, ENDIAN, RTO, ECTO, ENDS   
 
 ;----------------------------------------------------------------------
 ;
@@ -77,8 +77,8 @@ HEADER "!E", "TOEE", F_LEAP
 ;   w1 = b100, w2 = b300, w2 endian, w2 = 00b3
 ;   w1 w2 or
 ;
-HEADER "@E", "ATEE", F_LEAP
-    .word DUP, CATE, SWAP, CATE
+HEADER "E@", "EAT", F_LEAP
+    .word DUP, ECAT, SWAP, ECAT
     .word LIT, 0x00FF, AND
     .word ENDIAN, SWAP
     .word LIT, 0x00FF, AND
@@ -955,29 +955,29 @@ HEADER "COLD0", "COLDZERO", F_LEAP
 ;----------------------------------------------------------------------
 ;
 HEADER "EELOAD", "EELOAD", F_LEAP
-    .word ZERO, DUP, ATEE, LIT, VOID, TO 
-    .word TWO, PLUS, DUP, ATEE, LIT, LIVE, TO 
-    .word TWO, PLUS, DUP, ATEE, LIT, TURN, TO 
-    .word TWO, PLUS, DUP, ATEE, LIT, REST, TO 
+    .word ZERO, DUP, EAT, LIT, VOID, TO 
+    .word TWO, PLUS, DUP, EAT, LIT, LIVE, TO 
+    .word TWO, PLUS, DUP, EAT, LIT, TURN, TO 
+    .word TWO, PLUS, DUP, EAT, LIT, REST, TO 
 
-    .word TWO, PLUS, DUP, ATEE, LIT, LAST, TO 
-    .word TWO, PLUS, DUP, ATEE, LIT, VDP, TO 
-    .word TWO, PLUS, DUP, ATEE, LIT, VEP, TO 
-    .word TWO, PLUS, DUP, ATEE, LIT, VUP, TO 
+    .word TWO, PLUS, DUP, EAT, LIT, LAST, TO 
+    .word TWO, PLUS, DUP, EAT, LIT, VDP, TO 
+    .word TWO, PLUS, DUP, EAT, LIT, VEP, TO 
+    .word TWO, PLUS, DUP, EAT, LIT, VUP, TO 
     .word ENDS
 
 ;----------------------------------------------------------------------
 ;
 HEADER "EESAVE", "EESAVE", F_LEAP
-    .word ZERO, DUP, LIT, VOID, AT, SWAP, TOEE 
-    .word TWO, PLUS, DUP, LIT, LIVE, AT, SWAP, TOEE 
-    .word TWO, PLUS, DUP, LIT, TURN, AT, SWAP, TOEE 
-    .word TWO, PLUS, DUP, LIT, REST, AT, SWAP, TOEE 
+    .word ZERO, DUP, LIT, VOID, AT, SWAP, ETO 
+    .word TWO, PLUS, DUP, LIT, LIVE, AT, SWAP, ETO 
+    .word TWO, PLUS, DUP, LIT, TURN, AT, SWAP, ETO 
+    .word TWO, PLUS, DUP, LIT, REST, AT, SWAP, ETO 
 
-    .word TWO, PLUS, DUP, LIT, LAST, AT, SWAP, TOEE 
-    .word TWO, PLUS, DUP, LIT, VDP, AT, SWAP, TOEE 
-    .word TWO, PLUS, DUP, LIT, VEP, AT, SWAP, TOEE 
-    .word TWO, PLUS, DUP, LIT, VUP, AT, SWAP, TOEE 
+    .word TWO, PLUS, DUP, LIT, LAST, AT, SWAP, ETO 
+    .word TWO, PLUS, DUP, LIT, VDP, AT, SWAP, ETO 
+    .word TWO, PLUS, DUP, LIT, VEP, AT, SWAP, ETO 
+    .word TWO, PLUS, DUP, LIT, VUP, AT, SWAP, ETO 
     .word ENDS
 
 ;----------------------------------------------------------------------

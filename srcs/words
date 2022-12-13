@@ -20,10 +20,10 @@ forth-leafs.S:HEADER "KEY", "KEY", F_LEAP | F_CORE
 forth-leafs.S:HEADER "KEY?", "QKEY", F_LEAP | F_CORE
 forth-leafs.S:HEADER "EMIT", "EMIT", F_LEAP | F_CORE
 forth-leafs.S:HEADER "EMIT?", "QEMIT", F_LEAP | F_CORE
-forth-leafs.S:HEADER "C!E", "CTOE", F_LEAP 
-forth-leafs.S:HEADER "C@E", "CATE", F_LEAP
-forth-leafs.S:HEADER "C@P", "CATIO", F_LEAP 
-forth-leafs.S:HEADER "C!P", "CTOIO", F_LEAP
+forth-leafs.S:HEADER "EC!", "ECTO", F_LEAP 
+forth-leafs.S:HEADER "EC@", "ECAT", F_LEAP
+forth-leafs.S:HEADER "PC@", "PCAT", F_LEAP 
+forth-leafs.S:HEADER "PC!", "PCTO", F_LEAP
 forth-leafs.S:HEADER "MILLIS", "MILLIS", F_LEAP
 forth-leafs.S:HEADER "WDCLR", "WDCLR", F_LEAP 
 forth-leafs.S:HEADER "WDON", "WDON", F_LEAP
@@ -71,8 +71,8 @@ forth-leafs.S:HEADER "C@", "CAT", F_LEAP | F_CORE
 forth-leafs.S:HEADER "0", "ZERO", F_LEAP | F_CORE
 forth-leafs.S:HEADER "1", "ONE", F_LEAP | F_CORE
 forth-leafs.S:HEADER "2", "TWO", F_LEAP | F_CORE
-forth-twigs.S:HEADER "!E", "TOEE", F_LEAP
-forth-twigs.S:HEADER "@E", "ATEE", F_LEAP
+forth-twigs.S:HEADER "E!", "ETO", F_LEAP
+forth-twigs.S:HEADER "E@", "EAT", F_LEAP
 forth-twigs.S:HEADER "NIP", "NIP",
 forth-twigs.S:HEADER "SWIP", "SWIP",
 forth-twigs.S:;HEADER "OVER", "OVER",

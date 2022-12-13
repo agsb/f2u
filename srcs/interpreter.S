@@ -971,39 +971,39 @@ HEADER "SSMOVE", "SSMOVE",
     
     ; escaped controls allowed
 
-    .word DUP, LIT, '\', EQU, ZBRANCH, 60f
-10:    .word DUP, LIT, 'a', EQU, ZBRANCH,  12  ; BEL bell
+    .word DUP, LIT, '\', EQUAL, ZBRANCH, 60f
+10:    .word DUP, LIT, 'a', EQUAL, ZBRANCH,  12  ; BEL bell
     .word DROP, LIT, 7, BRANCH, 60f
-12:    .word DUP, LIT, 'b', EQU, ZBRANCH,  14  ; BS backspace
+12:    .word DUP, LIT, 'b', EQUAL, ZBRANCH,  14  ; BS backspace
     .word DROP, LIT, 8, BRANCH, 60f
-14:    .word DUP, LIT, 'e', EQU, ZBRANCH,  16  ; ESC escape
+14:    .word DUP, LIT, 'e', EQUAL, ZBRANCH,  16  ; ESC escape
     .word DROP, LIT, 27, BRANCH, 60f
-16:    .word DUP, LIT, 'f', EQU, ZBRANCH,  18  ; FF form feed
+16:    .word DUP, LIT, 'f', EQUAL, ZBRANCH,  18  ; FF form feed
     .word DROP, LIT, 12, BRANCH, 60f
-18:    .word DUP, LIT, 'l', EQU, ZBRANCH,  20  ; LF line feed
+18:    .word DUP, LIT, 'l', EQUAL, ZBRANCH,  20  ; LF line feed
     .word DROP, LIT, 10, BRANCH, 60f
-20:    .word DUP, LIT, 'n', EQU, ZBRANCH,  22  ; NL new line 
+20:    .word DUP, LIT, 'n', EQUAL, ZBRANCH,  22  ; NL new line 
     .word DROP, LIT, 10, BRANCH, 60f
-22:    .word DUP, LIT, 'q', EQU, ZBRANCH,  24  ; double quote
+22:    .word DUP, LIT, 'q', EQUAL, ZBRANCH,  24  ; double quote
     .word DROP, LIT, 34, BRANCH, 60f
-24:    .word DUP, LIT, 'r', EQU, ZBRANCH,  26  ; CR carriage return
+24:    .word DUP, LIT, 'r', EQUAL, ZBRANCH,  26  ; CR carriage return
     .word DROP, LIT, 13, BRANCH, 60f
-26:    .word DUP, LIT, 't', EQU, ZBRANCH,  28  ; HT horizontal tab
+26:    .word DUP, LIT, 't', EQUAL, ZBRANCH,  28  ; HT horizontal tab
     .word DROP, LIT, 9, BRANCH, 60f
-28:    .word DUP, LIT, 'v', EQU, ZBRANCH,  30  ; VT vertical tab
+28:    .word DUP, LIT, 'v', EQUAL, ZBRANCH,  30  ; VT vertical tab
     .word DROP, LIT, 11, BRANCH, 60f
-30:    .word DUP, LIT, 'z', EQU, ZBRANCH,  32  ; NUL no char 0x0
+30:    .word DUP, LIT, 'z', EQUAL, ZBRANCH,  32  ; NUL no char 0x0
     .word DROP, LIT, 0, BRANCH, 60f
-32:    .word DUP, LIT, '\"', EQU, ZBRANCH, 34  ; double quote
+32:    .word DUP, LIT, '\"', EQUAL, ZBRANCH, 34  ; double quote
     .word DROP, LIT, 34, BRANCH, 60f
-34:    .word DUP, LIT, '\\', EQU, ZBRANCH,  36  ; backslash
+34:    .word DUP, LIT, '\\', EQUAL, ZBRANCH,  36  ; backslash
     .word DROP, LIT, 92, BRANCH, 60f
 
      ; dual chars zzzz
 
-36:    .word DUP, LIT, 'x', EQU, ZBRANCH,  38  ; hexdigit hexdigit
+36:    .word DUP, LIT, 'x', EQUAL, ZBRANCH,  38  ; hexdigit hexdigit
     .word DROP, LIT, 10, BRANCH, 60f
-38:    .word DUP, LIT, 'm', EQU, ZBRANCH,  40  ; pair cr/lf  
+38:    .word DUP, LIT, 'm', EQUAL, ZBRANCH,  40  ; pair cr/lf  
     .word DROP, LIT, 10, BRANCH, 60f
     ; else clear to space
 40: 
@@ -1345,7 +1345,7 @@ HEADER "DOES>", "DOESTO", F_IMMEDIATE
 ; zzzz
  HEADER "CONSTANT", "CONSTANT", 
     .word CREATE, EPP, AT
-    .word DUP, TOR, TOEE, RTO
+    .word DUP, TOR, ETO, RTO
     .word DUP, CELL, PLUS, EPP, TO
     .word COMMA, DOESTO, ENDS 
     
