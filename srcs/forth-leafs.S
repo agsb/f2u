@@ -86,6 +86,7 @@
 ;
 .section .text 
 __forth__: 
+
 ;----------------------------------------------------------------------
 ; inner interpreter, 
 ; it is also a primitive word 
@@ -127,6 +128,14 @@ _jump:
 _link: 
     rjmp _unnest 
  
+;----------------------------------------------------------------------
+;
+; ok ( -- ) 
+;
+HEADER "NOOP", "NO_OP", F_LEAP 
+    NOOP
+    POON
+
 ;********************************************************************** 
 ;
 ;   bios i/O 
@@ -584,27 +593,40 @@ PUSH:
  
 ;----------------------------------------------------------------------
 ;
-; ok ( w2 w1 -- w1 w2 ) 
+; ok ( w1 w2 -- w2 w1 ) 
 ;
 HEADER "SWAP", "SWAP", F_LEAP | F_CORE
     NOOP 
-    pspull nos_low, nos_high 
-    pspush tos_low, tos_high 
-    movw tos_low, nos_low
+    pspull nos_low, nos_high ; w1
+    pspush tos_low, tos_high ; w2
+    movw tos_low, nos_low    ; w1
     POON 
  
 ;----------------------------------------------------------------------
 ;
-; ok ( w2 w1 -- w2 w1 w2 ) 
+; ok ( w1 w2 -- w1 w2 w1 ) 
 ;
 HEADER "OVER", "OVER", F_LEAP | F_CORE
     NOOP 
-    pspull nos_low, nos_high 
-    pspush nos_low, nos_high 
-    pspush tos_low, tos_high 
-    movw tos_low, nos_low
+    pspull nos_low, nos_high ; w1
+    pspush nos_low, nos_high ; w1
+    pspush tos_low, tos_high ; w2
+    movw tos_low, nos_low    ; w1
     POON 
  
+;----------------------------------------------------------------------
+;
+; ok ( w1 w2 w3 -- w2 w3 w1 ) 
+;
+HEADER "ROT", "ROT", F_LEAP | F_CORE
+    NOOP 
+    pspull nos_low, nos_high ; w2
+    pspull wrk_low, wrk_high ; w1
+    pspush nos_low, nos_high ; w2
+    pspush tos_low, tos_high ; w3
+    movw tos_low, wrk_low    ; w1
+    POON
+
 ;----------------------------------------------------------------------
 ;
 ; ok ( 0 | w -- 0 | w w ) 
@@ -620,8 +642,8 @@ HEADER "?DUP", "ZDUP", F_LEAP | F_CORE
 
 ;----------------------------------------------------------------------
 ;
-; ok ( w1 w2 -- 0 | -1 ) 
-;
+; ok ( w1 w2 -- 0 | -1 ) ; w2 < w1
+;   
 HEADER "<", "LTHAN", F_LEAP | F_CORE
     NOOP 
     pspull nos_low, nos_high 
@@ -635,7 +657,7 @@ HEADER "<", "LTHAN", F_LEAP | F_CORE
  
 ;----------------------------------------------------------------------
 ;
-; ok ( w1 w2 -- w2 + w1 ) 
+; ok ( w1 w2 -- w3 ) ; w3 = w1 + w2
 ;   signed plus
 ;
 HEADER "+", "PLUS", F_LEAP | F_CORE
@@ -648,7 +670,7 @@ HEADER "+", "PLUS", F_LEAP | F_CORE
  
 ;----------------------------------------------------------------------
 ;
-; ok ( w1 w2 -- w1 - w2 ) 
+; ok ( w1 w2 -- w3 ) ; w3 = w1 - w2 
 ;   signed minus, 0 5 -- -5
 ;
 HEADER "-", "MINUS", F_LEAP | F_CORE
@@ -662,7 +684,7 @@ HEADER "-", "MINUS", F_LEAP | F_CORE
  
 ;----------------------------------------------------------------------
 ;
-; ok ( w1 w2 -- w2 NAND w1 ) 
+; ok ( w1 w2 -- w3 ) ; w3 = w1 NAND w2 
 ;
 HEADER "NAND", "NAND", F_LEAP | F_CORE
     NOOP 
@@ -675,7 +697,7 @@ HEADER "NAND", "NAND", F_LEAP | F_CORE
 
 ;----------------------------------------------------------------------
 ;
-; ok ( w1 w2 -- w2 AND w1 ) 
+; ok ( w1 w2 -- w3 ) ; w3 = w1 AND w2 ) 
 ;
 HEADER "AND", "AND", F_LEAP | F_CORE
     NOOP 
@@ -686,7 +708,7 @@ HEADER "AND", "AND", F_LEAP | F_CORE
  
 ;----------------------------------------------------------------------
 ;
-; ok ( w1 w2 -- w2 OR w1 ) 
+; ok ( w1 w2 -- w3 ) ; w3 = w1 OR w2 ) 
 ;
 HEADER "OR", "OR", F_LEAP | F_CORE
     NOOP 
@@ -697,7 +719,7 @@ HEADER "OR", "OR", F_LEAP | F_CORE
  
 ;----------------------------------------------------------------------
 ;
-; ok ( w1 w2 -- w2 XOR w1 ) 
+; ok ( w1 w2 -- w3 ) ; w3 = w1 XOR w2 ) 
 ;
 HEADER "XOR", "XOR", F_LEAP | F_CORE
     NOOP 
@@ -708,7 +730,8 @@ HEADER "XOR", "XOR", F_LEAP | F_CORE
  
 ;----------------------------------------------------------------------
 ;
-; ok INV 
+; ok ( w1 -- w2 ) ; arithmetic inverse 
+;   by 2's complement, eg 0x0002 to 0xFFFE 
 ;
 HEADER "INVERT", "INVERT", F_LEAP | F_CORE
     NOOP 
@@ -719,7 +742,8 @@ _inv:
  
 ;----------------------------------------------------------------------
 ;
-; ok NEG 
+; ok ( w1 -- w2 ) ; logic inverse 
+;   by 1's complement, eg 0x0000 to 0xFFFF
 ;
 HEADER "NEGATE", "NEGATE", F_LEAP | F_CORE
     NOOP 
@@ -810,12 +834,15 @@ HEADER "LIT", "LIT", F_LEAP | F_CORE
 ;
 ; ok ( w -- w ) 
 ;  data space pointer align to CELL, atmega is always 
- 
+;   eg. 0x05 to 0x06, two steps: 
+;   1) round a cell down, 2) add one cell 
 ;
+rounds = -1 * CELL_SIZE
+
 HEADER "ALIGNED", "ALIGNED", F_LEAP | F_CORE
     NOOP 
-    adiw tos_low, 1 
-    cbr tos_low, 0 
+    andi tos_low, -1 * CELL_SIZE 
+    adiw tos_low, CELL_SIZE 
     POON 
  
 ;----------------------------------------------------------------------
@@ -854,6 +881,22 @@ HEADER "C@", "CAT", F_LEAP | F_CORE
     ld tos_low, Z
     clr tos_high
     POON 
+
+;----------------------------------------------------------------------
+;
+; ok ( -- ) does a real absolute jump to address in TOS
+;       how return from ? jmp _link
+;
+HEADER "JUMP", "JUMP", F_LEAP
+    NOOP 
+; prepare, as LIT ???
+;    rspull zpm_low, zpm_high
+;    pmload tos_low, tos_high 
+;    rspush zpm_low, zpm_high
+; does it    
+    movw zpm_low, tos_low
+    ijmp 
+
 ;----------------------------------------------------------------------
 ;
 ; ok ( -- 0 ) 

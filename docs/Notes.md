@@ -4,6 +4,25 @@
 
 *still lots of english errors, please correct me*
 
+# 16/12/2022
+
+- include ROT as primitive, more fast and small.
+
+- review of ALIGNED, now round down a cell, add a cell.
+
+- include @@ as compound, usefull for indirect variable access.
+
+- review of : LITERAL R> DUP CELL PLUS >R @ ; : EXECUTE >R ;
+
+- idea for : GOTO R> @ >R ; : SKIP R> CELL PLUS >R ;
+
+- how define =0 ? just as "if TOS eq 0x0 then skip next reference fi
+    why ? BRANCH and 0BRANCH
+
+- define JUMP in assembler, 
+    does not use the inner interpreter,
+    does a real absolute assemler jump to address in TOS 
+
 # 08/12/2022
 
 - review of lexical, using prefix for indicate EEPROM, IO Ports, I2C:
