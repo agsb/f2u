@@ -7,7 +7,9 @@
 # 21/12/2022
 
 - simplifly DO LEAVE LOOP +LOOP, using BEGIN UNTIL as wraprers, 
-    LEAVE is snapshot, 0x8000 offsets
+    LEAVE does not continue until end of LOOP, values with 0x8000 offsets, as Forth-83
+
+- versions of HOOK BACK ?BACK as same as BEGIN AGAIN UNTIL using return stack to preserve hook addresses
 
 # 16/12/2022
 
@@ -15,19 +17,19 @@
 
 - review of ALIGNED, now round down a cell, add a cell.
 
-- include @@ as compound, usefull for indirect variable access, as sram used and
+- include @@ and @! as compound, usefull for indirect variable access, as sram used and
   flash words
 
 - review of : LITERAL R> DUP CELL PLUS >R @ ; : EXECUTE >R ;
 
 - idea for : GOTO R> @ >R ; : SKIP R> CELL PLUS >R ;
 
-- how define =0 ? just as "if TOS eq 0x0 then skip next reference fi
+- how define =0 ? just as "if TOS eq 0x0 then skip next reference fi"
     why ? BRANCH and 0BRANCH
 
 - define JUMP in assembler, 
     does not use the inner interpreter,
-    does a real absolute assemler jump to address in TOS 
+    does a real absolute assembler jump to address in TOS 
 
 # 08/12/2022
 
@@ -79,10 +81,11 @@
 
 # 23/11/2022
 
-- Using MITC there is no IP. To preserve the next sequential reference, when executing >R R@ R>,
-      the values are into/from the second cell of returning stack and 
-      the reference is keeped at the first cell to be executed. 
-      The effect is transparent to the user. 
+- Using MITC there is no IP. 
+        To preserve the next sequential reference, when executing >R R@ R>,
+        the values are into/from the second cell of returning stack and 
+        the reference is keeped at the first cell to be executed. 
+        The effect is transparent to the user. 
 
 - Review of compile, execute, literal, as compile state words. 
 
