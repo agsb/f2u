@@ -11,6 +11,17 @@
 
 - versions of HOOK BACK ?BACK as same as BEGIN AGAIN UNTIL using return stack to preserve hook addresses
 
+- reviews of ?PAIRS for: 
+
+                if else then fi endif 
+                begin again until while repeat 
+                do loop leave +loop unloop 
+                case of endof endcase 
+                for next 
+                hook back ?back
+
+- wrappered refill inside XON XOFF for safety terminal input/output
+
 # 16/12/2022
 
 - include ROT as primitive, more fast and small.

@@ -325,12 +325,14 @@ NOT_A_NUMBER = -24
 ; works as a screen or block, just receives a line till a CR or CR LF
 ; uses BS, for edit last char
 ;
-;XON_   =   0x11    ; ascii DC1 ^Q
-;XOFF_  =   0x13    ; ascii DC3 ^S
 ;NAK_   =   0x15    ; ascii NAK ^U
+
+XON_   =   0x11    ; ascii DC1 ^Q
+XOFF_  =   0x13    ; ascii DC3 ^S
 
 CR_    =   0x0d    ; ascci carriage return ^M
 LF_    =   0x0a    ; ascii line feed ^J
+VT_    =   0x0b    ; ascii vertical tab ^K, somewhere also used as CR/LF 
 BS_    =   0x08    ; ascii backspace ^H
 BL_    =   0x20    ; ascii space 
 

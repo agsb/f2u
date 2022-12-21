@@ -517,7 +517,7 @@ HEADER "EXECUTE", "EXEC", F_IMMEDIATE
 ; ok make a word recursive 
 ; recursive return to last 
 ;
-HEADER "TAIL", "TAIL", 
+HEADER "RECURSE", "RECURSE", 
     .word RAT, CELL, MINUS, TOR, ENDS
 
 ;----------------------------------------------------------------------
@@ -653,6 +653,13 @@ HEADER "BACK", "BACK", F_IMMEDIATE | F_COMPILE,
  
 ;----------------------------------------------------------------------
 ;
+; is ?BACK 
+;
+HEADER "?BACK", "QBACK", F_IMMEDIATE | F_COMPILE,
+    .word RTO, UNTIL, ENDS 
+ 
+;----------------------------------------------------------------------
+;
 ; is FOR ( u -- h ; -- u )
 ; count down, from +32767
 HEADER "FOR", "FOR", F_IMMEDIATE
@@ -732,9 +739,7 @@ HEADER "ENDCASE", "ENDCASE", F_IMMEDIATE
 ; counts from n to m
 HEADER "DOIT", "DOIT", 
     ; forth-83 0x8000 trick
-    ; .word HERE, TOR, DOCON, 0x8000, PLUS, DUP, TOR, MINUS, TOR, ENDS
     .word LIT, 0x8000, PLUS, DUP, TOR, MINUS, TOR, ENDS
-    ; .word TOR, TOR, ENDS
 
 ;----------------------------------------------------------------------
 ;
@@ -775,7 +780,7 @@ HEADER "I", "I",
 ; is j (  -- n ; m n -- m n ) 
 ;
 HEADER "J", "J", 
-    .word RTO, RTO, RTO, DUP, TOR, TOR, TOR, ENDS
+    .word RTO, RTO, RTO, DUP, TOR, SWAP, TOR, SWAP, TOR, ENDS
 
 ;----------------------------------------------------------------------
 ;

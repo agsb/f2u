@@ -34,6 +34,8 @@
 ; from avr manual, do not change 
 ; reserved I/O Memory address
 ;
+; FOR AVRs
+
 __SREG__ = 0x3f
 __SP_H__ = 0x3e
 __SP_L__ = 0x3d
@@ -84,18 +86,17 @@ MCUCR = 0x35
 
 ;----------------------------------------------------------------------
 ;
-; classic interrup vector table
-;
-;----------------------------------------------------------------------
-
-
-;----------------------------------------------------------------------
-;
 ; code segment, flash
 ;
 .section .text
 .org 0x000
 .global boot
+
+;----------------------------------------------------------------------
+;
+; classic interrup vector table
+;
+;----------------------------------------------------------------------
 
 boot:
 
@@ -119,12 +120,12 @@ boot:
     reti ; rjmp TWSI ; Two-wire Serial Interface Handler
     reti ; rjmp SPM_RDY ; Store Program Memory Ready Handler;
 
-; todo: use USART_RXC to allow ^C, ^S, ^Q, ^D controls
+; todo: use USART_RXC to allow ^C, ^D controls
 
 ;----------------------------------------------------------------------
 ; 
 RESET:
-;   yes, is a nop. 
+;   yes, is a nop. allways.
     nop
 ; clear interrupts
     cli
@@ -213,7 +214,7 @@ USART_SET:
 ; enable interrupts
 GOOD:
     sei
-;    rjmp COLD 
+    rjmp COLD 
     rjmp HALT
 
 ;----------------------------------------------------------------------
@@ -226,7 +227,7 @@ GOOD:
 ;   r4 , counter each 1ms low byte
 ;   r5 , counter each 1ms high byte
 ;   r6 , _zero_
-
+;
 ;   timer0 prescale 
 ;   for 8 MHz, prescale 64, offset 131, results about 1 ms
 ;   64 * 125 = 8000 ; 
@@ -235,7 +236,7 @@ GOOD:
 ;
 ;   ticks counts till 65 seconds
 ;
-;   60000 is EA60
+;   60000 is EA60 aka 1 minute
 ;
 ; interrupt routine
 TIM0_OVF:
