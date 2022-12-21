@@ -4,13 +4,19 @@
 
 *still lots of english errors, please correct me*
 
+# 21/12/2022
+
+- simplifly DO LEAVE LOOP +LOOP, using BEGIN UNTIL as wraprers, 
+    LEAVE is snapshot, 0x8000 offsets
+
 # 16/12/2022
 
 - include ROT as primitive, more fast and small.
 
 - review of ALIGNED, now round down a cell, add a cell.
 
-- include @@ as compound, usefull for indirect variable access.
+- include @@ as compound, usefull for indirect variable access, as sram used and
+  flash words
 
 - review of : LITERAL R> DUP CELL PLUS >R @ ; : EXECUTE >R ;
 

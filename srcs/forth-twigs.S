@@ -728,27 +728,25 @@ HEADER "ENDCASE", "ENDCASE", F_IMMEDIATE
 
 ;----------------------------------------------------------------------
 ;
-; is DOIT ( n m -- ; -- m n ) 
+; is DOIT ( n m -- ; -- m+0x8000 m+0x8000-n ) 
 ; counts from n to m
 HEADER "DOIT", "DOIT", 
-    .word TOR, TOR, ENDS
+    ; forth-83 0x8000 trick
+    ; .word HERE, TOR, DOCON, 0x8000, PLUS, DUP, TOR, MINUS, TOR, ENDS
+    .word LIT, 0x8000, PLUS, DUP, TOR, MINUS, TOR, ENDS
+    ; .word TOR, TOR, ENDS
 
 ;----------------------------------------------------------------------
 ;
-; is LOOPN ( k -- f ; m n -- m n+k false | true) 
+; is LOOPN ( k -- true | false ; m n -- m n+k ) 
 ;
 HEADER "+LOOPI", "LOOPN", 
-    .word DUP, RTO, PLUS, RTO, ROTU ; ( n+k m k )
-    .word TOR, OVER, OVER, MINUS, RTO ; (n+k m m-n+k k)
-    .word ZEROLT, ZBRANCH, 4f
-    .word LTHAN, ZBRANCH, 8f
-    .word BRANCH, 6f
+    .word RTO, PLUS, RTO, OVER, OVER ; ( n+k m k )
+    .word LTHAN, ZBRANCH, 6f
 4:  
-    .word GTHAN, ZBRANCH, 8f
+    .word RTO, RTO, FTRUE, ENDS
 6:  
-    .word TOR, TOR, FFALSE, ENDS ; ( n m v -- f ; -- m n+1 )
-8:  
-    .word FTRUE, ENDS
+    .word DROP, DROP, FFALSE, ENDS 
 
 ;----------------------------------------------------------------------
 ;
@@ -785,7 +783,7 @@ HEADER "J", "J",
 ;   old way, runs last one
 ;
 HEADER "LEAVE", "LEAVE", F_IMMEDIATE
-    .word UNLOOP, COMP, BRANCH, HERE, DUP, COMMA, EXIT, ENDS
+    .word UNLOOP, EXIT, ENDS
 
 ;----------------------------------------------------------------------
 ;
