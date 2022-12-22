@@ -463,7 +463,7 @@ HEADER "<,", "TOMMA", F_IMMEDIATE
 ;	it must be de-referenced to sram 
 ;	      
 HEADER "DOVAR", "DOVAR",
-    .word RTO, DUP, TWOPLUS, TOR, ENDS 
+    .word RTO, DUP, CELL, PLUS, TOR, ENDS 
  
 ;-------------------------------------'---------------------------------
 ;
@@ -482,13 +482,6 @@ HEADER "DOCON", "DOCON",
 ;
 HEADER "LITERAL", "LITERAL", F_CORE
     .word LIT, LIT, COMMA, COMMA, ENDS 
- 
-;----------------------------------------------------------------------
-;
-; is ['] ( w -- ) 
-; zzzz
-HEADER "[']", "KTICK", F_CORE
-    .word LIT, LIT, COMMA, ENDS 
  
 ;----------------------------------------------------------------------
 ;
@@ -816,6 +809,13 @@ HEADER "UNLOOP", "UNLOOP", F_IMMEDIATE
 ;
 ; is  ( a u -- )
 ;
+HEADER "BL", "BL",
+    .word LIT, 0x20, EMIT, ENDS
+
+;----------------------------------------------------------------------
+;
+; is  ( a u -- )
+;
 HEADER "CR", "CR",
     .word LIT, 0x0D, EMIT, ENDS
 
@@ -829,13 +829,7 @@ HEADER "LF", "LF",
 ;----------------------------------------------------------------------
 ;
 ; is  ( a u -- )
-;
-HEADER "BL", "BL",
-    .word LIT, 0x20, EMIT, ENDS
-
-;----------------------------------------------------------------------
-;
-; is  ( a u -- )
+; it is used as CR/LF in databases and some file formats
 ;
 HEADER "PACE", "PACE",
     .word LIT, 0x0B, EMIT, ENDS
@@ -887,57 +881,7 @@ HEADER "TYPE", "TYPE",
 HEADER "UM-", "UMMINUS",
     .word NEGATE, UMPLUS, ENDS
 
-;----------------------------------------------------------------------
-;   User Stack from end sram
-;
-;----------------------------------------------------------------------
-;
-; is  ( -- )
-;   no checks
-;
-HEADER "U-", "ULESS",
-    .word UPP, AT, CELL, MINUS, DUP, UPP, TO, ENDS
-
-;----------------------------------------------------------------------
-;
-; is  ( -- )
-;   no checks
-;
-HEADER "U+", "UMORE",
-    .word UPP, AT, CELL, PLUS, DUP, UPP, TO, ENDS
-
-;----------------------------------------------------------------------
-;
-; is  ( u -- )
-;
-HEADER "U@", "UAT",
-1:
-    .word UPP, AT, ENDS
-
-;----------------------------------------------------------------------
-;
-; is  ( u -- )
-;
-HEADER "U!", "UTO",
-1:
-    .word UPP, TO, ENDS
-
-;----------------------------------------------------------------------
-;
-; is  ( u -- )
-;
-HEADER ">U", "USV",
-1:
-    .word UPP, AT, TO, ENDS
-
-;----------------------------------------------------------------------
-;
-; is  ( -- u )
-;
-HEADER "U>", "ULD",
-1:
-    .word UPP, AT, AT, ENDS
-
+;**********************************************************************
 ;----------------------------------------------------------------------
 ;
 HEADER "COLD0", "COLDZERO", F_LEAP
@@ -1003,12 +947,12 @@ _safe:
 HEADER "WARM", "WARM", F_LEAP
     ; verify error code 
     ; resets etc 
-    .word TURN, AT, EXEC, QUIT, ENDS 
+    .word LIT, TURN, AT, EXEC, QUIT, ENDS 
  
 ;----------------------------------------------------------------------
 ; does reset 
 ;
 HEADER "BYE", "BYE", F_LEAP
     .word EESAVE
-    .word REST, AT, EXEC, RESET, ENDS 
+    .word LIT, REST, AT, EXEC, RESET, ENDS 
 

@@ -1379,17 +1379,25 @@ HEADER "VARIABLE", "VARIABLE",
 ; is TICK ( "ccc<caddr>ccc" -- xt | 0 ) 
 ; 
 HEADER "'", "TICK", 
-    .word FINDN, DUP, ZEQU, ZBRANCH, 2f 
+    .word PARSEN, FINDN, DUP 
+    .word ZEQU, ZBRANCH, 2f 
     .word SWAP 
 2:  .word DROP, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 
 ; ok unconditional compile next word 
-;   no check if 0x0 zzzz 
+;   warning: no check if 0x0 zzzz 
 ; 
-HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE, 
+HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE | F_CORE 
     .word TICK, COMMA, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is ['] ( w -- ) 
+; zzzz
+HEADER "[']", "KTICK", F_IMMEDIATE | F_CORE
+    .word LIT, POSTPONE, LITERAL, ENDS 
  
 ;----------------------------------------------------------------------
 ;
