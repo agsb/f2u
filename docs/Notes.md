@@ -6,21 +6,24 @@
 
 # 21/12/2022
 
-- simplifly DO LEAVE LOOP +LOOP, using BEGIN UNTIL as wraprers, 
+- simplifly DO LEAVE LOOP +LOOP, using BEGIN UNTIL as wrapers, loop does a flag FALSE to continue 
     LEAVE does not continue until end of LOOP, values with 0x8000 offsets, as Forth-83
 
 - versions of HOOK BACK ?BACK as same as BEGIN AGAIN UNTIL using return stack to preserve hook addresses
 
 - reviews of ?PAIRS for: 
 
-                if else then fi endif 
-                begin again until while repeat 
-                do loop leave +loop unloop 
-                case of endof endcase 
-                for next 
-                hook back ?back
+                1   hook back ?back
+                2   if else then fi endif 
+                3   begin again until 
+                4   while repeat 
+                5   do loop leave +loop unloop 
+                6   case of endof endcase 
+                7   for next 
+                
+- wrapper refill inside XON XOFF for safety terminal input/output
 
-- wrappered refill inside XON XOFF for safety terminal input/output
+- review of _'_ _[']_ 
 
 # 16/12/2022
 
@@ -31,7 +34,7 @@
 - include @@ and @! as compound, usefull for indirect variable access, as sram used and
   flash words
 
-- review of : LITERAL R> DUP CELL PLUS >R @ ; : EXECUTE >R ;
+- review of : LITERAL R> DUP CELL PLUS >R @ ; to : LITERAL LIT LIT , , ; 
 
 - idea for : GOTO R> @ >R ; : SKIP R> CELL PLUS >R ;
 
