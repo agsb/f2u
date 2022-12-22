@@ -6,7 +6,7 @@
 
 # 21/12/2022
 
-- simplifly DO LEAVE LOOP +LOOP, using BEGIN UNTIL as wrapers, loop does a flag FALSE to continue 
+- simplifly DO LEAVE LOOP +LOOP, using BEGIN UNTIL as wrapers, loop sets tos to FALSE to continue, 
     LEAVE does not continue until end of LOOP, values with 0x8000 offsets, as Forth-83
 
 - versions of HOOK BACK ?BACK as same as BEGIN AGAIN UNTIL using return stack to preserve hook addresses
@@ -23,7 +23,9 @@
                 
 - wrapper refill inside XON XOFF for safety terminal input/output
 
-- review of _'_ _[']_ 
+- review of _'_  _[']_  _."_  _S"_
+
+- include errors.fs from Gforth as reference.
 
 # 16/12/2022
 
