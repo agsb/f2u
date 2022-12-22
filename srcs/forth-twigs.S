@@ -859,8 +859,8 @@ HEADER "SPACES", "SPACES"
  
 ;---------------------------------------------------------------------- 
 ; 
-; is COUNT ( a -- a+1 c ) 
-; from link to code 
+; is COUNT ( c-addr -- c-addr+1 c ) 
+; convert counted string c-addr to address and count
 HEADER "COUNT", "COUNT", 
     .word DUP, AT, TOR, ONEPLUS, RTO, ENDS 
  

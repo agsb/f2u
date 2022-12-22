@@ -229,7 +229,7 @@ HEADER "(refill)", "refillf", F_LEAP
     cpi wrk_low, 10 ; LF 
     breq 70f 
  
-    ; verify VT \n 
+    ; verify VT \v 
     cpi wrk_low, 11 ; VT 
     breq 70f 
  
@@ -1140,7 +1140,51 @@ HEADER "THROW", "THROW",
     .word HANDLER, AT, RSTO, RTO, HANDLER, TO 
     .word RTO, SWAP, TOR, PSTO, DROP, RTO 
 1:  .word ENDS 
- 
+
+;---------------------------------------------------------------------- 
+; 
+; is FATAL 
+; 
+HEADER "FATAL-CATCH", "FATAL", 
+	.word CATCH, ZDUP, ZBRANCH, 40f
+2:
+	.word DUP, LIT,  -1, EQUAL, ZBRANCH, 4f ; -1 of " Aborted" cr endof
+	.word SQUOTE 
+    STRINGS " Aborted"
+	.word BRANCH, 20f 
+4:
+	.word DUP, LIT,  -3, EQUAL, ZBRANCH, 6f ; -3 of " Stack overflow" cr endof
+	.word SQUOTE 
+	STRINGS " Stack overflow" 
+	.word BRANCH, 20f 
+6:
+	.word DUP, LIT,  -4, EQUAL, ZBRANCH, 8f ; -4 of " Stack underflow" cr endof
+	.word SQUOTE 
+	STRINGS " Stack underflow" 
+	.word BRANCH, 20f 
+8:
+	.word DUP, LIT, -10, EQUAL, ZBRANCH, 10f ; -10 of " Division by zero" cr endof
+	.word SQUOTE 
+	STRINGS " Division by zero"
+	.word BRANCH, 20f 
+10:
+	.word DUP, LIT, -13, EQUAL, ZBRANCH, 12f ; -13 of " Unknown word" cr endof
+	.word SQUOTE 
+	STRINGS " Unknown word" 
+	.word BRANCH, 20f 
+12:
+	.word DUP, LIT, -14, EQUAL, ZBRANCH, 14f ; -14 of " Compile-only word" cr endof
+	.word SQUOTE 
+	STRINGS " Compile-only word"
+	.word BRANCH, 20f 
+14:
+	.word SQUOTE 
+	STRINGS " Ocurred an unexpected error of code"
+    .word DUP, DOT 
+20:
+	.word CR, BRANCH, ABORT
+40:
+	.word ENDS	
 ;---------------------------------------------------------------------- 
 ; 
 ; is ABORT 
@@ -1243,19 +1287,20 @@ HEADER ".(", "DOTPAREN"
 ; 
 ; is S BACK SLASH QUOTE S\" ( -- )
 ;   not standart, 
-; zzzz
+;	zzzz differ ???
 HEADER "S\\\"", "SBSQUOTE" 
     .word RTO, DUP, COUNT, TYPE
+	; skip chars bytes 
     .word DUP, AT, ONE, PLUS, PLUS 
     .word CELL, PLUS, ALIGNED, TOR, ENDS
 
 ;---------------------------------------------------------------------- 
 ; 
-; is SQUOTE S\" ( -- )
+; is SQUOTE S" ( -- )
 ;   not standart, 
-; zzzz
-HEADER "S\"", "SQUOTE" 
+HEADER "S\"", "SQUOTE", F_IMMEDIATE 
     .word RTO, DUP, COUNT, TYPE
+	; skip chars bytes 
     .word DUP, AT, ONE, PLUS, PLUS 
     .word CELL, PLUS, ALIGNED, TOR, ENDS
 
@@ -1267,13 +1312,11 @@ HEADER "S\"", "SQUOTE"
 ;   bad things if no ending "
 ;
 HEADER ".\"", "DOTQUOTE", F_IMMEDIATE 
-    .word LIT, 0x22, PARSE
-    .word STATE, AT, ZBRANCH, 4f
+    .word LIT, QT_, PARSE
+    .word STATE, AT, ZBRANCH, TYPE
     .word COMP, SQUOTE, DUP, CCOMMA
-    .word HERE, OVER, ALLOT, ALIGN
-    .word SWAP, CMOVE, BRANCH, 6f  
-4:  .word TYPE 
-6:  .word ENDS 
+    .word HERE, OVER, DUP, ALLOT, ALIGN
+    .word CMOVE, ENDS  
 
 ;---------------------------------------------------------------------- 
 ; 
@@ -1332,13 +1375,6 @@ HEADER "CREATE", "CREATE",
     .word DUP, BL, SWAP, TO, ONE, PLUS 
 2:  .word ENDS 
  
-;---------------------------------------------------------------------- 
-;
-; is DOES ( xt -- ) 
-; zzzz ???? 
-HEADER "DOES", "DOES", 
-    .word LIT, BRANCH, COMMA, HERE, COMMA, ENDS 
-
 ;---------------------------------------------------------------------- 
 ; 
 ; is DOES> ( xt -- ) 

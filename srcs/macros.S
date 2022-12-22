@@ -70,6 +70,9 @@
 ;
 ; must be 16bits (16 to 31) registers
 ;
+; avr virtual machine as https://www.controllersandpcs.de/Project_sources/Macro_Reference.pdf
+;
+
 ; Z generic pointer for access sram and flash memory, lpm, spm, index, etc
 #define zpm_low r30
 #define zpm_high r31
@@ -82,15 +85,15 @@
 #define rsp_low r26
 #define rsp_high r27
 
-; top, Top parameter stack
+; top, Top parameter stack, A in avr virtual machine
 #define tos_low r24
 #define tos_high r25
 
-; nos, Next temporary
+; nos, Next temporary, B in avr virtual machine
 #define nos_low r22
 #define nos_high r23
 
-; wrk, Work temporary 
+; wrk, Work temporary, C in avr virtual machine 
 #define wrk_low r20
 #define wrk_high r21
 
@@ -100,14 +103,15 @@
 
 ; registers r8 to r19 free
 
+;.altmacro
+
 ;----------------------------------------------------------------------
 ;
 ;  trick adapted from amforth-6.9
 ;
 .macro STRINGS string
-;    .word DOSCON
     .byte 8f - 7f
-7:  .ascii "\\string"
+7:  .string "\string"
 8:  .balign 2
 .endm
 
@@ -335,6 +339,8 @@ LF_    =   0x0a    ; ascii line feed ^J
 VT_    =   0x0b    ; ascii vertical tab ^K, somewhere also used as CR/LF 
 BS_    =   0x08    ; ascii backspace ^H
 BL_    =   0x20    ; ascii space 
+
+QT_    =   0x22    ; quotation mark "
 
 ;----------------------------------------------------------------------
 ; AVR SREG constants

@@ -252,6 +252,7 @@ interpreter.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY",
 interpreter.S:HEADER "HANDLER", "HANDLER", 
 interpreter.S:HEADER "CATCH", "CATCH", 
 interpreter.S:HEADER "THROW", "THROW", 
+interpreter.S:HEADER "FATAL-CATCH", "FATAL", 
 interpreter.S:HEADER "ABORT", "ABORT" 
 interpreter.S:HEADER "ACCEPT", "ACCEPT", 
 interpreter.S:HEADER "OVERT", "OVERT", 
@@ -265,7 +266,7 @@ interpreter.S:HEADER "\\", "BACKSLASH", F_IMMEDIATE
 interpreter.S:HEADER "(", "PAREN", F_IMMEDIATE 
 interpreter.S:HEADER ".(", "DOTPAREN" 
 interpreter.S:HEADER "S\\\"", "SBSQUOTE" 
-interpreter.S:HEADER "S\"", "SQUOTE" 
+interpreter.S:HEADER "S\"", "SQUOTE", F_IMMEDIATE 
 interpreter.S:HEADER ".\"", "DOTQUOTE", F_IMMEDIATE 
 interpreter.S:HEADER "PARSE-NAME", "PARSEN", 
 interpreter.S:HEADER "FIND-NAME", "FINDN", 
@@ -273,7 +274,6 @@ interpreter.S:HEADER "FIND", "FIND",
 interpreter.S:HEADER "CHAR", "CHAR", 
 interpreter.S:HEADER ":NONAME", "NONAME", 
 interpreter.S:HEADER "CREATE", "CREATE", 
-interpreter.S:HEADER "DOES", "DOES", 
 interpreter.S:HEADER "DOES>", "DOESTO", F_IMMEDIATE 
 interpreter.S: HEADER "CONSTANT", "CONSTANT", 
 interpreter.S:HEADER "VARIABLE", "VARIABLE", 
