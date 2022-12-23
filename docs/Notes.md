@@ -4,6 +4,10 @@
 
 *still lots of english errors, please correct me*
 
+# 23/12/2022
+
+- cycle: boot -> cold -> turn -> warn -> quit -> rest -> halt 
+
 # 21/12/2022
 
 - simplifly DO LEAVE LOOP +LOOP, using BEGIN UNTIL as wrapers, loop sets tos to FALSE to continue, 
