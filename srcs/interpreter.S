@@ -225,8 +225,12 @@ HEADER "(refill)", "refillf", F_LEAP
     cpi wrk_low, 13 ; CR 
     breq 70f 
  
-    ; verify LF \n 
+    ; verify LF \r 
     cpi wrk_low, 10 ; LF 
+    breq 70f 
+ 
+    ; verify VT \v 
+    cpi wrk_low, 11 ; VT 
     breq 70f 
  
 44: 
@@ -848,76 +852,79 @@ HEADER "?PAIR", "QPAIR",
 ; 7 of endof
 ; 8 do loop +loop -loop leave
 ;
-HEADER "HOOK", "QHOOK", F_IMMEDIATE | F_COMPILE
+HEADER "HOOK", "XHOOK", F_IMMEDIATE | F_COMPILE
     .word QCOMP, HOOK, LIT, 0x01, ENDS
 
-HEADER "BACK", "QBACK", F_IMMEDIATE | F_COMPILE
+HEADER "BACK", "XBACK", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x01, QPAIR, BACK, ENDS
 
-HEADER "IF", "QIF", F_IMMEDIATE | F_COMPILE
+HEADER "QBACK", "XQBACK", F_IMMEDIATE | F_COMPILE
+    .word QCOMP, LIT, 0x01, QPAIR, BACK, ENDS
+
+HEADER "IF", "XIF", F_IMMEDIATE | F_COMPILE
     .word QCOMP, IF, LIT, 0x02, ENDS
 
-HEADER "ELSE", "QELSE", F_IMMEDIATE | F_COMPILE
+HEADER "ELSE", "XELSE", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x02, QPAIR, LIT, 0x02, ELSE, ENDS
 
-HEADER "ENDIF", "QENDIF", F_IMMEDIATE | F_COMPILE
+HEADER "ENDIF", "XENDIF", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x02, QPAIR, ENDIF, ENDS
 
-HEADER "THEN", "QTHEN", F_IMMEDIATE | F_COMPILE
+HEADER "THEN", "XTHEN", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x02, QPAIR, ENDIF, ENDS
 
-HEADER "AHEAD", "QAHEAD", F_IMMEDIATE | F_COMPILE
+HEADER "AHEAD", "XAHEAD", F_IMMEDIATE | F_COMPILE
     .word QCOMP, GO, LIT, 0x02, ENDS
 
-HEADER "AFT", "QAFT", F_IMMEDIATE | F_COMPILE
+HEADER "AFT", "XAFT", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x02, QPAIR, AFT, LIT, 0x02, ENDS
 
-HEADER "BEGIN", "QBEGIN", F_IMMEDIATE | F_COMPILE
+HEADER "BEGIN", "XBEGIN", F_IMMEDIATE | F_COMPILE
     .word QCOMP, BEGIN, LIT, 0x03, ENDS
 
-HEADER "AGAIN", "QAGAIN", F_IMMEDIATE | F_COMPILE
+HEADER "AGAIN", "XAGAIN", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x03, QPAIR, AGAIN, ENDS
 
-HEADER "UNTIL", "QUNTIL", F_IMMEDIATE | F_COMPILE
+HEADER "UNTIL", "XUNTIL", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x03, QPAIR, UNTIL, ENDS
 
-HEADER "WHILE", "QWHILE", F_IMMEDIATE | F_COMPILE
+HEADER "WHILE", "XWHILE", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x03, QPAIR, WHILE, LIT, 0x04, ENDS
 
-HEADER "REPEAT", "QREPEAT", F_IMMEDIATE | F_COMPILE
+HEADER "REPEAT", "XREPEAT", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x04, QPAIR, REPEAT, ENDS
 
-HEADER "FOR", "QFOR", F_IMMEDIATE | F_COMPILE
+HEADER "FOR", "XFOR", F_IMMEDIATE | F_COMPILE
     .word QCOMP, FOR, LIT, 0x05, ENDS
 
-HEADER "NEXT", "QNEXT", F_IMMEDIATE | F_COMPILE
+HEADER "NEXT", "XNEXT", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x05, QPAIR, NEXT, ENDS
 
-HEADER "CASE", "QCASE", F_IMMEDIATE | F_COMPILE
+HEADER "CASE", "XCASE", F_IMMEDIATE | F_COMPILE
     .word QCOMP, CASE, LIT, 0x06, ENDS
 
-HEADER "ENDCASE", "QENDCASE", F_IMMEDIATE | F_COMPILE
+HEADER "ENDCASE", "XENDCASE", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x06, QPAIR, ENDCASE, ENDS
 
-HEADER "OF", "QOF", F_IMMEDIATE | F_COMPILE
+HEADER "OF", "XOF", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x06, OF, QPAIR, 0x07, ENDS
 
-HEADER "ENDOF", "QENDOF", F_IMMEDIATE | F_COMPILE
+HEADER "ENDOF", "XENDOF", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x07, QPAIR, ENDOF, LIT, 0x06, ENDS
 
-HEADER "DO", "QDO", F_IMMEDIATE | F_COMPILE
+HEADER "DO", "XDO", F_IMMEDIATE | F_COMPILE
     .word QCOMP, DO, LIT, 0x08, ENDS
 
-HEADER "LOOP", "QLOOP", F_IMMEDIATE | F_COMPILE
+HEADER "LOOP", "XLOOP", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x08, QPAIR, LOOP, ENDS
 
-HEADER "+LOOP", "QPLOOP", F_IMMEDIATE | F_COMPILE
+HEADER "+LOOP", "XPLOOP", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x08, QPAIR, PLOOP, ENDS
 
-HEADER "LEAVE", "QLEAVE", F_IMMEDIATE | F_COMPILE
+HEADER "LEAVE", "XLEAVE", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x08, QPAIR, LEAVE, LIT, 0x08, ENDS
 
-HEADER "UNLOOP", "QUNLOOP", F_IMMEDIATE | F_COMPILE
+HEADER "UNLOOP", "XUNLOOP", F_IMMEDIATE | F_COMPILE
     .word QCOMP, LIT, 0x08, QPAIR, UNLOOP, LIT, 0x08, ENDS
 
 
@@ -1133,7 +1140,51 @@ HEADER "THROW", "THROW",
     .word HANDLER, AT, RSTO, RTO, HANDLER, TO 
     .word RTO, SWAP, TOR, PSTO, DROP, RTO 
 1:  .word ENDS 
- 
+
+;---------------------------------------------------------------------- 
+; 
+; is FATAL 
+; 
+HEADER "FATAL-CATCH", "FATAL", 
+	.word CATCH, ZDUP, ZBRANCH, 40f
+2:
+	.word DUP, LIT,  -1, EQUAL, ZBRANCH, 4f ; -1 of " Aborted" cr endof
+	.word SQUOTE 
+    STRINGS " Aborted"
+	.word BRANCH, 20f 
+4:
+	.word DUP, LIT,  -3, EQUAL, ZBRANCH, 6f ; -3 of " Stack overflow" cr endof
+	.word SQUOTE 
+	STRINGS " Stack overflow" 
+	.word BRANCH, 20f 
+6:
+	.word DUP, LIT,  -4, EQUAL, ZBRANCH, 8f ; -4 of " Stack underflow" cr endof
+	.word SQUOTE 
+	STRINGS " Stack underflow" 
+	.word BRANCH, 20f 
+8:
+	.word DUP, LIT, -10, EQUAL, ZBRANCH, 10f ; -10 of " Division by zero" cr endof
+	.word SQUOTE 
+	STRINGS " Division by zero"
+	.word BRANCH, 20f 
+10:
+	.word DUP, LIT, -13, EQUAL, ZBRANCH, 12f ; -13 of " Unknown word" cr endof
+	.word SQUOTE 
+	STRINGS " Unknown word" 
+	.word BRANCH, 20f 
+12:
+	.word DUP, LIT, -14, EQUAL, ZBRANCH, 14f ; -14 of " Compile-only word" cr endof
+	.word SQUOTE 
+	STRINGS " Compile-only word"
+	.word BRANCH, 20f 
+14:
+	.word SQUOTE 
+	STRINGS " Ocurred an unexpected error of code"
+    .word DUP, DOT 
+20:
+	.word CR, BRANCH, ABORT
+40:
+	.word ENDS	
 ;---------------------------------------------------------------------- 
 ; 
 ; is ABORT 
@@ -1191,9 +1242,13 @@ HEADER "SOURCE+", "SOURCEPLUS",
 ;---------------------------------------------------------------------- 
 ; 
 ; is  REFILL ( -- a n ), toin = 0 
-; 
+; wrapper refill inside (xon - xoff)
+;
 HEADER "REFILL", "REFILL", 
-    .word SOURCE, refillf, ZERO, TOIN, TO, ENDS 
+    .word LIT, XON_, EMIT 
+    .word SOURCE, refillf 
+    .word LIT, XOFF_, EMIT
+    .word ZERO, TOIN, TO, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 
@@ -1232,19 +1287,20 @@ HEADER ".(", "DOTPAREN"
 ; 
 ; is S BACK SLASH QUOTE S\" ( -- )
 ;   not standart, 
-; zzzz
+;	zzzz differ ???
 HEADER "S\\\"", "SBSQUOTE" 
     .word RTO, DUP, COUNT, TYPE
+	; skip chars bytes 
     .word DUP, AT, ONE, PLUS, PLUS 
     .word CELL, PLUS, ALIGNED, TOR, ENDS
 
 ;---------------------------------------------------------------------- 
 ; 
-; is SQUOTE S\" ( -- )
+; is SQUOTE S" ( -- )
 ;   not standart, 
-; zzzz
-HEADER "S\"", "SQUOTE" 
+HEADER "S\"", "SQUOTE", F_IMMEDIATE 
     .word RTO, DUP, COUNT, TYPE
+	; skip chars bytes 
     .word DUP, AT, ONE, PLUS, PLUS 
     .word CELL, PLUS, ALIGNED, TOR, ENDS
 
@@ -1256,13 +1312,11 @@ HEADER "S\"", "SQUOTE"
 ;   bad things if no ending "
 ;
 HEADER ".\"", "DOTQUOTE", F_IMMEDIATE 
-    .word LIT, 0x22, PARSE
-    .word STATE, AT, ZBRANCH, 4f
+    .word LIT, QT_, PARSE
+    .word STATE, AT, ZBRANCH, TYPE
     .word COMP, SQUOTE, DUP, CCOMMA
-    .word HERE, OVER, ALLOT, ALIGN
-    .word SWAP, CMOVE, BRANCH, 6f  
-4:  .word TYPE 
-6:  .word ENDS 
+    .word HERE, OVER, DUP, ALLOT, ALIGN
+    .word CMOVE, ENDS  
 
 ;---------------------------------------------------------------------- 
 ; 
@@ -1322,13 +1376,6 @@ HEADER "CREATE", "CREATE",
 2:  .word ENDS 
  
 ;---------------------------------------------------------------------- 
-;
-; is DOES ( xt -- ) 
-; zzzz ???? 
-HEADER "DOES", "DOES", 
-    .word LIT, BRANCH, COMMA, HERE, COMMA, ENDS 
-
-;---------------------------------------------------------------------- 
 ; 
 ; is DOES> ( xt -- ) 
 ; 
@@ -1368,17 +1415,25 @@ HEADER "VARIABLE", "VARIABLE",
 ; is TICK ( "ccc<caddr>ccc" -- xt | 0 ) 
 ; 
 HEADER "'", "TICK", 
-    .word FINDN, DUP, ZEQU, ZBRANCH, 2f 
+    .word PARSEN, FINDN, DUP 
+    .word ZEQU, ZBRANCH, 2f 
     .word SWAP 
 2:  .word DROP, ENDS 
  
 ;---------------------------------------------------------------------- 
 ; 
 ; ok unconditional compile next word 
-;   no check if 0x0 zzzz 
+;   warning: no check if 0x0 zzzz 
 ; 
-HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE, 
+HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE | F_CORE 
     .word TICK, COMMA, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; is ['] ( w -- ) 
+; zzzz
+HEADER "[']", "KTICK", F_IMMEDIATE | F_CORE
+    .word LIT, POSTPONE, LITERAL, ENDS 
  
 ;----------------------------------------------------------------------
 ;

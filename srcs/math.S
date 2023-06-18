@@ -164,7 +164,7 @@ HEADER "UMPASS", "UMPASS",
 ; 
 HEADER "UM/MOD", "UMDIVMOD", 
     NOOP
-    .word OVER, OVER, ULESS, ZBRANCH, 8f 
+    .word OVER, OVER, UMLESS, ZBRANCH, 8f 
  2: .word NEGATE
 	.word LIT, 15, FOR
     .word TOR, UMPASS, DUP

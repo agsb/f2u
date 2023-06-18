@@ -4,24 +4,52 @@
 
 *still lots of english errors, please correct me*
 
+# 23/12/2022
+
+- cycle: boot -> cold -> turn -> warn -> quit -> rest -> halt 
+
+# 21/12/2022
+
+- simplifly DO LEAVE LOOP +LOOP, using BEGIN UNTIL as wrapers, loop sets tos to FALSE to continue, 
+    LEAVE does not continue until end of LOOP, values with 0x8000 offsets, as Forth-83
+
+- versions of HOOK BACK ?BACK as same as BEGIN AGAIN UNTIL using return stack to preserve hook addresses
+
+- reviews of ?PAIRS for: 
+
+                1   hook back ?back
+                2   if else then fi endif 
+                3   begin again until 
+                4   while repeat 
+                5   do loop leave +loop unloop 
+                6   case of endof endcase 
+                7   for next 
+                
+- wrapper refill inside XON XOFF for safety terminal input/output
+
+- review of _'_  _[']_  _."_  _S"_
+
+- include errors.fs from Gforth as reference.
+
 # 16/12/2022
 
 - include ROT as primitive, more fast and small.
 
 - review of ALIGNED, now round down a cell, add a cell.
 
-- include @@ as compound, usefull for indirect variable access.
+- include @@ and @! as compound, usefull for indirect variable access, as sram used and
+  flash words
 
-- review of : LITERAL R> DUP CELL PLUS >R @ ; : EXECUTE >R ;
+- review of : LITERAL R> DUP CELL PLUS >R @ ; to : LITERAL LIT LIT , , ; 
 
 - idea for : GOTO R> @ >R ; : SKIP R> CELL PLUS >R ;
 
-- how define =0 ? just as "if TOS eq 0x0 then skip next reference fi
+- how define =0 ? just as "if TOS eq 0x0 then skip next reference fi"
     why ? BRANCH and 0BRANCH
 
 - define JUMP in assembler, 
     does not use the inner interpreter,
-    does a real absolute assemler jump to address in TOS 
+    does a real absolute assembler jump to address in TOS 
 
 # 08/12/2022
 
@@ -73,10 +101,11 @@
 
 # 23/11/2022
 
-- Using MITC there is no IP. To preserve the next sequential reference, when executing >R R@ R>,
-      the values are into/from the second cell of returning stack and 
-      the reference is keeped at the first cell to be executed. 
-      The effect is transparent to the user. 
+- Using MITC there is no IP. 
+        To preserve the next sequential reference, when executing >R R@ R>,
+        the values are into/from the second cell of returning stack and 
+        the reference is keeped at the first cell to be executed. 
+        The effect is transparent to the user. 
 
 - Review of compile, execute, literal, as compile state words. 
 
