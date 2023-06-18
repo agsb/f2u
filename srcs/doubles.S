@@ -105,6 +105,20 @@ HEADER "2SWAP", "TWOSWAP",
      
 ;----------------------------------------------------------------------
 ;
+; ok ( w1 w2 -- w1 w2 w1 w2 ) 
+;
+HEADER "2OVER", "TWOOVER",
+     .word TOR, TOR, TWODUP, RTO, RTO, TWOSWAP, ENDS 
+ 
+;----------------------------------------------------------------------
+;
+; ok ( w1 w2 w3 w4 -- w3 w4 w1 w2 ) 
+;
+HEADER "2ROT", "TWOUROT",
+     .word TWOTOR, TWOSWAP, TWORTO, TWOSWAP, ENDS 
+     
+;----------------------------------------------------------------------
+;
 ; ok ( w1 w2 w3 w4 -- w3 w4 + w1 w2 ) 
 ;
 HEADER "D+", "DPLUS",
