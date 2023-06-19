@@ -1,0 +1,236 @@
+doubles.S:HEADER "4+", "FOURPLUS",
+doubles.S:HEADER "4-", "FOURMINUS",
+doubles.S:HEADER "2!", "TWOTO", 
+doubles.S:HEADER "2@", "TWOAT", 
+doubles.S:HEADER "2>R", "TWOTOR",
+doubles.S:HEADER "2R>", "TWORTO",
+doubles.S:HEADER "2R@", "TWORAT",
+doubles.S:HEADER "2DROP", "TWODROP",
+doubles.S:HEADER "2DUP", "TWODUP",
+doubles.S:HEADER "2SWAP", "TWOSWAP",
+doubles.S:HEADER "D+", "DPLUS",
+doubles.S:HEADER "D-", "DMINUS",
+flush.S:HEADER "(load_flash)", "LDFLASH"
+flush.S:HEADER "(save_flash)", "SVFLASH"
+forth-leafs.S:HEADER "ENDS", "ENDS", F_LEAP
+forth-leafs.S:HEADER "KEY", "KEY", F_LEAP
+forth-leafs.S:HEADER "KEY?", "QKEY", F_LEAP
+forth-leafs.S:HEADER "EMIT", "EMIT", F_LEAP
+forth-leafs.S:HEADER "EMIT?", "QEMIT", F_LEAP
+forth-leafs.S:HEADER "C!E", "CTOE", F_LEAP
+forth-leafs.S:HEADER "C@E", "CATE", F_LEAP
+forth-leafs.S:HEADER "C@P", "CATIO", F_LEAP
+forth-leafs.S:HEADER "C!P", "CTOIO", F_LEAP
+forth-leafs.S:HEADER "MILLIS", "MILLIS", F_LEAP
+forth-leafs.S:HEADER "TRUE", "FTRUE", F_LEAP
+forth-leafs.S:HEADER "FALSE", "FFALSE", F_LEAP
+forth-leafs.S:HEADER "0=", "ZEQU", F_LEAP
+forth-leafs.S:HEADER "0<", "ZLTH", F_LEAP
+forth-leafs.S:HEADER "U<", "UMLESS", F_LEAP
+forth-leafs.S:HEADER "UM+", "UMPLUS", F_LEAP
+forth-leafs.S:HEADER "!", "TO", F_LEAP
+forth-leafs.S:HEADER "@", "AT", F_LEAP
+forth-leafs.S:HEADER ">R", "TOR", F_LEAP
+forth-leafs.S:HEADER "R>", "RTO", F_LEAP
+forth-leafs.S:HEADER "R@", "RAT", F_LEAP
+forth-leafs.S:HEADER "RS!", "RSTO", F_LEAP
+forth-leafs.S:HEADER "PS!", "PSTO", F_LEAP
+forth-leafs.S:HEADER "RS@", "RSAT", F_LEAP
+forth-leafs.S:HEADER "PS@", "PSAT", F_LEAP
+forth-leafs.S:HEADER "DROP", "DROP", F_LEAP
+forth-leafs.S:HEADER "DUP", "DUP", F_LEAP
+forth-leafs.S:HEADER "SWAP", "SWAP", F_LEAP
+forth-leafs.S:HEADER "OVER", "OVER", F_LEAP
+forth-leafs.S:HEADER "?DUP", "ZDUP", F_LEAP
+forth-leafs.S:HEADER "<", "LTHAN", F_LEAP
+forth-leafs.S:HEADER "+", "PLUS", F_LEAP
+forth-leafs.S:HEADER "-", "MINUS", F_LEAP
+forth-leafs.S:HEADER "NAND", "NAND", F_LEAP
+forth-leafs.S:HEADER "AND", "AND", F_LEAP
+forth-leafs.S:HEADER "OR", "OR", F_LEAP
+forth-leafs.S:HEADER "XOR", "XOR", F_LEAP
+forth-leafs.S:HEADER "INVERT", "INVERT", F_LEAP
+forth-leafs.S:HEADER "NEGATE", "NEGATE", F_LEAP
+forth-leafs.S:HEADER "2*", "SHL", F_LEAP
+forth-leafs.S:HEADER "2/", "SHR", F_LEAP
+forth-leafs.S:HEADER "><", "ENDIAN", F_LEAP
+forth-leafs.S:HEADER "BRANCH", "BRANCH", F_LEAP
+forth-leafs.S:HEADER "0BRANCH", "ZBRANCH", F_LEAP
+forth-leafs.S:HEADER "LIT", "LIT", F_LEAP
+forth-leafs.S:HEADER "ALIGNED", "ALIGNED", F_LEAP
+forth-leafs.S:HEADER "CELL", "CELL", F_LEAP
+forth-leafs.S:HEADER "C!", "CTO", F_LEAP
+forth-leafs.S:HEADER "C@", "CAT", F_LEAP
+forth-leafs.S:HEADER "0", "ZERO", F_LEAP
+forth-leafs.S:HEADER "1", "ONE", F_LEAP
+forth-leafs.S:HEADER "2", "TWO", F_LEAP
+forth-twigs.S:HEADER "!E", "TOE", F_LEAP
+forth-twigs.S:HEADER "@E", "ATE", F_LEAP
+forth-twigs.S:HEADER "NIP", "NIP",
+forth-twigs.S:HEADER "SWIP", "SWIP",
+forth-twigs.S:;HEADER "OVER", "OVER",
+forth-twigs.S:HEADER "ROT", "ROTU",
+forth-twigs.S:HEADER "-ROT", "ROTD",
+forth-twigs.S:HEADER "TUCK", "TUCK",
+forth-twigs.S:HEADER "FLIP", "FLIP",
+forth-twigs.S:HEADER "=", "EQUAL",
+forth-twigs.S:HEADER "<>", "NOTEQUAL",
+forth-twigs.S:HEADER ">", "GTHAN",
+forth-twigs.S:HEADER "0>", "ZEROGT",
+forth-twigs.S:HEADER "0<", "ZEROLT",
+forth-twigs.S:HEADER "CELLS", "CELLS",
+forth-twigs.S:HEADER "CELL+", "CELLPLUS",
+forth-twigs.S:HEADER "CELL-", "CELLMINUS",
+forth-twigs.S:HEADER "1+", "ONEPLUS",
+forth-twigs.S:HEADER "1-", "ONEMINUS",
+forth-twigs.S:HEADER "2+", "TWOPLUS",
+forth-twigs.S:HEADER "2-", "TWOMINUS",
+forth-twigs.S:HEADER "+!", "PLUSTO",
+forth-twigs.S:HEADER "TIB", "TIB",
+forth-twigs.S:HEADER "LATEST", "LATEST",
+forth-twigs.S:HEADER "STATE", "STATE",
+forth-twigs.S:HEADER "BASE", "BASE",
+forth-twigs.S:HEADER "EP", "EPP",
+forth-twigs.S:HEADER "DP", "DPP",
+forth-twigs.S:HEADER "HP", "HPP",
+forth-twigs.S:HEADER "UP", "UPP",
+forth-twigs.S:;HEADER "RS$", "RSIS",
+forth-twigs.S:;HEADER "PS$", "PSIS",
+forth-twigs.S:HEADER "DEPTH", "DEPTH",
+forth-twigs.S:HEADER "RDEPTH", "RDEPTH",
+forth-twigs.S:HEADER "UHERE", "UHERE",
+forth-twigs.S:HEADER "HERE", "HERE",
+forth-twigs.S:HEADER "ALLOT", "ALLOT",
+forth-twigs.S:HEADER "ALIGN", "ALIGN",
+forth-twigs.S:HEADER "C,", "CCOMMA", F_IMMEDIATE
+forth-twigs.S:HEADER ",", "COMMA", F_IMMEDIATE
+forth-twigs.S:HEADER "<,", "TOMMA", F_IMMEDIATE
+forth-twigs.S:HEADER "DOVAR", "DOVAR",
+forth-twigs.S:HEADER "DOCON", "DOCON",
+forth-twigs.S:HEADER "DOAT", "DOAT",
+forth-twigs.S:HEADER "DOTO", "DOTO",
+forth-twigs.S:HEADER "LITERAL", "LITERAL",
+forth-twigs.S:HEADER "COMP", "COMP", F_IMMEDIATE
+forth-twigs.S:HEADER "EXIT", "EXIT", F_IMMEDIATE
+forth-twigs.S:HEADER "EXEC", "EXEC", F_IMMEDIATE
+forth-twigs.S:HEADER "TAIL", "TAIL", 
+forth-twigs.S:HEADER "VALUE", "VALUE", 
+forth-twigs.S:HEADER "TO", "TOVALUE", 
+forth-twigs.S:HEADER "DEFER", "DEFER", 
+forth-twigs.S:HEADER "IS", "ISDEFER", 
+forth-twigs.S:HEADER "MARKTO", "MARKTO", F_IMMEDIATE,
+forth-twigs.S:HEADER "TOMARK", "TOMARK", F_IMMEDIATE,
+forth-twigs.S:HEADER "BEGIN", "BEGIN", F_IMMEDIATE,
+forth-twigs.S:HEADER "AGAIN", "AGAIN", F_IMMEDIATE,
+forth-twigs.S:HEADER "UNTIL", "UNTIL", F_IMMEDIATE,
+forth-twigs.S:HEADER "UNLESS", "UNLESS", F_IMMEDIATE, 
+forth-twigs.S:HEADER "IF", "IF", F_IMMEDIATE,
+forth-twigs.S:HEADER "GO", "GO", F_IMMEDIATE,
+forth-twigs.S:HEADER "THEN", "THEN", F_IMMEDIATE,
+forth-twigs.S:HEADER "ENDIF", "ENDIF", F_IMMEDIATE,
+forth-twigs.S:HEADER "ELSE", "ELSE", F_IMMEDIATE,
+forth-twigs.S:HEADER "WHILE", "WHILE", F_IMMEDIATE,
+forth-twigs.S:HEADER "REPEAT", "REPEAT", F_IMMEDIATE,
+forth-twigs.S:HEADER "AHEAD", "AHEAD", F_IMMEDIATE,
+forth-twigs.S:HEADER "AFT", "AFT", F_IMMEDIATE,
+forth-twigs.S:HEADER "HOOK", "HOOK", F_IMMEDIATE,
+forth-twigs.S:HEADER "BACK", "BACK", F_IMMEDIATE,
+forth-twigs.S:HEADER "FOR", "FOR", F_IMMEDIATE
+forth-twigs.S:HEADER "TXEN", "TXEN", 
+forth-twigs.S:HEADER "NEXT", "NEXT", F_IMMEDIATE
+forth-twigs.S:HEADER "CASE", "CASE", F_IMMEDIATE
+forth-twigs.S:HEADER "OF", "OF", F_IMMEDIATE
+forth-twigs.S:HEADER "ENDOF", "ENDOF", F_IMMEDIATE
+forth-twigs.S:HEADER "ENDCASE", "ENDCASE", F_IMMEDIATE
+forth-twigs.S:HEADER "CR", "CR",
+forth-twigs.S:HEADER "LF", "LF",
+forth-twigs.S:HEADER "BL", "BL",
+forth-twigs.S:HEADER "DOT", "DOT",
+forth-twigs.S:HEADER "TYPE", "TYPE",
+forth-twigs.S:HEADER "<#", "LTSNUM",
+forth-twigs.S:HEADER "#>", "SNUMGT",
+forth-twigs.S:HEADER "DIGIT", "DIGIT",
+forth-twigs.S:HEADER "#", "SNUM",
+forth-twigs.S:HEADER "#S", "SNUMS",
+forth-twigs.S:HEADER "HOLD", "HOLD",
+forth-twigs.S:HEADER "SIGN", "SIGN",
+forth-twigs.S:HEADER "UM-", "UMMINUS",
+forth-twigs.S:HEADER "U-", "ULESS",
+forth-twigs.S:HEADER "U+", "UMORE",
+forth-twigs.S:HEADER "@U", "ATU",
+forth-twigs.S:HEADER "!U", "TOU",
+forth-twigs.S:HEADER ">U", "USV",
+forth-twigs.S:HEADER "U>", "ULD",
+forth-twigs.S:HEADER "COLD0", "COLDZERO", F_LEAP
+forth-twigs.S:HEADER "EELOAD", "EELOAD", F_LEAP
+forth-twigs.S:HEADER "EESAVE", "EESAVE", F_LEAP
+forth-twigs.S:HEADER "COLD", "COLD", F_LEAP
+forth-twigs.S:HEADER "WARM", "WARM", F_LEAP
+forth-twigs.S:HEADER "BYE", "BYE", F_LEAP
+interpreter.S:HEADER "(skip)", "skip" 
+interpreter.S:HEADER "(scan)", "scan" 
+interpreter.S:HEADER "(same)", "same" 
+interpreter.S:HEADER "(copy)", "copy" 
+interpreter.S:HEADER "(refill)", "refill" 
+interpreter.S:HEADER "(parse)", "parse" 
+interpreter.S:HEADER "(word)", "word" 
+interpreter.S:HEADER "(number)", "number" 
+interpreter.S:HEADER "(find)", "find" 
+interpreter.S:HEADER "MOVE", "MOVE", 
+interpreter.S:HEADER "FILL", "FILL", 
+interpreter.S:HEADER "]", "RBRAC", 
+interpreter.S:HEADER "[", "LBRAC", F_IMMEDIATE 
+interpreter.S:HEADER "TOGGLE", "TOGGLE", 
+interpreter.S:HEADER ">NFA", "TONFA", 
+interpreter.S:HEADER ">CFA", "TOCFA", 
+interpreter.S:HEADER "HIDDEN", "HIDDEN", 
+interpreter.S:HEADER "IMMEDIATE", "IMMEDIATE", 
+interpreter.S:HEADER "COMPILE_ONLY", "COMPILE_ONLY", 
+interpreter.S:HEADER "HANDLER", "HANDLER", 
+interpreter.S:HEADER "CATCH", "CATCH", 
+interpreter.S:HEADER "THROW", "THROW", 
+interpreter.S:HEADER "SPACE", "SPACE" 
+interpreter.S:HEADER "SPACES", "SPACES" 
+interpreter.S:HEADER "ABORT", "ABORT" 
+interpreter.S:HEADER "ACCEPT", "ACCEPT", 
+interpreter.S:HEADER "OVERT", "OVERT", 
+interpreter.S:HEADER ":", "COLON", F_IMMEDIATE 
+interpreter.S:HEADER ";", "SEMMI", 
+interpreter.S:HEADER "SOURCE", "SOURCE", 
+interpreter.S:HEADER "SOURCE+", "SOURCEPLUS", 
+interpreter.S:HEADER "REFILL", "REFILL", 
+interpreter.S:HEADER "PARSE", "PARSE" 
+interpreter.S:HEADER "(", "PAREN" 
+interpreter.S:HEADER ".(", "DOTPAREN" 
+interpreter.S:HEADER "S\"", "SQUOTE" 
+interpreter.S:HEADER ".\"", "DOTQUOTE" 
+interpreter.S:HEADER "PARSE-NAME", "PARSEN", 
+interpreter.S:HEADER "FIND-NAME", "FINDN", 
+interpreter.S:HEADER "FIND", "FIND", 
+interpreter.S:HEADER "NONAME", "NONAME", 
+interpreter.S:HEADER "CREATE", "CREATE", 
+interpreter.S:HEADER "DOES", "DOES", 
+interpreter.S:HEADER "DOES>", "DOESTO", F_IMMEDIATE 
+interpreter.S: HEADER "CONSTANT", "CONSTANT", 
+interpreter.S:HEADER "VARIABLE", "VARIABLE", 
+interpreter.S:HEADER "'", "TICK", 
+interpreter.S:HEADER "POSTPONE", "POSTPONE", F_IMMEDIATE, 
+interpreter.S:HEADER "COMPXT", "COMPXT", F_IMMEDIATE 
+interpreter.S:HEADER "NUMBN", "NUMBN", 
+interpreter.S:HEADER "NONEN", "NONEN", 
+interpreter.S:HEADER "EVAL", "EVAL", 
+interpreter.S:HEADER "QUIT", "QUIT", 
+macros.S:.macro HEADER name, label, flags=0x0
+main.S:HEADER "ZZZZ", "ZZZZ",
+math.S:HEADER "HASH", "HASH", F_LEAP
+math.S:HEADER "RANDOM", "RANDOM", F_LEAP
+math.S:HEADER "RAND", "RAND", F_LEAP
+math.S:HEADER "ABS", "ABS", F_LEAP 
+math.S:HEADER "MAX", "MAX", F_LEAP
+math.S:HEADER "MIN", "MIN", F_LEAP
+math.S:HEADER "WITHIN", "WITHIN", F_LEAP
+math.S:HEADER "UM*", "UMUL", F_LEAP
+math.S:HEADER "UM/MOD", "UMBYMOD", F_LEAP
+math.S:HEADER "*", "SMUL", F_LEAP
+math.S:HEADER "/", "SDIV", F_LEAP
+math.S:HEADER "utoa", "utoa", F_LEAP 
