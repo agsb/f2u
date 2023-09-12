@@ -5,6 +5,9 @@
 # *"To master riding bicycles you have do ride bicycles"*
 
 ## This is still just a "brainstorm", really is a documentation of changes. 
+
+## outdated, use only as old references
+
 ---
 # Table of Contents
 * [Introduction]
